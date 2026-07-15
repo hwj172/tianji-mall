@@ -1,0 +1,16 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: gateway
+  cloud:
+    nacos:
+      discovery:
+        server-addr: 192.168.1.100:8848
+      config:
+        server-addr: 192.168.1.100:8848
+        file-extension: yaml
+    gateway:
+      routes:
+        # 路由规则后续按需配置

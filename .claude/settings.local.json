@@ -1,0 +1,66 @@
+{
+  "permissions": {
+    "allow": [
+      "Read",
+      "Glob",
+      "Grep",
+      "Edit",
+      "MultiEdit",
+      "Write(src/main/**)",
+      "Write(src/test/**)",
+      "Bash(npm *)",
+      "Bash(pnpm *)",
+      "Bash(git status)",
+      "Bash(git diff *)",
+      "Bash(git log *)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(cat *)",
+      "Bash(head *)",
+      "Bash(tail *)",
+      "Bash(find *)",
+      "Bash(pip list *)",
+      "Bash(mvn compile *)",
+      "Bash(git init *)"
+    ],
+    "deny": [
+      "Read(**/.env*)",
+      "Read(**/*.yml)",
+      "Read(**/*.yaml)",
+      "Read(**/*.properties)",
+      "Read(**/*.pem)",
+      "Read(**/*.key)",
+      "Read(**/secrets/**)",
+      "Read(**/credentials/**)",
+      "Write(**/.env*)",
+      "Write(**/*.yml)",
+      "Write(**/*.yaml)",
+      "Write(**/*.properties)",
+      "Write(**/secrets/**)",
+      "Write(package-lock.json)",
+      "Write(.github/workflows/*)",
+      "Bash(rm -rf *)",
+      "Bash(sudo *)",
+      "Bash(git push *)",
+      "Bash(git merge *)",
+      "Bash(git rebase *)",
+      "Bash(docker *)",
+      "Bash(curl * | sh)",
+      "Bash(chmod *)"
+    ],
+    "defaultMode": "plan",
+    "hooks": {
+      "PostToolUse": [
+        {
+          "matcher": "Write|Edit",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "echo \"文件已修改，建议检查一下改了什么\""
+            }
+          ]
+        }
+      ]
+    }
+  }
+}
