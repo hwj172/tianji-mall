@@ -4,21 +4,70 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## 项目概览
 
-双技术栈项目：
-- **Maven Java 11**：`pom.xml`（groupId: `com.tianji`, artifactId: `demo`），`src/main` 和 `src/test`
-- **Node.js**：`server.js`，零依赖 HTTP 服务，返回 HTML 页面，监听 3000 端口
+天机商城（tianji-mall）— 基于 Spring Cloud Alibaba 的仿淘宝智能电商平台。
+
+- **Java 17 + Spring Boot 3.2.5 / Spring Cloud 2023.0.3 / Spring Cloud Alibaba 2023.0.1.0**
+- **Maven 多模块**：1 个父 POM 聚合 7 个子模块
+- **数据库**：MySQL 8.0 + MyBatis-Plus 3.5.7 + Druid 1.2.23
+- **注册配置**：Nacos
+- **消息队列**：RocketMQ（rocketmq-spring-boot-starter 2.3.1）
+- **链路监控**：SkyWalking + Sentinel Dashboard
+- **向量数据库**：Milvus
+- **前端**：Vue3（独立项目）
+- 完整需求文档见 `remand.md`
+
+## 模块架构
+
+```
+tianji-mall (父 POM)
+├── tianji-common          # 公共模块（jar，无启动类）
+├── gateway                # API 网关 — 8080
+├── user-service           # 用户服务 — 8081
+├── mall-goods-order       # 商城核心（商品+购物车+订单+地址）— 8082
+├── pay-service            # 支付宝沙盒支付 — 8083
+├── mcp-server             # MCP 工具中间服务 — 8084
+└── ai-chat-service        # AI 智能导购（Claude + RAG）— 8085
+```
+
+**模块间调用**：Nacos 注册发现 + OpenFeign。ai-chat-service 通过 MCP 协议调用 mcp-server。
 
 ## 常用命令
 
 ```bash
-# Maven
-mvn compile          # 编译
-mvn test             # 运行测试
-mvn package          # 打包
+mvn compile          # 全模块编译
+mvn test             # 全模块测试
+mvn package          # 全模块打包
 
-# Node.js
-node server.js       # 启动 HTTP 服务（http://localhost:3000）
+# 单模块编译/测试
+mvn compile -pl user-service
+mvn test -pl mall-goods-order
+
+# 从指定模块恢复构建（依赖已下载完成时）
+mvn compile -rf :pay-service
+
+# 打包跳过测试
+mvn package -DskipTests
 ```
+
+## 子模块依赖速查
+
+| 模块 | 关键依赖 |
+|------|----------|
+| tianji-common | Lombok, Jackson, Jakarta Validation — 无 spring-boot-maven-plugin |
+| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer — **不是 spring-boot-starter-web** |
+| user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6 |
+| mall-goods-order | 同 user-service + OpenFeign |
+| pay-service | 同 user-service + OpenFeign + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释） |
+| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign |
+| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign, RocketMQ |
+
+## 关键约定
+
+- `tianji-common` 是纯 jar 库，不要在它的 pom.xml 中加 spring-boot-maven-plugin
+- Gateway 使用 WebFlux（spring-cloud-starter-gateway），**不能**引入 spring-boot-starter-web
+- 所有业务服务继承父 POM 的依赖版本，不在子模块中写 `<version>`
+- Nacos 地址统一填虚拟机静态 IP（当前：192.168.1.100:8848），不能用 127.0.0.1
+- application.yml 中 `spring.application.name` 必须与 `pom.xml` 的 `artifactId` 一致
 
 ## 行为准则
 
@@ -48,18 +97,12 @@ node server.js       # 启动 HTTP 服务（http://localhost:3000）
 ### 4. Goal-Driven Execution
 
 - 将任务转化为可验证的目标
-- 多步骤任务先列出简要计划，
-
-## 可用 Skills
-- 创建 React 组件时，请读取 `.claude/skills/react-component/SKILL.md` 并严格遵循其中的规范
+- 多步骤任务先列出简要计划
 
 ## 项目 Skills
-以下 Skill 定义了标准化的开发流程（每个 Skill 是一个目录，核心指令在 SKILL.md 中）：
-- `.claude/skills/react-component/` - React 组件生成规范
-- `.claude/skills/git-commit/` - Git 提交规范
 
-执行相关任务时，请先阅读对应 Skill 目录下的 SKILL.md 并严格遵循。
-如 Skill 中包含 scripts/、resources/ 或 references/，请一并参考。
+Skills 位于 `.claude/skills/` 目录，每个 skill 有独立的 `SKILL.md`。执行相关任务时，使用 `Skill` 工具加载对应的 skill 并严格遵循其流程。绝不要用 Read 工具读取 SKILL.md 文件。
+
 
 <!-- superpowers-zh:begin (do not edit between these markers) -->
 # Superpowers-ZH 中文增强版
@@ -104,6 +147,3 @@ Skills 位于 `.claude/skills/` 目录，每个 skill 有独立的 `SKILL.md` �
 
 如果你认为哪怕只有 1% 的可能性某个 skill 适用于你正在做的事情，你必须调用该 skill 检查。
 <!-- superpowers-zh:end -->
-
-#### 铁律
-每次回复我必须称呼我‘问鸡’

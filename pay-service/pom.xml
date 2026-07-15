@@ -51,14 +51,11 @@
             <artifactId>spring-cloud-starter-alibaba-nacos-config</artifactId>
         </dependency>
 
-        <!--
-        支付宝沙盒 SDK — 不在公共 Maven 仓库，需手动安装到本地后再取消注释
-        (参考父 POM dependencyManagement 中的说明)
+        <!-- 支付宝沙盒 SDK -->
         <dependency>
             <groupId>com.alipay.sdk</groupId>
             <artifactId>alipay-sdk-java</artifactId>
         </dependency>
-        -->
 
         <!-- OpenFeign -->
         <dependency>

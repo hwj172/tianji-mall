@@ -47,7 +47,7 @@
         <lombok.version>1.18.32</lombok.version>
 
         <!-- 支付宝 SDK -->
-        <alipay-sdk.version>4.39.146.ALL</alipay-sdk.version>
+        <alipay-sdk.version>4.39.223.ALL</alipay-sdk.version>
     </properties>
 
     <!-- ==================== 依赖版本管理 ==================== -->
@@ -139,20 +139,12 @@
                 <version>${lombok.version}</version>
             </dependency>
 
-            <!--
-            支付宝沙盒 SDK — 不在公共 Maven 仓库，需手动安装到本地：
-            1. 从 https://opendocs.alipay.com/open/54/103419 下载 alipay-sdk-java.zip
-            2. mvn install:install-file -Dfile=alipay-sdk-java.jar \
-                   -DgroupId=com.alipay.sdk -DartifactId=alipay-sdk-java \
-                   -Dversion=${alipay-sdk.version} -Dpackaging=jar
-            -->
-            <!--
+            <!-- 支付宝沙盒 SDK -->
             <dependency>
                 <groupId>com.alipay.sdk</groupId>
                 <artifactId>alipay-sdk-java</artifactId>
                 <version>${alipay-sdk.version}</version>
             </dependency>
-            -->
 
             <!-- Spring AI -->
             <dependency>
@@ -164,6 +156,16 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <!-- ==================== 仓库配置 ==================== -->
+    <!-- 全局 settings.xml 中 alimaven 镜像没有支付宝 SDK，需要显式指定 Maven Central -->
+    <repositories>
+        <repository>
+            <id>maven-central-direct</id>
+            <name>Maven Central</name>
+            <url>https://repo1.maven.org/maven2/</url>
+        </repository>
+    </repositories>
 
     <!-- ==================== 构建配置 ==================== -->
     <build>
