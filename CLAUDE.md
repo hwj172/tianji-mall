@@ -66,7 +66,7 @@ mvn package -DskipTests
 - `tianji-common` 是纯 jar 库，不要在它的 pom.xml 中加 spring-boot-maven-plugin
 - Gateway 使用 WebFlux（spring-cloud-starter-gateway），**不能**引入 spring-boot-starter-web
 - 所有业务服务继承父 POM 的依赖版本，不在子模块中写 `<version>`
-- Nacos 地址统一填虚拟机静态 IP（当前：192.168.1.100:8848），不能用 127.0.0.1
+- Nacos 地址统一填虚拟机静态 IP（当前：192.168.150.11:8848），不能用 127.0.0.1
 - application.yml 中 `spring.application.name` 必须与 `pom.xml` 的 `artifactId` 一致
 
 ## 行为准则
