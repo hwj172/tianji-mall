@@ -63,6 +63,12 @@
             <artifactId>spring-cloud-starter-openfeign</artifactId>
         </dependency>
 
+        <!-- LoadBalancer（Feign + Nacos 必需） -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
+        </dependency>
+
         <!-- 公共模块 -->
         <dependency>
             <groupId>com.tianji</groupId>

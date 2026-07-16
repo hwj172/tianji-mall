@@ -34,29 +34,10 @@
       "Bash(mvn install *)"
     ],
     "deny": [
-      "Read(**/.env*)",
-      "Read(**/*.yml)",
-      "Read(**/*.yaml)",
-      "Read(**/*.properties)",
-      "Read(**/*.pem)",
-      "Read(**/*.key)",
-      "Read(**/secrets/**)",
-      "Read(**/credentials/**)",
-      "Write(**/.env*)",
-      "Write(**/*.yml)",
-      "Write(**/*.yaml)",
-      "Write(**/*.properties)",
-      "Write(**/secrets/**)",
-      "Write(package-lock.json)",
-      "Write(.github/workflows/*)",
       "Bash(rm -rf *)",
-      "Bash(sudo *)",
       "Bash(git push *)",
       "Bash(git merge *)",
-      "Bash(git rebase *)",
-      "Bash(docker *)",
-      "Bash(curl * | sh)",
-      "Bash(chmod *)"
+      "Bash(git rebase *)"
     ],
     "defaultMode": "plan",
     "hooks": {

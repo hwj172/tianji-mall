@@ -65,9 +65,9 @@ mvn package -DskipTests
 | gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web** |
 | user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6 |
 | mall-goods-order | 同 user-service + OpenFeign |
-| pay-service | 同 user-service + OpenFeign + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释） |
-| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign |
-| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign, jjwt + DeepSeek API（RestTemplate） |
+| pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释） |
+| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer |
+| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate） |
 
 ## 关键约定
 
@@ -85,6 +85,10 @@ mvn package -DskipTests
 - **支付幂等**：使用 `UPDATE ... WHERE status = 1` 原子操作，禁止读-判断-写
 - **内部 Feign 调用**：需校验 userId 所有权（如 `payOrder`），Feign 接口返回 `R<OrderDTO>` 类型化对象而非 `Map`
 - **RestTemplate**：必须设置 connectTimeout + readTimeout，避免请求永久挂起
+- **Nacos Config 导入检查**：Spring Cloud 2023.x 强制要求 `spring.config.import`，不使用 Nacos 配置中心的服务需在 application.yml 设置 `spring.cloud.nacos.config.import-check.enabled: false`
+- **Feign 注解参数名**：Spring 6 要求 `@PathVariable`、`@RequestParam` 显式写 value（如 `@PathVariable("id")`），不能省略
+- **Druid 数据源**：所有使用 MySQL 的服务必须引入 `druid-spring-boot-3-starter`（application.yml 中 `spring.datasource.type` 指向 Druid）
+- **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
 
 ## 行为准则
 

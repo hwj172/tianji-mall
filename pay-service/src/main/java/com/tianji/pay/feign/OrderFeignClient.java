@@ -12,8 +12,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 public interface OrderFeignClient {
 
     @GetMapping("/api/order/internal/{id}")
-    R<OrderDTO> getOrder(@PathVariable Long id);
+    R<OrderDTO> getOrder(@PathVariable("id") Long id);
 
     @PutMapping("/api/order/internal/{id}/pay")
-    R<Void> payOrder(@PathVariable Long id, @RequestParam("userId") Long userId);
+    R<Void> payOrder(@PathVariable("id") Long id, @RequestParam("userId") Long userId);
 }
