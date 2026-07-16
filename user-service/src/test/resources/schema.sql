@@ -1,0 +1,11 @@
+CREATE TABLE `user` (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    username VARCHAR(64) NOT NULL,
+    password VARCHAR(128) NOT NULL,
+    phone VARCHAR(20),
+    email VARCHAR(128),
+    avatar VARCHAR(512),
+    status INT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
