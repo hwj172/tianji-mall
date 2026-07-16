@@ -2,12 +2,6 @@
 # 本地开发配置模板
 # 使用方式：复制为 application-local.yml 并填入真实值
 # ===========================================
-spring:
-  datasource:
-    password: 你的数据库密码
 
 jwt:
-  secret: 你的JWT密钥至少256位
-
-deepseek:
-  api-key: 你的 DeepSeek API Key
+  secret: 你的JWT密钥至少256位（需与其他服务一致）

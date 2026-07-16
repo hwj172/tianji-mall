@@ -5,7 +5,7 @@ import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.service.OrderService;
-import com.tianji.mall.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

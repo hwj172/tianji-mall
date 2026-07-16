@@ -1,4 +1,4 @@
-package com.tianji.user.util;
+package com.tianji.common.util;
 
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
@@ -16,8 +16,11 @@ public class JwtUtil {
     private final SecretKey key;
     private final long expiration;
 
-    public JwtUtil(@Value("${jwt.secret:tianji-mall-secret-key-2024-min-length-32}") String secret,
+    public JwtUtil(@Value("${jwt.secret:}") String secret,
                    @Value("${jwt.expiration:86400000}") long expiration) {
+        if (secret == null || secret.isBlank()) {
+            throw new IllegalStateException("jwt.secret 未配置，请在 application-local.yml 中设置");
+        }
         this.key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
         this.expiration = expiration;
     }

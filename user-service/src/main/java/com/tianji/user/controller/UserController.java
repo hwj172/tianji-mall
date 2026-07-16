@@ -6,7 +6,7 @@ import com.tianji.user.dto.LoginResponse;
 import com.tianji.user.dto.RegisterRequest;
 import com.tianji.user.entity.User;
 import com.tianji.user.service.UserService;
-import com.tianji.user.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

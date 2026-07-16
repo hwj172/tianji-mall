@@ -5,3 +5,6 @@
 spring:
   datasource:
     password: 你的数据库密码
+
+jwt:
+  secret: 你的JWT密钥至少256位

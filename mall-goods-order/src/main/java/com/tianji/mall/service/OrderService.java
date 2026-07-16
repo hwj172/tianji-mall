@@ -9,6 +9,7 @@ import com.tianji.mall.dto.OrderItemResponse;
 import com.tianji.mall.entity.*;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +28,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final OrderItemMapper orderItemMapper;
     private final CartService cartService;
     private final ProductService productService;
+    private final ProductMapper productMapper;
     private final AddressService addressService;
 
     @Transactional
@@ -92,11 +94,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             orderItemMapper.insert(item);
         }
 
-        // 7. 扣库存
+        // 7. 原子扣库存
         for (OrderItem item : orderItems) {
-            Product product = productService.getById(item.getProductId());
-            product.setStock(product.getStock() - item.getQuantity());
-            productService.updateById(product);
+            int rows = productMapper.deductStock(item.getProductId(), item.getQuantity());
+            if (rows == 0) {
+                throw new BizException("商品「" + item.getProductName() + "」库存不足");
+            }
         }
 
         // 8. 清购物车
@@ -142,15 +145,11 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setStatus(5); // 已取消
         updateById(order);
 
-        // 恢复库存
+        // 原子恢复库存
         List<OrderItem> items = orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
         for (OrderItem item : items) {
-            Product product = productService.getById(item.getProductId());
-            if (product != null) {
-                product.setStock(product.getStock() + item.getQuantity());
-                productService.updateById(product);
-            }
+            productMapper.restoreStock(item.getProductId(), item.getQuantity());
         }
     }
 

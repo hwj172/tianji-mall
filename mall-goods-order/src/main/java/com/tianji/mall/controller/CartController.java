@@ -6,7 +6,7 @@ import com.tianji.mall.dto.CartCheckRequest;
 import com.tianji.mall.dto.CartUpdateRequest;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.service.CartService;
-import com.tianji.mall.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

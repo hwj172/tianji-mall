@@ -49,3 +49,11 @@ spring:
           uri: lb://ai-chat-service
           predicates:
             - Path=/api/chat/**
+
+# JWT 密钥（生产环境必须通过环境变量或 application-local.yml 设置）
+jwt:
+  secret: ${JWT_SECRET:}
+
+# 内部服务调用 token（mcp-server -> mall-goods-order）
+internal:
+  token: ${INTERNAL_TOKEN:tianji-internal-token-2024}

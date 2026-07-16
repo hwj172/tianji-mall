@@ -4,7 +4,7 @@ import com.tianji.aichat.dto.ChatRequest;
 import com.tianji.aichat.dto.ChatResponse;
 import com.tianji.aichat.entity.AiConversation;
 import com.tianji.aichat.service.AiChatService;
-import com.tianji.aichat.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import com.tianji.common.result.R;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;

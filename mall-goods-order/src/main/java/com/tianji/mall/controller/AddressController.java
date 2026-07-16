@@ -4,7 +4,7 @@ import com.tianji.common.result.R;
 import com.tianji.mall.dto.AddressRequest;
 import com.tianji.mall.entity.Address;
 import com.tianji.mall.service.AddressService;
-import com.tianji.mall.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;

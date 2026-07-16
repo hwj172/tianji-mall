@@ -37,7 +37,7 @@ tianji-mall (父 POM)
 └── ai-chat-service        # AI 智能导购（DeepSeek + 工具调用）— 8085
 ```
 
-**模块间调用**：Nacos 注册发现 + OpenFeign。ai-chat-service 通过 Feign 调用 mcp-server 的 REST 工具端点，mcp-server 通过 Feign 调用 mall-goods-order 内部端点。
+**模块间调用**：Nacos 注册发现 + OpenFeign。ai-chat-service 通过 Feign 调用 mcp-server 的 REST 工具端点，mcp-server 通过 Feign 调用 mall-goods-order 内部端点（`X-Internal-Token` 请求头鉴权）。
 
 ## 常用命令
 
@@ -61,8 +61,8 @@ mvn package -DskipTests
 
 | 模块 | 关键依赖 |
 |------|----------|
-| tianji-common | Lombok, Jackson, Jakarta Validation — 无 spring-boot-maven-plugin |
-| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer — **不是 spring-boot-starter-web** |
+| tianji-common | Lombok, Jackson, Jakarta Validation, jjwt 0.12.6 — **无 spring-boot-maven-plugin** |
+| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web** |
 | user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6 |
 | mall-goods-order | 同 user-service + OpenFeign |
 | pay-service | 同 user-service + OpenFeign + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释） |
@@ -78,6 +78,10 @@ mvn package -DskipTests
 - application.yml 中 `spring.application.name` 必须与 `pom.xml` 的 `artifactId` 一致
 - 配置文件分离为 `application.yml`（通用，可提交）+ `application-local.yml`（密钥，gitignore）
 - 各模块提供 `application-local.yml.example` 模板文件供其他开发者参考
+- **JWT 鉴权**：`JwtUtil` 集中在 `tianji-common`，所有业务模块共享。jwt.secret 无默认值，未配置时启动报错
+- **内部端点**：`/api/order/internal`、`/api/cart/internal` 通过 `X-Internal-Token` 请求头鉴权（非 JWT），不从网关白名单暴露
+- **库存扣减**：使用 `UPDATE ... WHERE stock >= #{qty}` 原子操作，禁止 Java 侧读-改-写
+- **mcp-server**：`ToolController` 从 JWT 提取真实 userId，不信任请求体中的 userId
 
 ## 行为准则
 

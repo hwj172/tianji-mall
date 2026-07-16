@@ -7,7 +7,7 @@ import com.tianji.user.dto.LoginResponse;
 import com.tianji.user.dto.RegisterRequest;
 import com.tianji.user.entity.User;
 import com.tianji.user.mapper.UserMapper;
-import com.tianji.user.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;

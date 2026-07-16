@@ -4,7 +4,7 @@ import com.tianji.common.result.R;
 import com.tianji.pay.dto.PayResponse;
 import com.tianji.pay.entity.Payment;
 import com.tianji.pay.service.PayService;
-import com.tianji.pay.util.JwtUtil;
+import com.tianji.common.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
