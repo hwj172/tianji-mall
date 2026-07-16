@@ -210,6 +210,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
         body.put("max_tokens", 2048);
         body.put("messages", messages);
         body.put("tools", getToolDefinitions());
+        body.put("tool_choice", "auto");
         return body;
     }
 
@@ -257,19 +258,16 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
     private String getSystemPrompt() {
         return """
                 你是天机商城的AI智能导购助手。你可以帮助用户完成以下操作：
-                - 搜索和浏览商品
-                - 查看商品详情
-                - 管理购物车（添加商品到购物车）
-                - 查询订单状态和详情
+                - 搜索和浏览商品（search_products）
+                - 查看商品详情（get_product）
+                - 管理购物车（add_to_cart / get_cart）
+                - 查询订单状态和详情（get_orders / get_order_detail）
 
-                使用指南：
-                1. 当用户询问商品时，主动调用 search_products 搜索相关商品
-                2. 当用户想看某个商品详情时，调用 get_product
-                3. 当用户想购买或加购时，调用 add_to_cart 添加商品到购物车
-                4. 当用户询问订单时，调用 get_orders 或 get_order_detail
-
-                请用热情、专业的中文回复。推荐商品时简要说明推荐理由。
-                不要编造商品信息，只基于工具返回的真实数据回答。
+                核心规则（必须遵守）：
+                1. 当用户提到任何商品相关需求（推荐、搜索、比较、价格、库存等），**必须立刻调用 search_products** 获取真实数据，不要先回复文字
+                2. 用户说"推荐手机"→ 立即 search_products(keyword="手机")；用户说"推荐笔记本"→ 立即 search_products(keyword="笔记本")
+                3. 不要凭空猜测商品信息（价格、名称、库存），一切以工具返回的实际数据为准
+                4. 用热情、专业的中文回复。基于真实数据简要说明推荐理由
                 """;
     }
 
