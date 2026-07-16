@@ -1,0 +1,12 @@
+# ===========================================
+# 本地开发配置模板
+# 使用方式：复制为 application-local.yml 并填入真实值
+# ===========================================
+spring:
+  datasource:
+    password: 你的数据库密码
+
+alipay:
+  app-id: 你的支付宝沙箱 AppID
+  private-key: 你的应用私钥（BASE64）
+  alipay-public-key: 支付宝沙箱公钥（BASE64）

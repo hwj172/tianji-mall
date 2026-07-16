@@ -1,0 +1,10 @@
+# ===========================================
+# 本地开发配置模板
+# 使用方式：复制为 application-local.yml 并填入真实值
+# ===========================================
+spring:
+  datasource:
+    password: 你的数据库密码
+
+deepseek:
+  api-key: 你的 DeepSeek API Key

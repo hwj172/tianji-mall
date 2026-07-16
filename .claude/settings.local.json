@@ -21,7 +21,17 @@
       "Bash(find *)",
       "Bash(pip list *)",
       "Bash(mvn compile *)",
-      "Bash(git init *)"
+      "Bash(git init *)",
+      "WebSearch",
+      "WebFetch(domain:mvnrepository.com)",
+      "Read(//c/Program Files/Apache/apache-maven-3.9.9/conf/**)",
+      "Read(//c//**)",
+      "Bash(where mvn *)",
+      "Bash(python3 -c \"import paramiko; print\\('paramiko available'\\)\")",
+      "Bash(python -c \"import paramiko; print\\('paramiko available'\\)\")",
+      "Bash(ssh *)",
+      "Bash(scp *)",
+      "Bash(mvn install *)"
     ],
     "deny": [
       "Read(**/.env*)",

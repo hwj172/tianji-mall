@@ -4,13 +4,48 @@ server:
 spring:
   application:
     name: gateway
+  profiles:
+    active: local
   cloud:
     nacos:
       discovery:
         server-addr: 192.168.150.11:8848
       config:
         server-addr: 192.168.150.11:8848
-        file-extension: yaml
     gateway:
+      discovery:
+        locator:
+          enabled: false
       routes:
-        # 路由规则后续按需配置
+        - id: user-service
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+        - id: mall-product
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/product/**
+        - id: mall-cart
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/cart/**
+        - id: mall-order
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/order/**
+        - id: mall-address
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/address/**
+        - id: pay-service
+          uri: lb://pay-service
+          predicates:
+            - Path=/api/pay/**
+        - id: mcp-server
+          uri: lb://mcp-server
+          predicates:
+            - Path=/api/tool/**
+        - id: ai-chat-service
+          uri: lb://ai-chat-service
+          predicates:
+            - Path=/api/chat/**

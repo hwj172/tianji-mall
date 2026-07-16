@@ -4,22 +4,22 @@ server:
 spring:
   application:
     name: mcp-server
+  profiles:
+    active: local
   datasource:
-    url: jdbc:mysql://192.168.150.11:3306/tianji_mall?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.150.11:3306/tianji_mall?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
+    type: com.alibaba.druid.pool.DruidDataSource
   cloud:
     nacos:
       discovery:
         server-addr: 192.168.150.11:8848
       config:
         server-addr: 192.168.150.11:8848
-        file-extension: yaml
 
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:

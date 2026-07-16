@@ -4,11 +4,12 @@ server:
 spring:
   application:
     name: pay-service
+  profiles:
+    active: local
   datasource:
-    url: jdbc:mysql://192.168.150.11:3306/tianji_mall?useUnicode=true&characterEncoding=utf8mb4&serverTimezone=Asia/Shanghai
-    username: root
-    password: root
     driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://192.168.150.11:3306/tianji_mall?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
+    username: root
     type: com.alibaba.druid.pool.DruidDataSource
   cloud:
     nacos:
@@ -16,21 +17,14 @@ spring:
         server-addr: 192.168.150.11:8848
       config:
         server-addr: 192.168.150.11:8848
-        file-extension: yaml
 
 mybatis-plus:
   configuration:
-    map-underscore-to-camel-case: true
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
 
-# 支付宝沙盒配置（后续填写实际值）
 alipay:
-  app-id:
-  private-key:
-  alipay-public-key:
   gateway-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do
-  notify-url:
-  return-url:
+  notify-url: https://t8e56477.natappfree.cc/api/pay/notify

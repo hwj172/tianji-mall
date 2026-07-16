@@ -13,8 +13,16 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **消息队列**：RocketMQ（rocketmq-spring-boot-starter 2.3.1）
 - **链路监控**：SkyWalking + Sentinel Dashboard
 - **向量数据库**：Milvus
+- **AI 模型**：DeepSeek（OpenAI 兼容 API）
 - **前端**：Vue3（独立项目）
 - 完整需求文档见 `remand.md`
+
+## 部署拓扑
+
+| 环境 | 组件 |
+|------|------|
+| **Windows 物理机** | IDEA 开发环境（6 个微服务）、natapp 内网穿透（→ localhost:8080）、前端项目 |
+| **Linux VM**（192.168.150.11） | Docker 中间件：Nacos、MySQL、Redis、RocketMQ、Milvus、SkyWalking、Sentinel |
 
 ## 模块架构
 
@@ -25,11 +33,11 @@ tianji-mall (父 POM)
 ├── user-service           # 用户服务 — 8081
 ├── mall-goods-order       # 商城核心（商品+购物车+订单+地址）— 8082
 ├── pay-service            # 支付宝沙盒支付 — 8083
-├── mcp-server             # MCP 工具中间服务 — 8084
-└── ai-chat-service        # AI 智能导购（Claude + RAG）— 8085
+├── mcp-server             # 工具网关（REST API，非 MCP 协议）— 8084
+└── ai-chat-service        # AI 智能导购（DeepSeek + 工具调用）— 8085
 ```
 
-**模块间调用**：Nacos 注册发现 + OpenFeign。ai-chat-service 通过 MCP 协议调用 mcp-server。
+**模块间调用**：Nacos 注册发现 + OpenFeign。ai-chat-service 通过 Feign 调用 mcp-server 的 REST 工具端点，mcp-server 通过 Feign 调用 mall-goods-order 内部端点。
 
 ## 常用命令
 
@@ -59,7 +67,7 @@ mvn package -DskipTests
 | mall-goods-order | 同 user-service + OpenFeign |
 | pay-service | 同 user-service + OpenFeign + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释） |
 | mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign |
-| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign, RocketMQ |
+| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Nacos, OpenFeign, jjwt + DeepSeek API（RestTemplate） |
 
 ## 关键约定
 
@@ -68,6 +76,8 @@ mvn package -DskipTests
 - 所有业务服务继承父 POM 的依赖版本，不在子模块中写 `<version>`
 - Nacos 地址统一填虚拟机静态 IP（当前：192.168.150.11:8848），不能用 127.0.0.1
 - application.yml 中 `spring.application.name` 必须与 `pom.xml` 的 `artifactId` 一致
+- 配置文件分离为 `application.yml`（通用，可提交）+ `application-local.yml`（密钥，gitignore）
+- 各模块提供 `application-local.yml.example` 模板文件供其他开发者参考
 
 ## 行为准则
 
