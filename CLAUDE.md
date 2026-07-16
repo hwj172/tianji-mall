@@ -82,6 +82,9 @@ mvn package -DskipTests
 - **内部端点**：`/api/order/internal`、`/api/cart/internal` 通过 `X-Internal-Token` 请求头鉴权（非 JWT），不从网关白名单暴露
 - **库存扣减**：使用 `UPDATE ... WHERE stock >= #{qty}` 原子操作，禁止 Java 侧读-改-写
 - **mcp-server**：`ToolController` 从 JWT 提取真实 userId，不信任请求体中的 userId
+- **支付幂等**：使用 `UPDATE ... WHERE status = 1` 原子操作，禁止读-判断-写
+- **内部 Feign 调用**：需校验 userId 所有权（如 `payOrder`），Feign 接口返回 `R<OrderDTO>` 类型化对象而非 `Map`
+- **RestTemplate**：必须设置 connectTimeout + readTimeout，避免请求永久挂起
 
 ## 行为准则
 

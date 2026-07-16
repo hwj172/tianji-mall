@@ -61,8 +61,8 @@ public class OrderController {
     }
 
     @PutMapping("/internal/{id}/pay")
-    public R<Void> payOrderInternal(@PathVariable Long id) {
-        orderService.payOrder(id);
+    public R<Void> payOrderInternal(@PathVariable Long id, @RequestParam Long userId) {
+        orderService.payOrder(id, userId);
         return R.ok();
     }
 }

@@ -19,7 +19,9 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -53,11 +55,19 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             }
         }
 
-        // 3. 校验库存并计算金额
+        // 3. 批量查询所有商品（避免 N+1）
+        List<Long> productIds = cartItems.stream()
+                .map(CartItem::getProductId)
+                .distinct()
+                .toList();
+        Map<Long, Product> productMap = productService.listByIds(productIds).stream()
+                .collect(Collectors.toMap(Product::getId, p -> p));
+
+        // 4. 校验库存并计算金额
         BigDecimal totalAmount = BigDecimal.ZERO;
         List<OrderItem> orderItems = new ArrayList<>();
         for (CartItem cartItem : cartItems) {
-            Product product = productService.getById(cartItem.getProductId());
+            Product product = productMap.get(cartItem.getProductId());
             if (product == null || product.getStatus() == 0) {
                 throw new BizException("商品「" + (product != null ? product.getName() : "未知") + "」已下架");
             }
@@ -75,11 +85,11 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
         }
 
-        // 4. 生成订单号
+        // 5. 生成订单号
         String orderNo = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                 + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
-        // 5. 创建订单
+        // 6. 创建订单
         Order order = new Order();
         order.setOrderNo(orderNo);
         order.setUserId(userId);
@@ -88,13 +98,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setAddressId(req.getAddressId());
         save(order);
 
-        // 6. 写入订单明细
+        // 7. 写入订单明细
         for (OrderItem item : orderItems) {
             item.setOrderId(order.getId());
             orderItemMapper.insert(item);
         }
 
-        // 7. 原子扣库存
+        // 8. 原子扣库存
         for (OrderItem item : orderItems) {
             int rows = productMapper.deductStock(item.getProductId(), item.getQuantity());
             if (rows == 0) {
@@ -102,7 +112,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             }
         }
 
-        // 8. 清购物车
+        // 9. 清购物车
         cartService.removeByIds(req.getCartItemIds());
 
         return order;
@@ -154,10 +164,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     }
 
     @Transactional
-    public void payOrder(Long orderId) {
+    public void payOrder(Long orderId, Long userId) {
         Order order = getById(orderId);
         if (order == null) {
             throw new BizException("订单不存在");
+        }
+        if (!order.getUserId().equals(userId)) {
+            throw new BizException("订单不属于当前用户");
         }
         if (order.getStatus() != 1) {
             throw new BizException("订单状态不允许支付");

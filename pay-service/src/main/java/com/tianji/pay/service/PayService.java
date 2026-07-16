@@ -7,6 +7,8 @@ import com.alipay.api.request.AlipayTradePagePayRequest;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
+import com.tianji.common.result.R;
+import com.tianji.pay.dto.OrderDTO;
 import com.tianji.pay.dto.PayResponse;
 import com.tianji.pay.entity.Payment;
 import com.tianji.pay.feign.OrderFeignClient;
@@ -30,6 +32,7 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
 
     private final AlipayClient alipayClient;
     private final OrderFeignClient orderFeignClient;
+    private final PaymentMapper paymentMapper;
 
     @Value("${alipay.notify-url:}")
     private String notifyUrl;
@@ -40,25 +43,20 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
     @Transactional
     public PayResponse createPayment(Long userId, Long orderId) {
         // 1. 通过 Feign 获取订单信息
-        Map<String, Object> orderResult = orderFeignClient.getOrder(orderId);
-        if (orderResult == null || !Integer.valueOf(200).equals(orderResult.get("code"))) {
+        R<OrderDTO> orderResult = orderFeignClient.getOrder(orderId);
+        if (orderResult == null || orderResult.getCode() != 200 || orderResult.getData() == null) {
             throw new BizException("订单不存在");
         }
-        Map<String, Object> orderData = (Map<String, Object>) orderResult.get("data");
-        if (orderData == null) {
-            throw new BizException("订单不存在");
-        }
+        OrderDTO order = orderResult.getData();
 
-        Long orderUserId = toLong(orderData.get("userId"));
-        if (!userId.equals(orderUserId)) {
+        if (!userId.equals(order.getUserId())) {
             throw new BizException("订单不属于当前用户");
         }
-        Integer orderStatus = (Integer) orderData.get("status");
-        if (orderStatus != 1) {
+        if (order.getStatus() != 1) {
             throw new BizException("订单状态不允许支付");
         }
-        String orderNo = (String) orderData.get("orderNo");
-        BigDecimal totalAmount = new BigDecimal(orderData.get("totalAmount").toString());
+        String orderNo = order.getOrderNo();
+        BigDecimal totalAmount = order.getTotalAmount();
 
         // 2. 检查是否已有支付记录
         Payment existing = getOne(new LambdaQueryWrapper<Payment>().eq(Payment::getOrderId, orderId));
@@ -126,16 +124,14 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
         }
 
         if ("TRADE_SUCCESS".equals(tradeStatus) || "TRADE_FINISHED".equals(tradeStatus)) {
-            if (payment.getStatus() == 2) {
+            int rows = paymentMapper.markPaid(paymentNo, tradeNo);
+            if (rows == 0) {
                 // 已处理过，幂等返回
+                log.info("支付回调重复处理: paymentNo={}", paymentNo);
                 return;
             }
-            payment.setStatus(2);
-            payment.setTradeNo(tradeNo);
-            updateById(payment);
-
-            // 3. 通知订单服务更新订单状态
-            orderFeignClient.payOrder(payment.getOrderId());
+            // 通知订单服务更新订单状态
+            orderFeignClient.payOrder(payment.getOrderId(), payment.getUserId());
             log.info("支付成功: paymentNo={}, tradeNo={}", paymentNo, tradeNo);
         }
     }
@@ -146,12 +142,5 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
             throw new BizException("支付记录不存在");
         }
         return payment;
-    }
-
-    private Long toLong(Object value) {
-        if (value instanceof Integer) {
-            return ((Integer) value).longValue();
-        }
-        return (Long) value;
     }
 }

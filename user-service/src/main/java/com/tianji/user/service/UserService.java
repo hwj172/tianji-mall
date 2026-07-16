@@ -9,6 +9,7 @@ import com.tianji.user.entity.User;
 import com.tianji.user.mapper.UserMapper;
 import com.tianji.common.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -32,7 +33,12 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setPhone(req.getPhone());
         user.setEmail(req.getEmail());
         user.setStatus(1);
-        save(user);
+
+        try {
+            save(user);
+        } catch (DuplicateKeyException e) {
+            throw new BizException("用户名已存在");
+        }
     }
 
     public LoginResponse login(String username, String password) {
