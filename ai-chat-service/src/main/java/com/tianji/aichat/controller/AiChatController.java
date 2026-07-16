@@ -35,7 +35,7 @@ public class AiChatController {
      */
     @GetMapping("/history/{sessionId}")
     public R<List<AiConversation>> history(@RequestHeader("Authorization") String authHeader,
-                                            @PathVariable String sessionId) {
+                                            @PathVariable("sessionId") String sessionId) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(aiChatService.getHistory(userId, sessionId));
     }

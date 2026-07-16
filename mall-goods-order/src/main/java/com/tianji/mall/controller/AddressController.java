@@ -35,7 +35,7 @@ public class AddressController {
 
     @PutMapping("/{id}")
     public R<Void> update(@RequestHeader("Authorization") String authHeader,
-                          @PathVariable Long id,
+                          @PathVariable("id") Long id,
                           @Valid @RequestBody AddressRequest req) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         addressService.updateAddress(userId, id, req);
@@ -44,7 +44,7 @@ public class AddressController {
 
     @DeleteMapping("/{id}")
     public R<Void> delete(@RequestHeader("Authorization") String authHeader,
-                          @PathVariable Long id) {
+                          @PathVariable("id") Long id) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         addressService.deleteAddress(userId, id);
         return R.ok();

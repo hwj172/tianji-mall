@@ -35,14 +35,14 @@ public class OrderController {
 
     @GetMapping("/{id}")
     public R<OrderDetailResponse> detail(@RequestHeader("Authorization") String authHeader,
-                                         @PathVariable Long id) {
+                                         @PathVariable("id") Long id) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(orderService.getOrderDetail(userId, id));
     }
 
     @PutMapping("/{id}/cancel")
     public R<Void> cancel(@RequestHeader("Authorization") String authHeader,
-                          @PathVariable Long id) {
+                          @PathVariable("id") Long id) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         orderService.cancelOrder(userId, id);
         return R.ok();
@@ -51,17 +51,17 @@ public class OrderController {
     // ===== 内部端点（供其他服务 Feign 调用，无需 JWT 鉴权）=====
 
     @GetMapping("/internal/{id}")
-    public R<Order> getOrderInternal(@PathVariable Long id) {
+    public R<Order> getOrderInternal(@PathVariable("id") Long id) {
         return R.ok(orderService.getById(id));
     }
 
     @GetMapping("/internal/list/{userId}")
-    public R<List<Order>> listInternal(@PathVariable Long userId) {
+    public R<List<Order>> listInternal(@PathVariable("userId") Long userId) {
         return R.ok(orderService.getOrderList(userId));
     }
 
     @PutMapping("/internal/{id}/pay")
-    public R<Void> payOrderInternal(@PathVariable Long id, @RequestParam Long userId) {
+    public R<Void> payOrderInternal(@PathVariable("id") Long id, @RequestParam("userId") Long userId) {
         orderService.payOrder(id, userId);
         return R.ok();
     }

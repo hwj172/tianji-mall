@@ -38,7 +38,7 @@ public class CartController {
 
     @PutMapping("/{id}")
     public R<Void> update(@RequestHeader("Authorization") String authHeader,
-                          @PathVariable Long id,
+                          @PathVariable("id") Long id,
                           @Valid @RequestBody CartUpdateRequest req) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         cartService.updateQuantity(userId, id, req.getQuantity());
@@ -47,7 +47,7 @@ public class CartController {
 
     @DeleteMapping("/{id}")
     public R<Void> delete(@RequestHeader("Authorization") String authHeader,
-                          @PathVariable Long id) {
+                          @PathVariable("id") Long id) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         cartService.deleteItem(userId, id);
         return R.ok();
@@ -64,7 +64,7 @@ public class CartController {
     // ===== 内部端点（供 mcp-server Feign 调用，无需 JWT 鉴权）=====
 
     @GetMapping("/internal/list")
-    public R<List<CartItem>> listInternal(@RequestParam Long userId) {
+    public R<List<CartItem>> listInternal(@RequestParam("userId") Long userId) {
         return R.ok(cartService.getCartList(userId));
     }
 

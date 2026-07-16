@@ -1,11 +1,14 @@
 package com.tianji.common.result;
 
+import lombok.AccessLevel;
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 /**
  * 统一响应结果封装
  */
 @Data
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public class R<T> {
 
     private int code;

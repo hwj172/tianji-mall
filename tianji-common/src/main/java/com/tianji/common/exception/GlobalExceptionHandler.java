@@ -38,6 +38,6 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public R<Void> handleException(Exception e, HttpServletRequest request) {
         log.error("Unexpected error at {} {}", request.getMethod(), request.getRequestURI(), e);
-        return R.fail(500, "服务器内部错误");
+        return R.fail(500, e.getClass().getSimpleName() + ": " + e.getMessage());
     }
 }

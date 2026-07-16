@@ -22,7 +22,7 @@ public class PayController {
 
     @PostMapping("/create")
     public R<PayResponse> create(@RequestHeader("Authorization") String authHeader,
-                                 @RequestParam Long orderId) {
+                                 @RequestParam("orderId") Long orderId) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(payService.createPayment(userId, orderId));
     }
@@ -41,7 +41,7 @@ public class PayController {
 
     @GetMapping("/query/{orderId}")
     public R<Payment> query(@RequestHeader("Authorization") String authHeader,
-                            @PathVariable Long orderId) {
+                            @PathVariable("orderId") Long orderId) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(payService.queryPayment(userId, orderId));
     }
