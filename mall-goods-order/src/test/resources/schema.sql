@@ -1,4 +1,4 @@
-CREATE TABLE category (
+CREATE TABLE IF NOT EXISTS category (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(64),
     parent_id BIGINT,
@@ -7,7 +7,7 @@ CREATE TABLE category (
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE product (
+CREATE TABLE IF NOT EXISTS product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(128),
     description TEXT,
@@ -20,7 +20,7 @@ CREATE TABLE product (
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE cart_item (
+CREATE TABLE IF NOT EXISTS cart_item (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT,
     product_id BIGINT,
@@ -30,7 +30,7 @@ CREATE TABLE cart_item (
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE address (
+CREATE TABLE IF NOT EXISTS address (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id BIGINT,
     receiver_name VARCHAR(64),
@@ -44,7 +44,7 @@ CREATE TABLE address (
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE `order` (
+CREATE TABLE IF NOT EXISTS `order` (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_no VARCHAR(32),
     user_id BIGINT,
@@ -56,7 +56,7 @@ CREATE TABLE `order` (
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
-CREATE TABLE order_item (
+CREATE TABLE IF NOT EXISTS order_item (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     order_id BIGINT,
     product_id BIGINT,
