@@ -71,7 +71,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：130（Controller 41 + Service 集成 26 + Service 单元 63），8 个模块全覆盖。**
+**当前测试总数：130 (Controller 41 + Service 集成 26 + Service 单元 63)，8 个模块全覆盖。**
 
 ### 测试分层
 
