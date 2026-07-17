@@ -71,7 +71,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：157 (Gateway 27 + Controller 41 + Service 集成 26 + Service 单元 63)，8 个模块全覆盖。**
+**当前测试总数：169 (Gateway 27 + Controller 41 + Service 集成 26 + Service 单元 75)，8 个模块全覆盖。**
 
 ### 测试分层
 
@@ -140,6 +140,8 @@ mvn package -DskipTests
 - **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED），`OrderEventConsumer` 消费并留日志。异常不阻塞主流程。
 - **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient`）
 - **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）
+- **RAG 管道**：`AiChatService.chat` 预检索 — 用户消息 → SiliconFlow Embedding（BAAI/bge-large-zh-v1.5, 1024 维）→ Milvus COSINE Top-5 → Feign 批量查商品 → 注入 System Prompt；RAG 失败降级为空列表，工具调用保留作 fallback。`VectorSearchService` 启动时自动建 collection（product_vectors, IVF_FLAT），Milvus 不可用时所有方法降级不抛异常
+- **Spring AI**：版本 2.0.0-M5（父 POM BOM + Spring Milestones 仓库），依赖名 `spring-ai-starter-model-openai`；`EmbeddingModel` 注入 `OpenAIClient`（官方 openai-java SDK）。ai-chat-service 需显式 pin `protobuf-java 3.24.0`（mysql-connector-j 传递引入 3.21 与 milvus-sdk-java 冲突）
 - **mcp-server**：`ToolController` 从 JWT 提取真实 userId，不信任请求体中的 userId
 - **支付回调幂等**：`PayController.notify` 中 BizException（不可重试）返回 `"success"` 终止重试，仅系统异常返回 `"fail"` 触发重试。`PaymentMapper.markPaid` 使用 `UPDATE ... WHERE status = 1` 原子操作
 - **异常处理**：mcp-server tools 区分 `FeignException`（下游服务故障）与 `Exception`（未知异常）；`GlobalExceptionHandler` 对外不暴露内部类名
