@@ -1,8 +1,10 @@
 package com.tianji.aichat.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.tianji.aichat.dto.ProductDTO;
 import com.tianji.aichat.entity.AiConversation;
 import com.tianji.aichat.feign.McpFeignClient;
+import com.tianji.aichat.feign.ProductFeignClient;
 import com.tianji.aichat.mapper.AiConversationMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -31,13 +33,17 @@ class AiChatServiceTest {
     @Mock
     private McpFeignClient mcpFeignClient;
     @Mock
+    private VectorSearchService vectorSearchService;
+    @Mock
+    private ProductFeignClient productFeignClient;
+    @Mock
     private AiConversationMapper aiConversationMapper;
 
     private AiChatService aiChatService;
 
     @BeforeEach
     void setUp() {
-        aiChatService = new AiChatService(restTemplate, mcpFeignClient);
+        aiChatService = new AiChatService(restTemplate, mcpFeignClient, vectorSearchService, productFeignClient);
         ReflectionTestUtils.setField(aiChatService, "baseMapper", aiConversationMapper);
         ReflectionTestUtils.setField(aiChatService, "apiKey", "test-api-key");
         ReflectionTestUtils.setField(aiChatService, "model", "deepseek-chat");
@@ -49,11 +55,11 @@ class AiChatServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldBuildMessagesWithSystemPrompt() throws Exception {
-        Method method = AiChatService.class.getDeclaredMethod("buildMessages", List.class);
+        Method method = AiChatService.class.getDeclaredMethod("buildMessages", List.class, List.class);
         method.setAccessible(true);
 
         // 历史为空
-        List<Map<String, Object>> messages = (List<Map<String, Object>>) method.invoke(aiChatService, List.of());
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) method.invoke(aiChatService, List.of(), List.of());
 
         assertThat(messages).isNotEmpty();
         assertThat(messages.get(0).get("role")).isEqualTo("system");
@@ -64,7 +70,7 @@ class AiChatServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldBuildMessagesFromHistory() throws Exception {
-        Method method = AiChatService.class.getDeclaredMethod("buildMessages", List.class);
+        Method method = AiChatService.class.getDeclaredMethod("buildMessages", List.class, List.class);
         method.setAccessible(true);
 
         // 模拟按 createTime DESC 排序的历史（getRecentHistory 返回的顺序）
@@ -76,7 +82,7 @@ class AiChatServiceTest {
         history.add(userMsg);
         history.add(earlierAssistant); // 最早
 
-        List<Map<String, Object>> messages = (List<Map<String, Object>>) method.invoke(aiChatService, history);
+        List<Map<String, Object>> messages = (List<Map<String, Object>>) method.invoke(aiChatService, history, List.of());
 
         // system prompt 第一条
         assertThat(messages.get(0).get("role")).isEqualTo("system");
@@ -148,16 +154,47 @@ class AiChatServiceTest {
     @Test
     @SuppressWarnings("unchecked")
     void shouldContainToolInstructions() throws Exception {
-        Method method = AiChatService.class.getDeclaredMethod("getSystemPrompt");
+        Method method = AiChatService.class.getDeclaredMethod("getSystemPrompt", List.class);
         method.setAccessible(true);
 
-        String prompt = (String) method.invoke(aiChatService);
+        String prompt = (String) method.invoke(aiChatService, List.of());
 
         assertThat(prompt).contains("天机商城");
         assertThat(prompt).contains("search_products");
         assertThat(prompt).contains("get_product");
         assertThat(prompt).contains("add_to_cart");
         assertThat(prompt).contains("get_orders");
+    }
+
+    @Test
+    void shouldInjectRagProductsIntoSystemPrompt() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("getSystemPrompt", List.class);
+        method.setAccessible(true);
+
+        ProductDTO product = new ProductDTO();
+        product.setId(1L);
+        product.setName("华为Mate 60 Pro");
+        product.setPrice(new java.math.BigDecimal("6999.00"));
+        product.setStock(100);
+        product.setDescription("徕卡摄像头旗舰手机");
+
+        String prompt = (String) method.invoke(aiChatService, List.of(product));
+
+        assertThat(prompt).contains("[RAG检索结果");
+        assertThat(prompt).contains("华为Mate 60 Pro");
+        assertThat(prompt).contains("6999.00");
+    }
+
+    @Test
+    void shouldNotInjectRagSectionWhenEmpty() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("getSystemPrompt", List.class);
+        method.setAccessible(true);
+
+        String prompt = (String) method.invoke(aiChatService, List.of());
+
+        // base prompt 规则文案中提到 [RAG检索结果]，但不应有实际数据段落
+        assertThat(prompt).doesNotContain("[RAG检索结果 — 以下为真实商品数据]");
+        assertThat(prompt).doesNotContain("请优先基于以上真实商品数据回复用户");
     }
 
     // ==================== helpers ====================
