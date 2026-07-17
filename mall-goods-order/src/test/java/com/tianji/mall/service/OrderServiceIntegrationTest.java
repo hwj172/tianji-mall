@@ -38,6 +38,9 @@ class OrderServiceIntegrationTest {
     @MockBean
     private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
 
+    @MockBean
+    private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
     @Autowired
     private OrderMapper orderMapper;
 

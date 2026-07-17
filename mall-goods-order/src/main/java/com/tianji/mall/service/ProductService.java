@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,11 +15,14 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService extends ServiceImpl<ProductMapper, Product> {
+
+    private final AiChatFeignClient aiChatFeignClient;
 
     @Cacheable(value = "productPage",
                key = "'c' + #categoryId + '_k' + #keyword + '_p' + #page + '_s' + #size")
@@ -70,5 +74,21 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return list(new LambdaQueryWrapper<Product>()
                 .in(Product::getId, ids)
                 .eq(Product::getStatus, 1));
+    }
+
+    /**
+     * 同步商品向量到 Milvus（best-effort，失败不影响主流程）
+     */
+    public void syncVector(Long productId, String name, String description) {
+        try {
+            Map<String, Object> body = Map.of(
+                    "productId", productId,
+                    "name", name != null ? name : "",
+                    "description", description != null ? description : ""
+            );
+            aiChatFeignClient.upsertProductVector(body);
+        } catch (Exception e) {
+            log.warn("商品向量同步失败（不影响主流程）: productId={}", productId, e);
+        }
     }
 }

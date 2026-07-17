@@ -37,6 +37,9 @@ class ProductControllerTest {
     @MockBean
     private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
 
+    @MockBean
+    private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
     // ==================== GET /api/product/list ====================
 
     @Test

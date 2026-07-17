@@ -43,6 +43,9 @@ class AddressControllerTest {
     @MockBean
     private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
 
+    @MockBean
+    private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
     @BeforeEach
     void setUp() {
         when(jwtUtil.getUserId(anyString())).thenReturn(1L);
