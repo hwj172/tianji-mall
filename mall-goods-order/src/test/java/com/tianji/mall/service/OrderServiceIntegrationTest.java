@@ -7,9 +7,12 @@ import com.tianji.mall.entity.*;
 import com.tianji.mall.mapper.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import java.math.BigDecimal;
@@ -17,6 +20,9 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -25,6 +31,9 @@ class OrderServiceIntegrationTest {
 
     @Autowired
     private OrderService orderService;
+
+    @MockBean
+    private RedissonClient redissonClient;
 
     @Autowired
     private OrderMapper orderMapper;
@@ -45,12 +54,18 @@ class OrderServiceIntegrationTest {
     private Long productId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws InterruptedException {
         orderItemMapper.delete(new LambdaQueryWrapper<>());
         orderMapper.delete(new LambdaQueryWrapper<>());
         cartItemMapper.delete(new LambdaQueryWrapper<>());
         productMapper.delete(new LambdaQueryWrapper<>());
         addressMapper.delete(new LambdaQueryWrapper<>());
+
+        // 分布式锁 mock：所有锁操作默认成功
+        RLock mockLock = mock(RLock.class);
+        when(mockLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
+        when(redissonClient.getLock(anyString())).thenReturn(mockLock);
+        when(redissonClient.getMultiLock(any())).thenReturn(mockLock);
 
         addressId = insertAddress(1L, "张三", "13800000001");
         productId = insertProduct("iPhone 15", BigDecimal.valueOf(6999), 10);

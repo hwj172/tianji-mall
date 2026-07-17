@@ -39,6 +39,9 @@ class CartControllerTest {
     @MockBean
     private JwtUtil jwtUtil;
 
+    @MockBean
+    private org.redisson.api.RedissonClient redissonClient;
+
     @BeforeEach
     void setUp() {
         when(jwtUtil.getUserId(anyString())).thenReturn(1L);

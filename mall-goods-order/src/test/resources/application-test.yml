@@ -22,6 +22,10 @@ spring:
       - com.alibaba.cloud.nacos.discovery.NacosDiscoveryAutoConfiguration
       - com.alibaba.druid.spring.boot.autoconfigure.DruidDataSourceAutoConfigure
       - org.springframework.cloud.openfeign.FeignAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - com.alibaba.cloud.nacos.endpoint.NacosConfigEndpointAutoConfiguration
+  cache:
+    type: none
 
 mybatis-plus:
   configuration:

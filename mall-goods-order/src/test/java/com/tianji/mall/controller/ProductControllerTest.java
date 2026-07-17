@@ -31,6 +31,9 @@ class ProductControllerTest {
     @MockBean
     private ProductService productService;
 
+    @MockBean
+    private org.redisson.api.RedissonClient redissonClient;
+
     // ==================== GET /api/product/list ====================
 
     @Test

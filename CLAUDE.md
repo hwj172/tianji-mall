@@ -64,7 +64,7 @@ mvn package -DskipTests
 | tianji-common | Lombok, Jackson, Jakarta Validation, jjwt 0.12.6 — **无 spring-boot-maven-plugin** |
 | gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web** |
 | user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6, **test:** spring-boot-starter-test + H2 |
-| mall-goods-order | 同 user-service + OpenFeign, **test:** spring-boot-starter-test + H2 |
+| mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）, **test:** spring-boot-starter-test + H2 |
 | pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）, **test:** spring-boot-starter-test + H2 |
 | mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer, **test:** spring-boot-starter-test + H2 |
 | ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）, **test:** spring-boot-starter-test |
@@ -131,6 +131,9 @@ mvn package -DskipTests
 - **JWT 鉴权**：`JwtUtil` 集中在 `tianji-common`，所有业务模块共享。jwt.secret 无默认值，未配置时启动报错
 - **内部端点**：`/api/order/internal`、`/api/cart/internal` 通过 `X-Internal-Token` 请求头鉴权（非 JWT），不从网关白名单暴露
 - **库存扣减**：使用 `UPDATE ... WHERE stock >= #{qty}` 原子操作，禁止 Java 侧读-改-写
+- **分布式锁**：`OrderService.createOrder` 使用 Redisson `getMultiLock`（锁 key 排序防死锁，waitTime=3s / leaseTime=10s），锁内重新读取库存。`cancelOrder` 恢复库存无并发竞争，不加锁
+- **商品缓存**：`ProductService.getProductById` / `getProductPage` 使用 `@Cacheable`，`deductStock` / `restoreStock` 使用 `@CacheEvict`。序列化器 `GenericJackson2JsonRedisSerializer`，TTL 30min
+- **测试中 Redis**：`application-test.yml` 排除 `RedisAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient`（避免连接真实 Redis）
 - **mcp-server**：`ToolController` 从 JWT 提取真实 userId，不信任请求体中的 userId
 - **支付幂等**：使用 `UPDATE ... WHERE status = 1` 原子操作，禁止读-判断-写
 - **内部 Feign 调用**：需校验 userId 所有权（如 `payOrder`），Feign 接口返回 `R<OrderDTO>` 类型化对象而非 `Map`

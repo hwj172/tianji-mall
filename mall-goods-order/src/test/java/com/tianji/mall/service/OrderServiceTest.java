@@ -7,21 +7,25 @@ import com.tianji.mall.dto.OrderDetailResponse;
 import com.tianji.mall.entity.*;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
-import com.tianji.mall.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.redisson.api.RLock;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class OrderServiceTest {
@@ -35,16 +39,22 @@ class OrderServiceTest {
     @Mock
     private ProductService productService;
     @Mock
-    private ProductMapper productMapper;
-    @Mock
     private AddressService addressService;
+    @Mock
+    private org.redisson.api.RedissonClient redissonClient;
 
     private OrderService orderService;
 
     @BeforeEach
-    void setUp() {
-        orderService = new OrderService(orderItemMapper, cartService, productService, productMapper, addressService);
+    void setUp() throws InterruptedException {
+        orderService = new OrderService(orderItemMapper, cartService, productService, addressService, redissonClient);
         ReflectionTestUtils.setField(orderService, "baseMapper", orderMapper);
+
+        // 分布式锁 mock：所有锁操作默认成功（lenient 避免非锁路径报 UnnecessaryStubbing）
+        RLock mockLock = mock(RLock.class);
+        lenient().when(mockLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
+        lenient().when(redissonClient.getLock(anyString())).thenReturn(mockLock);
+        lenient().when(redissonClient.getMultiLock(any())).thenReturn(mockLock);
     }
 
     // ==================== createOrder ====================
@@ -172,12 +182,10 @@ class OrderServiceTest {
         // 订单内有 1 个商品需要恢复库存
         OrderItem item = buildOrderItem(1L, 1L, 1L, 2);
         when(orderItemMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(item));
-        when(productMapper.restoreStock(eq(1L), eq(2))).thenReturn(1);
-
         orderService.cancelOrder(100L, 1L);
 
         assertThat(order.getStatus()).isEqualTo(5); // 已取消
-        verify(productMapper).restoreStock(1L, 2);
+        verify(productService).restoreStock(1L, 2);
     }
 
     @Test
