@@ -63,11 +63,61 @@ mvn package -DskipTests
 |------|----------|
 | tianji-common | Lombok, Jackson, Jakarta Validation, jjwt 0.12.6 — **无 spring-boot-maven-plugin** |
 | gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web** |
-| user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6 |
-| mall-goods-order | 同 user-service + OpenFeign |
-| pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释） |
-| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer |
-| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate） |
+| user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6, **test:** spring-boot-starter-test + H2 |
+| mall-goods-order | 同 user-service + OpenFeign, **test:** spring-boot-starter-test + H2 |
+| pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）, **test:** spring-boot-starter-test + H2 |
+| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer, **test:** spring-boot-starter-test + H2 |
+| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）, **test:** spring-boot-starter-test |
+
+## 测试约定
+
+**当前测试总数：130（Controller 41 + Service 集成 26 + Service 单元 63），8 个模块全覆盖。**
+
+### 测试分层
+
+| 层级 | 注解 | 说明 |
+|------|------|------|
+| **Controller** | `@SpringBootTest` + `@AutoConfigureMockMvc` + `@MockBean` | 加载完整 Context（H2），Mock Service 层，验证路由/JWT/@Valid/异常处理 |
+| **Service 集成** | `@SpringBootTest` + `@ActiveProfiles("test")` | 加载完整 Context（H2），测试真实 MyBatis-Plus 查询（getOne/LambdaUpdateWrapper/分页/事务） |
+| **Service 单元** | `@ExtendWith(MockitoExtension.class)` | 纯 Mockito，Mock Mapper/Service，验证业务逻辑分支 |
+
+### 测试基础设施
+
+每个需要测试的模块必须提供：
+
+```
+{module}/src/test/
+├── resources/
+│   ├── application-test.yml    # H2 数据源 + 禁用 Nacos/Druid/Feign + jwt.secret
+│   └── schema.sql              # CREATE TABLE IF NOT EXISTS（H2 MODE=MySQL）
+└── java/com/tianji/{module}/   # 测试类
+```
+
+**application-test.yml 模板要点：**
+- `spring.datasource.url`: `jdbc:h2:mem:testdb;MODE=MySQL;DATABASE_TO_LOWER=true;DB_CLOSE_DELAY=-1`
+- 排除 Nacos、Druid、Feign 自动配置（防止加载外部依赖）
+- `spring.sql.init.mode: always`（首次初始化 schema）
+- pay-service 额外需要 `alipay.*` fake 值（AlipayConfig `@Value` 注入）
+
+**schema.sql 要点：**
+- 全部使用 `CREATE TABLE IF NOT EXISTS`（`DB_CLOSE_DELAY=-1` 跨 Context 复用）
+- H2 保留字（`user`、`order`）用反引号括起来，MyBatis-Plus 实体对应 `@TableName("\`xxx\`")`
+
+### @WebMvcTest 不可用
+
+由于所有 `@SpringBootApplication` 类均有 `@ComponentScan("com.tianji")`（扫描全部 tianji 包），`@WebMvcTest` 无法隔离单个 Controller。Controller 测试统一使用 `@SpringBootTest` + `@AutoConfigureMockMvc`。
+
+### 主要 Controller 测试清单
+
+| 模块 | 测试类 | Tests | 覆盖 |
+|------|--------|-------|------|
+| user-service | UserControllerTest | 5 | register/login/info + @Valid + 缺 Auth |
+| mall-goods-order | ProductControllerTest | 4 | 公开端点（无需 JWT） + BizException |
+| mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
+| mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
+| mall-goods-order | OrderControllerTest | 9 | create/list/detail/cancel + @Valid + 内部端点 + 缺 Auth |
+| pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
+| mcp-server | ToolControllerTest | 4 | JWT 手动提取 + 工具路由 + 未知工具 + 未授权 |
 
 ## 关键约定
 
