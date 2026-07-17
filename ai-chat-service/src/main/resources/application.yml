@@ -19,6 +19,13 @@ spring:
         server-addr: 192.168.150.11:8848
         import-check:
           enabled: false
+  ai:
+    openai:
+      api-key: ${SILICONFLOW_API_KEY:sk-sbkcnrewdutwpkewypfxuesnkkspblvfznnuqioruchpslcd}
+      base-url: https://api.siliconflow.cn/v1
+      embedding:
+        options:
+          model: BAAI/bge-large-zh-v1.5
 
 mybatis-plus:
   configuration:
@@ -30,15 +37,6 @@ mybatis-plus:
 deepseek:
   api-url: https://api.deepseek.com/v1/chat/completions
   model: deepseek-chat
-
-spring:
-  ai:
-    openai:
-      api-key: ${SILICONFLOW_API_KEY:sk-sbkcnrewdutwpkewypfxuesnkkspblvfznnuqioruchpslcd}
-      base-url: https://api.siliconflow.cn/v1
-      embedding:
-        options:
-          model: BAAI/bge-large-zh-v1.5
 
 # Milvus 向量数据库连接
 milvus:
