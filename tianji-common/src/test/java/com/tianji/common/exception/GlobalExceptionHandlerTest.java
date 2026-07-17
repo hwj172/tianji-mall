@@ -98,7 +98,7 @@ class GlobalExceptionHandlerTest {
         R<Void> result = handler.handleException(ex, request);
 
         assertThat(result.getCode()).isEqualTo(500);
-        assertThat(result.getMessage()).isEqualTo("RuntimeException: 数据库连接失败");
+        assertThat(result.getMessage()).isEqualTo("系统内部错误，请稍后重试");
     }
 
     @Test
@@ -112,6 +112,6 @@ class GlobalExceptionHandlerTest {
         R<Void> result = handler.handleException(ex, request);
 
         assertThat(result.getCode()).isEqualTo(500);
-        assertThat(result.getMessage()).contains("NullPointerException");
+        assertThat(result.getMessage()).isEqualTo("系统内部错误，请稍后重试");
     }
 }

@@ -53,9 +53,12 @@ public class ToolController {
                 case "add_to_cart" -> cartTools.addToCart(realUserId, req.getParameters());
                 default -> ToolResponse.fail("未知工具: " + req.getTool());
             };
+        } catch (feign.FeignException e) {
+            log.error("工具执行 Feign 调用失败: tool={}, status={}", req.getTool(), e.status(), e);
+            return ToolResponse.fail("下游服务暂不可用");
         } catch (Exception e) {
-            log.error("工具执行异常", e);
-            return ToolResponse.fail("工具执行异常: " + e.getMessage());
+            log.error("工具执行未知异常: tool={}", req.getTool(), e);
+            return ToolResponse.fail("工具执行异常");
         }
     }
 

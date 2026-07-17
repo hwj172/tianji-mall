@@ -7,11 +7,13 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class ProductService extends ServiceImpl<ProductMapper, Product> {
@@ -50,6 +52,9 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
 
     @CacheEvict(value = "product", key = "#productId")
     public void restoreStock(Long productId, int quantity) {
-        baseMapper.restoreStock(productId, quantity);
+        int rows = baseMapper.restoreStock(productId, quantity);
+        if (rows == 0) {
+            log.warn("恢复库存失败（商品可能被删除）: productId={}", productId);
+        }
     }
 }

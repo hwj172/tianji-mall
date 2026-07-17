@@ -136,7 +136,8 @@ mvn package -DskipTests
 - **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED），`OrderEventConsumer` 消费并留日志。异常不阻塞主流程。
 - **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`
 - **mcp-server**：`ToolController` 从 JWT 提取真实 userId，不信任请求体中的 userId
-- **支付幂等**：使用 `UPDATE ... WHERE status = 1` 原子操作，禁止读-判断-写
+- **支付回调幂等**：`PayController.notify` 中 BizException（不可重试）返回 `"success"` 终止重试，仅系统异常返回 `"fail"` 触发重试。`PaymentMapper.markPaid` 使用 `UPDATE ... WHERE status = 1` 原子操作
+- **异常处理**：mcp-server tools 区分 `FeignException`（下游服务故障）与 `Exception`（未知异常）；`GlobalExceptionHandler` 对外不暴露内部类名
 - **内部 Feign 调用**：需校验 userId 所有权（如 `payOrder`），Feign 接口返回 `R<OrderDTO>` 类型化对象而非 `Map`
 - **RestTemplate**：必须设置 connectTimeout + readTimeout，避免请求永久挂起
 - **Nacos Config 导入检查**：Spring Cloud 2023.x 强制要求 `spring.config.import`，不使用 Nacos 配置中心的服务需在 application.yml 设置 `spring.cloud.nacos.config.import-check.enabled: false`

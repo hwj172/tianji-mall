@@ -9,10 +9,13 @@ import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.mapper.CartItemMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
@@ -25,6 +28,7 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
                 .orderByDesc(CartItem::getCreateTime));
     }
 
+    @Transactional
     public void addItem(Long userId, CartAddRequest req) {
         // 检查商品是否存在且上架
         Product product = productService.getProductById(req.getProductId());
@@ -48,8 +52,10 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
         item.setQuantity(req.getQuantity());
         item.setChecked(1);
         save(item);
+        log.info("加购成功: userId={}, productId={}, quantity={}", userId, req.getProductId(), req.getQuantity());
     }
 
+    @Transactional
     public void updateQuantity(Long userId, Long cartItemId, int quantity) {
         CartItem item = getById(cartItemId);
         if (item == null || !item.getUserId().equals(userId)) {
@@ -57,16 +63,20 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
         }
         item.setQuantity(quantity);
         updateById(item);
+        log.info("购物车数量更新: userId={}, cartItemId={}, quantity={}", userId, cartItemId, quantity);
     }
 
+    @Transactional
     public void deleteItem(Long userId, Long cartItemId) {
         CartItem item = getById(cartItemId);
         if (item == null || !item.getUserId().equals(userId)) {
             throw new BizException("购物车项不存在");
         }
         removeById(cartItemId);
+        log.info("购物车项删除: userId={}, cartItemId={}", userId, cartItemId);
     }
 
+    @Transactional
     public void checkItem(Long userId, Long cartItemId, Integer checked) {
         CartItem item = getById(cartItemId);
         if (item == null || !item.getUserId().equals(userId)) {

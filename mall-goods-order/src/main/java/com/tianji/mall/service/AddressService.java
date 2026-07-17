@@ -8,10 +8,13 @@ import com.tianji.mall.dto.AddressRequest;
 import com.tianji.mall.entity.Address;
 import com.tianji.mall.mapper.AddressMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class AddressService extends ServiceImpl<AddressMapper, Address> {
@@ -23,6 +26,7 @@ public class AddressService extends ServiceImpl<AddressMapper, Address> {
                 .orderByDesc(Address::getCreateTime));
     }
 
+    @Transactional
     public void addAddress(Long userId, AddressRequest req) {
         if (req.getIsDefault() == 1) {
             clearDefault(userId);
@@ -37,8 +41,10 @@ public class AddressService extends ServiceImpl<AddressMapper, Address> {
         address.setDetail(req.getDetail());
         address.setIsDefault(req.getIsDefault());
         save(address);
+        log.info("地址新增: userId={}, receiverName={}", userId, req.getReceiverName());
     }
 
+    @Transactional
     public void updateAddress(Long userId, Long addressId, AddressRequest req) {
         Address address = getById(addressId);
         if (address == null || !address.getUserId().equals(userId)) {
@@ -55,8 +61,10 @@ public class AddressService extends ServiceImpl<AddressMapper, Address> {
         address.setDetail(req.getDetail());
         address.setIsDefault(req.getIsDefault());
         updateById(address);
+        log.info("地址更新: userId={}, addressId={}", userId, addressId);
     }
 
+    @Transactional
     public void deleteAddress(Long userId, Long addressId) {
         Address address = getById(addressId);
         if (address == null || !address.getUserId().equals(userId)) {
