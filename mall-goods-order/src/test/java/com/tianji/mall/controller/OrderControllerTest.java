@@ -120,6 +120,46 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
     }
 
+    // ==================== internal endpoints ====================
+
+    @Test
+    void shouldGetOrderInternal() throws Exception {
+        Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
+        when(orderService.getById(1L)).thenReturn(order);
+
+        mockMvc.perform(get("/api/order/internal/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.orderNo").value("202407160001"));
+    }
+
+    @Test
+    void shouldListOrdersInternal() throws Exception {
+        Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
+        when(orderService.getOrderList(1L)).thenReturn(List.of(order));
+
+        mockMvc.perform(get("/api/order/internal/list/1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].orderNo").value("202407160001"));
+    }
+
+    @Test
+    void shouldPayOrderInternal() throws Exception {
+        doNothing().when(orderService).payOrder(1L, 1L);
+
+        mockMvc.perform(put("/api/order/internal/1/pay").param("userId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== exception scenarios ====================
+
+    @Test
+    void shouldReturnErrorWhenMissingAuthHeader() throws Exception {
+        mockMvc.perform(get("/api/order/list"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500));
+    }
+
     // ==================== helpers ====================
 
     private Order buildOrder(Long id, String orderNo, BigDecimal totalAmount) {

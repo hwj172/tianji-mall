@@ -102,4 +102,13 @@ class UserControllerTest {
                 .andExpect(jsonPath("$.data.username").value("testuser"))
                 .andExpect(jsonPath("$.data.phone").value("13800000001"));
     }
+
+    // ==================== exception scenarios ====================
+
+    @Test
+    void shouldReturnErrorWhenMissingAuthHeader() throws Exception {
+        mockMvc.perform(get("/api/user/info"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500));
+    }
 }

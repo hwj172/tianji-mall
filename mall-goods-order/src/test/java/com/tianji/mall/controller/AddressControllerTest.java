@@ -113,6 +113,15 @@ class AddressControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
     }
 
+    // ==================== exception scenarios ====================
+
+    @Test
+    void shouldReturnErrorWhenMissingAuthHeader() throws Exception {
+        mockMvc.perform(get("/api/address/list"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500));
+    }
+
     // ==================== helpers ====================
 
     private Address buildAddress(Long id, String name, String phone) {

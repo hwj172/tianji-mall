@@ -124,6 +124,38 @@ class CartControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
     }
 
+    // ==================== internal endpoints ====================
+
+    @Test
+    void shouldGetCartListInternal() throws Exception {
+        CartItem item = buildCartItem(1L, 100L, 2);
+        when(cartService.getCartList(1L)).thenReturn(List.of(item));
+
+        mockMvc.perform(get("/api/cart/internal/list").param("userId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].productId").value(100));
+    }
+
+    @Test
+    void shouldAddCartItemInternal() throws Exception {
+        doNothing().when(cartService).addItem(eq(1L), any(CartAddRequest.class));
+
+        mockMvc.perform(post("/api/cart/internal/add")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":1,\"productId\":100,\"quantity\":2}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== exception scenarios ====================
+
+    @Test
+    void shouldReturnErrorWhenMissingAuthHeader() throws Exception {
+        mockMvc.perform(get("/api/cart/list"))
+                .andExpect(status().isInternalServerError())
+                .andExpect(jsonPath("$.code").value(500));
+    }
+
     // ==================== helpers ====================
 
     private CartItem buildCartItem(Long id, Long productId, int quantity) {
