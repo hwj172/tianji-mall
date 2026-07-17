@@ -1,5 +1,6 @@
 package com.tianji.aichat.service;
 
+import com.tianji.aichat.client.EmbeddingClient;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.grpc.DataType;
 import io.milvus.grpc.MutationResult;
@@ -19,7 +20,6 @@ import io.milvus.param.index.CreateIndexParam;
 import io.milvus.response.SearchResultsWrapper;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
@@ -40,7 +40,7 @@ public class VectorSearchService {
     private static final String FIELD_ID = "product_id";
     private static final String FIELD_VECTOR = "embedding";
 
-    private final EmbeddingModel embeddingModel;
+    private final EmbeddingClient embeddingClient;
 
     @Value("${milvus.host:192.168.150.11}")
     private String host;
@@ -57,8 +57,8 @@ public class VectorSearchService {
 
     private MilvusServiceClient milvusClient;
 
-    public VectorSearchService(EmbeddingModel embeddingModel) {
-        this.embeddingModel = embeddingModel;
+    public VectorSearchService(EmbeddingClient embeddingClient) {
+        this.embeddingClient = embeddingClient;
     }
 
     @PostConstruct
@@ -85,7 +85,7 @@ public class VectorSearchService {
             return Collections.emptyList();
         }
         try {
-            List<Float> queryVector = toFloatList(embeddingModel.embed(queryText));
+            List<Float> queryVector = toFloatList(embeddingClient.embed(queryText));
 
             SearchParam searchParam = SearchParam.newBuilder()
                     .withCollectionName(collectionName)
@@ -122,7 +122,7 @@ public class VectorSearchService {
         }
         try {
             String text = (description == null || description.isEmpty()) ? name : name + " " + description;
-            List<Float> vector = toFloatList(embeddingModel.embed(text));
+            List<Float> vector = toFloatList(embeddingClient.embed(text));
 
             List<InsertParam.Field> fields = List.of(
                     new InsertParam.Field(FIELD_ID, List.of(productId)),

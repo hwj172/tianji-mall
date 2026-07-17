@@ -1,5 +1,6 @@
 package com.tianji.aichat.service;
 
+import com.tianji.aichat.client.EmbeddingClient;
 import io.milvus.client.MilvusServiceClient;
 import io.milvus.grpc.IDs;
 import io.milvus.grpc.LongArray;
@@ -19,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.ai.embedding.EmbeddingModel;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.util.List;
@@ -36,7 +36,7 @@ import static org.mockito.Mockito.when;
 class VectorSearchServiceTest {
 
     @Mock
-    private EmbeddingModel embeddingModel;
+    private EmbeddingClient embeddingClient;
     @Mock
     private MilvusServiceClient milvusClient;
 
@@ -44,7 +44,7 @@ class VectorSearchServiceTest {
 
     @BeforeEach
     void setUp() {
-        vectorSearchService = new VectorSearchService(embeddingModel);
+        vectorSearchService = new VectorSearchService(embeddingClient);
         ReflectionTestUtils.setField(vectorSearchService, "milvusClient", milvusClient);
         ReflectionTestUtils.setField(vectorSearchService, "collectionName", "product_vectors");
         ReflectionTestUtils.setField(vectorSearchService, "dimension", 4);
@@ -54,7 +54,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldReturnProductIdsWhenSearchSucceeds() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+        when(embeddingClient.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(milvusClient.search(any(SearchParam.class))).thenReturn(buildSearchResults(101L, 102L, 103L));
 
         List<Long> result = vectorSearchService.searchSimilar("适合学生的轻薄笔记本", 3);
@@ -64,7 +64,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldReturnEmptyListWhenSearchReturnsFailedStatus() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+        when(embeddingClient.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(milvusClient.search(any(SearchParam.class)))
                 .thenReturn(R.failed(new RuntimeException("collection not loaded")));
 
@@ -75,7 +75,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldReturnEmptyListWhenSearchThrows() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+        when(embeddingClient.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(milvusClient.search(any(SearchParam.class))).thenThrow(new RuntimeException("connect failed"));
 
         List<Long> result = vectorSearchService.searchSimilar("手机", 5);
@@ -85,7 +85,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldReturnEmptyListWhenEmbeddingFails() {
-        when(embeddingModel.embed(anyString())).thenThrow(new RuntimeException("embedding api error"));
+        when(embeddingClient.embed(anyString())).thenThrow(new RuntimeException("embedding api error"));
 
         List<Long> result = vectorSearchService.searchSimilar("手机", 5);
 
@@ -106,7 +106,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldUpsertProductWithoutError() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+        when(embeddingClient.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(milvusClient.upsert(any(UpsertParam.class)))
                 .thenReturn(R.success(MutationResult.getDefaultInstance()));
 
@@ -118,7 +118,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldNotThrowWhenUpsertFails() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+        when(embeddingClient.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(milvusClient.upsert(any(UpsertParam.class))).thenThrow(new RuntimeException("connect failed"));
 
         assertThatCode(() -> vectorSearchService.upsertProduct(101L, "iPhone 15", "苹果旗舰手机"))
@@ -127,7 +127,7 @@ class VectorSearchServiceTest {
 
     @Test
     void shouldNotThrowWhenUpsertWithNullDescription() {
-        when(embeddingModel.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
+        when(embeddingClient.embed(anyString())).thenReturn(new float[]{0.1f, 0.2f, 0.3f, 0.4f});
         when(milvusClient.upsert(any(UpsertParam.class)))
                 .thenReturn(R.success(MutationResult.getDefaultInstance()));
 

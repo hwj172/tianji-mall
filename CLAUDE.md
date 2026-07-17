@@ -67,11 +67,11 @@ mvn package -DskipTests
 | mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）+ **RocketMQ**（订单事件异步消息）, **test:** spring-boot-starter-test + H2 |
 | pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）, **test:** spring-boot-starter-test + H2 |
 | mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer, **test:** spring-boot-starter-test + H2 |
-| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）, **test:** spring-boot-starter-test |
+| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）+ milvus-sdk-java 2.3.4 + SiliconFlow Embedding（RestTemplate）, **test:** spring-boot-starter-test |
 
 ## 测试约定
 
-**当前测试总数：169 (Gateway 27 + Controller 41 + Service 集成 26 + Service 单元 75)，8 个模块全覆盖。**
+**当前测试总数：171 (Gateway 27 + Controller 41 + Service 集成 26 + Service 单元 77)，8 个模块全覆盖。**
 
 ### 测试分层
 
@@ -141,7 +141,8 @@ mvn package -DskipTests
 - **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient`）
 - **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）
 - **RAG 管道**：`AiChatService.chat` 预检索 — 用户消息 → SiliconFlow Embedding（BAAI/bge-large-zh-v1.5, 1024 维）→ Milvus COSINE Top-5 → Feign 批量查商品 → 注入 System Prompt；RAG 失败降级为空列表，工具调用保留作 fallback。`VectorSearchService` 启动时自动建 collection（product_vectors, IVF_FLAT），Milvus 不可用时所有方法降级不抛异常
-- **Spring AI**：版本 2.0.0-M5（父 POM BOM + Spring Milestones 仓库），依赖名 `spring-ai-starter-model-openai`；`EmbeddingModel` 注入 `OpenAIClient`（官方 openai-java SDK）。ai-chat-service 需显式 pin `protobuf-java 3.24.0`（mysql-connector-j 传递引入 3.21 与 milvus-sdk-java 冲突）
+- **Embedding**：**禁止引入 Spring AI**（2.0.x 需要 Spring Boot 4 / Framework 7，与本项目 Boot 3.2.5 运行时不兼容，编译能过但启动报 `ClassNotFoundException: RetryTemplate`）。Embedding 由 `EmbeddingClient`（RestTemplate 直连 SiliconFlow `/v1/embeddings`，OpenAI 兼容）实现
+- **ai-chat-service 依赖冲突 pin**：`protobuf-java 3.24.0`（mysql-connector-j 传递引入 3.21 与 milvus-sdk-java 冲突）+ `grpc-bom 1.59.1` dependencyManagement import（RocketMQ 传递引入 grpc 1.50.0，milvus-sdk-java 需要 1.59.1 的 `ForwardingChannelBuilder2`，就近解析选 1.50 会导致启动时 `NoClassDefFoundError`——这是 Error 不是 Exception，`@PostConstruct` 里的 `catch (Exception)` 兜不住）
 - **mcp-server**：`ToolController` 从 JWT 提取真实 userId，不信任请求体中的 userId
 - **支付回调幂等**：`PayController.notify` 中 BizException（不可重试）返回 `"success"` 终止重试，仅系统异常返回 `"fail"` 触发重试。`PaymentMapper.markPaid` 使用 `UPDATE ... WHERE status = 1` 原子操作
 - **异常处理**：mcp-server tools 区分 `FeignException`（下游服务故障）与 `Exception`（未知异常）；`GlobalExceptionHandler` 对外不暴露内部类名

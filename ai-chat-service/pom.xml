@@ -97,11 +97,6 @@
             <version>${project.version}</version>
         </dependency>
 
-        <!-- Spring AI OpenAI Starter（Embedding API） -->
-        <dependency>
-            <groupId>org.springframework.ai</groupId>
-            <artifactId>spring-ai-starter-model-openai</artifactId>
-        </dependency>
         <!-- Milvus 原生 SDK -->
         <dependency>
             <groupId>io.milvus</groupId>
@@ -122,6 +117,20 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <!-- 统一 gRPC 版本：RocketMQ 传递引入 1.50.0，milvus-sdk-java 2.3.4 需要 1.59.1
+         （io.grpc.ForwardingChannelBuilder2 为 1.59 新增），就近解析会选 1.50 导致启动时 NoClassDefFoundError -->
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>io.grpc</groupId>
+                <artifactId>grpc-bom</artifactId>
+                <version>1.59.1</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
