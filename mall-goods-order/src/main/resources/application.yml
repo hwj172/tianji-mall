@@ -29,6 +29,11 @@ spring:
       time-to-live: 30m
       cache-null-values: false
 
+rocketmq:
+  name-server: 192.168.150.11:9876
+  producer:
+    group: mall-goods-order-producer
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

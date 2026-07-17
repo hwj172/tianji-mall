@@ -5,11 +5,14 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
+import com.tianji.mall.dto.OrderEvent;
 import com.tianji.mall.dto.OrderItemResponse;
 import com.tianji.mall.entity.*;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
@@ -25,6 +28,7 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService extends ServiceImpl<OrderMapper, Order> {
@@ -34,6 +38,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final ProductService productService;
     private final AddressService addressService;
     private final RedissonClient redissonClient;
+    private final RocketMQTemplate rocketMQTemplate;
 
     @Transactional
     public Order createOrder(Long userId, OrderCreateRequest req) {
@@ -128,6 +133,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             // 10. 清购物车
             cartService.removeByIds(req.getCartItemIds());
 
+            // 11. 发送订单创建事件
+            publishOrderEvent(order, "CREATED");
+
             return order;
 
         } catch (InterruptedException e) {
@@ -181,6 +189,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         for (OrderItem item : items) {
             productService.restoreStock(item.getProductId(), item.getQuantity());
         }
+
+        // 发送订单取消事件
+        publishOrderEvent(order, "CANCELLED");
     }
 
     @Transactional
@@ -198,5 +209,24 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setStatus(2); // 已付款
         order.setPayType(1); // 支付宝
         updateById(order);
+
+        // 发送订单支付事件
+        publishOrderEvent(order, "PAID");
+    }
+
+    private void publishOrderEvent(Order order, String eventType) {
+        try {
+            OrderEvent event = new OrderEvent(
+                    order.getId(),
+                    order.getUserId(),
+                    order.getOrderNo(),
+                    order.getTotalAmount(),
+                    eventType,
+                    LocalDateTime.now());
+            rocketMQTemplate.convertAndSend("order-topic:" + eventType, event);
+            log.info("订单事件已发送: orderId={}, eventType={}", order.getId(), eventType);
+        } catch (Exception e) {
+            log.error("发送订单事件失败: orderId={}, eventType={}", order.getId(), eventType, e);
+        }
     }
 }

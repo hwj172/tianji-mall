@@ -30,6 +30,9 @@ class AddressServiceIntegrationTest {
     @MockBean
     private RedissonClient redissonClient;
 
+    @MockBean
+    private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
+
     @Autowired
     private AddressMapper addressMapper;
 

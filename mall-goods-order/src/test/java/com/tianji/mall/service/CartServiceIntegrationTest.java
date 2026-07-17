@@ -33,6 +33,9 @@ class CartServiceIntegrationTest {
     @MockBean
     private RedissonClient redissonClient;
 
+    @MockBean
+    private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
+
     @Autowired
     private CartItemMapper cartItemMapper;
 

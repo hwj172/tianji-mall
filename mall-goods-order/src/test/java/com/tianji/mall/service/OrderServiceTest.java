@@ -42,12 +42,14 @@ class OrderServiceTest {
     private AddressService addressService;
     @Mock
     private org.redisson.api.RedissonClient redissonClient;
+    @Mock
+    private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
 
     private OrderService orderService;
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        orderService = new OrderService(orderItemMapper, cartService, productService, addressService, redissonClient);
+        orderService = new OrderService(orderItemMapper, cartService, productService, addressService, redissonClient, rocketMQTemplate);
         ReflectionTestUtils.setField(orderService, "baseMapper", orderMapper);
 
         // 分布式锁 mock：所有锁操作默认成功（lenient 避免非锁路径报 UnnecessaryStubbing）

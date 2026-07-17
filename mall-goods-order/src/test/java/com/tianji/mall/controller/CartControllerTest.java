@@ -42,6 +42,9 @@ class CartControllerTest {
     @MockBean
     private org.redisson.api.RedissonClient redissonClient;
 
+    @MockBean
+    private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
+
     @BeforeEach
     void setUp() {
         when(jwtUtil.getUserId(anyString())).thenReturn(1L);

@@ -24,6 +24,7 @@ spring:
       - org.springframework.cloud.openfeign.FeignAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - com.alibaba.cloud.nacos.endpoint.NacosConfigEndpointAutoConfiguration
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
   cache:
     type: none
 

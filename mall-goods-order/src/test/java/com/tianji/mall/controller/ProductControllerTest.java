@@ -34,6 +34,9 @@ class ProductControllerTest {
     @MockBean
     private org.redisson.api.RedissonClient redissonClient;
 
+    @MockBean
+    private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
+
     // ==================== GET /api/product/list ====================
 
     @Test
