@@ -62,7 +62,7 @@ mvn package -DskipTests
 | 模块 | 关键依赖 |
 |------|----------|
 | tianji-common | Lombok, Jackson, Jakarta Validation, jjwt 0.12.6 — **无 spring-boot-maven-plugin** |
-| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web** |
+| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web**, **test:** spring-boot-starter-test + reactor-test |
 | user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6, **test:** spring-boot-starter-test + H2 |
 | mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）+ **RocketMQ**（订单事件异步消息）, **test:** spring-boot-starter-test + H2 |
 | pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）, **test:** spring-boot-starter-test + H2 |
@@ -71,7 +71,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：130 (Controller 41 + Service 集成 26 + Service 单元 63)，8 个模块全覆盖。**
+**当前测试总数：157 (Gateway 27 + Controller 41 + Service 集成 26 + Service 单元 63)，8 个模块全覆盖。**
 
 ### 测试分层
 
@@ -80,6 +80,7 @@ mvn package -DskipTests
 | **Controller** | `@SpringBootTest` + `@AutoConfigureMockMvc` + `@MockBean` | 加载完整 Context（H2），Mock Service 层，验证路由/JWT/@Valid/异常处理 |
 | **Service 集成** | `@SpringBootTest` + `@ActiveProfiles("test")` | 加载完整 Context（H2），测试真实 MyBatis-Plus 查询（getOne/LambdaUpdateWrapper/分页/事务） |
 | **Service 单元** | `@ExtendWith(MockitoExtension.class)` | 纯 Mockito，Mock Mapper/Service，验证业务逻辑分支 |
+| **Gateway 单元** | `@ExtendWith(MockitoExtension.class)` | 纯 Mockito，Mock `ServerWebExchange`/`ServerHttpRequest`/`ServerHttpResponse`，测试 WebFlux GlobalFilter |
 
 ### 测试基础设施
 
@@ -98,6 +99,7 @@ mvn package -DskipTests
 - 排除 Nacos、Druid、Feign 自动配置（防止加载外部依赖）
 - `spring.sql.init.mode: always`（首次初始化 schema）
 - pay-service 额外需要 `alipay.*` fake 值（AlipayConfig `@Value` 注入）
+- **gateway 测试**：无需 H2/schema.sql（无数据库），`application-test.yml` 禁用 Nacos 即可。使用 Mockito 模拟 WebFlux 组件（`ServerWebExchange`、`ServerHttpRequest`），借助 jjwt 生成测试 Token
 
 **schema.sql 要点：**
 - 全部使用 `CREATE TABLE IF NOT EXISTS`（`DB_CLOSE_DELAY=-1` 跨 Context 复用）
@@ -118,6 +120,8 @@ mvn package -DskipTests
 | mall-goods-order | OrderControllerTest | 9 | create/list/detail/cancel + @Valid + 内部端点 + 缺 Auth |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
 | mcp-server | ToolControllerTest | 4 | JWT 手动提取 + 工具路由 + 未知工具 + 未授权 |
+| gateway | AuthGlobalFilterTest | 23 | 公开路径/内部路径/JWT 鉴权/非 API 路径/边界 + Mock WebFlux |
+| gateway | CorsConfigTest | 4 | CORS 过滤器 Bean 创建 + 预检/GET/无 Origin |
 
 ## 关键约定
 
