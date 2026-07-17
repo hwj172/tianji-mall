@@ -13,6 +13,8 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -56,5 +58,17 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         if (rows == 0) {
             log.warn("恢复库存失败（商品可能被删除）: productId={}", productId);
         }
+    }
+
+    /**
+     * 根据 ID 列表批量查询在售商品（供 AI RAG 管道使用）
+     */
+    public List<Product> getProductBatch(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        return list(new LambdaQueryWrapper<Product>()
+                .in(Product::getId, ids)
+                .eq(Product::getStatus, 1));
     }
 }

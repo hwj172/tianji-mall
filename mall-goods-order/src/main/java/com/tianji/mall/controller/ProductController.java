@@ -7,6 +7,8 @@ import com.tianji.mall.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/api/product")
 @RequiredArgsConstructor
@@ -25,5 +27,10 @@ public class ProductController {
     @GetMapping("/{id}")
     public R<Product> detail(@PathVariable("id") Long id) {
         return R.ok(productService.getProductById(id));
+    }
+
+    @PostMapping("/batch")
+    public R<List<Product>> batch(@RequestBody List<Long> ids) {
+        return R.ok(productService.getProductBatch(ids));
     }
 }
