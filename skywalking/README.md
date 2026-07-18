@@ -2,11 +2,14 @@
 
 ## 下载 Agent
 
+> 注意：SkyWalking Java Agent 是独立版本线（与 OAP 版本号不同），9.2.0 兼容 OAP 9.7.0。
+
 ```bash
-curl -L https://archive.apache.org/dist/skywalking/9.7.0/apache-skywalking-java-agent-9.7.0.tgz -o /tmp/sw.tgz
+curl -L https://archive.apache.org/dist/skywalking/java-agent/9.2.0/apache-skywalking-java-agent-9.2.0.tgz -o /tmp/sw-agent.tgz
 mkdir -p skywalking/agent
-tar xzf /tmp/sw.tgz -C skywalking/
-mv skywalking/skywalking-agent skywalking/agent
+tar xzf /tmp/sw-agent.tgz -C skywalking/
+mv skywalking/skywalking-agent/* skywalking/agent/
+rmdir skywalking/skywalking-agent
 ```
 
 ## IDEA VM Options 模板
