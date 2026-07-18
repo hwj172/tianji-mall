@@ -410,4 +410,46 @@ class AuthGlobalFilterTest {
             assertThat(filter.getOrder()).isEqualTo(-100);
         }
     }
+
+    // ==================== 商品内部路径（向量回填） ====================
+
+    @Nested
+    @DisplayName("/api/product/internal — 内部 token 鉴权（先于公开前缀匹配）")
+    class ProductInternalPaths {
+
+        @Test
+        @DisplayName("/api/product/internal/sync-vectors 无 token 返回 401")
+        void shouldRejectProductInternalWithoutToken() {
+            ServerWebExchange exchange = createExchange("/api/product/internal/sync-vectors");
+
+            filter.filter(exchange, chain);
+
+            verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
+            verify(chain, never()).filter(any());
+        }
+
+        @Test
+        @DisplayName("/api/product/internal/sync-vectors 携带正确 token 放行")
+        void shouldPassProductInternalWithValidToken() {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("X-Internal-Token", INTERNAL_TOKEN);
+            ServerWebExchange exchange = createExchange("/api/product/internal/sync-vectors", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+
+        @Test
+        @DisplayName("/api/product/list 仍是公开路径（顺序调整回归保护）")
+        void shouldKeepProductListPublic() {
+            ServerWebExchange exchange = createExchange("/api/product/list");
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+    }
 }

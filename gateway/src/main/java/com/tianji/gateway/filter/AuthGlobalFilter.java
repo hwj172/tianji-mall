@@ -38,7 +38,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     /** 内部服务调用路径，通过 X-Internal-Token 请求头鉴权 */
     private static final List<String> INTERNAL_PATHS = List.of(
             "/api/order/internal",
-            "/api/cart/internal"
+            "/api/cart/internal",
+            "/api/product/internal"
     );
 
     @Value("${jwt.secret}")
@@ -51,12 +52,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
-        // 公开路径直接放行
-        if (isPublicPath(path)) {
-            return chain.filter(exchange);
-        }
-
-        // 内部服务路径：检查 X-Internal-Token
+        // 内部服务路径：检查 X-Internal-Token（必须先于公开路径检查——
+        // /api/product/internal 是公开前缀 /api/product 的子路径，更具体的规则先匹配）
         if (isInternalPath(path)) {
             String token = exchange.getRequest().getHeaders().getFirst("X-Internal-Token");
             if (internalToken.equals(token)) {
@@ -65,6 +62,11 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             log.warn("内部接口 token 无效: {}", path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
             return exchange.getResponse().setComplete();
+        }
+
+        // 公开路径直接放行
+        if (isPublicPath(path)) {
+            return chain.filter(exchange);
         }
 
         // 非 API 路径放行
