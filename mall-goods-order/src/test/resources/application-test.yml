@@ -16,6 +16,8 @@ spring:
       config:
         import-check:
           enabled: false
+    sentinel:
+      enabled: false
   autoconfigure:
     exclude:
       - com.alibaba.cloud.nacos.NacosConfigAutoConfiguration

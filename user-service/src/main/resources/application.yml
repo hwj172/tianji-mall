@@ -19,6 +19,10 @@ spring:
         server-addr: 192.168.150.11:8848
         import-check:
           enabled: false
+    sentinel:
+      transport:
+        dashboard: 192.168.150.11:8858
+      eager: true
 
 mybatis-plus:
   configuration:
