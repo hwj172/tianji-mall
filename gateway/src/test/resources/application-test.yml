@@ -16,6 +16,8 @@ spring:
       discovery:
         locator:
           enabled: false
+    sentinel:
+      enabled: false
 
 # 测试用 JWT 密钥（HMAC-SHA256 至少 256 位 = 32 字符）
 jwt:
