@@ -32,3 +32,6 @@ docs/credentials.md
 # Docker
 docker/volumes/
 natapp/
+
+# SkyWalking
+skywalking/agent/
