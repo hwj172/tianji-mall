@@ -123,6 +123,19 @@
                 <artifactId>rocketmq-spring-boot-starter</artifactId>
                 <version>${rocketmq.version}</version>
             </dependency>
+            <!-- 覆盖 SCA BOM 锁定的 rocketmq-client/acl 5.1.4：
+                 rocketmq-spring-boot-starter 2.3.1 基于 client 5.3.0 构建，
+                 5.1.4 缺少 setNamespaceV2，consumer 容器初始化会 NoSuchMethodError -->
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-client</artifactId>
+                <version>5.3.0</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.rocketmq</groupId>
+                <artifactId>rocketmq-acl</artifactId>
+                <version>5.3.0</version>
+            </dependency>
 
             <!-- H2 (test only) -->
             <dependency>

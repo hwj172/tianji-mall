@@ -71,7 +71,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：171 (Gateway 27 + Controller 41 + Service 集成 26 + Service 单元 77)，8 个模块全覆盖。**
+**当前测试总数：178 (Gateway 30 + Controller 42 + Service 集成 26 + Service 单元 80)，8 个模块全覆盖。**
 
 ### 测试分层
 
@@ -114,13 +114,13 @@ mvn package -DskipTests
 | 模块 | 测试类 | Tests | 覆盖 |
 |------|--------|-------|------|
 | user-service | UserControllerTest | 5 | register/login/info + @Valid + 缺 Auth |
-| mall-goods-order | ProductControllerTest | 4 | 公开端点（无需 JWT） + BizException |
+| mall-goods-order | ProductControllerTest | 5 | 公开端点（无需 JWT） + BizException + 内部回填端点 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
 | mall-goods-order | OrderControllerTest | 9 | create/list/detail/cancel + @Valid + 内部端点 + 缺 Auth |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
 | mcp-server | ToolControllerTest | 4 | JWT 手动提取 + 工具路由 + 未知工具 + 未授权 |
-| gateway | AuthGlobalFilterTest | 23 | 公开路径/内部路径/JWT 鉴权/非 API 路径/边界 + Mock WebFlux |
+| gateway | AuthGlobalFilterTest | 26 | 公开路径/内部路径/JWT 鉴权/非 API 路径/边界 + Mock WebFlux |
 | gateway | CorsConfigTest | 4 | CORS 过滤器 Bean 创建 + 预检/GET/无 Origin |
 
 ## 关键约定
@@ -133,13 +133,13 @@ mvn package -DskipTests
 - 配置文件分离为 `application.yml`（通用，可提交）+ `application-local.yml`（密钥，gitignore）
 - 各模块提供 `application-local.yml.example` 模板文件供其他开发者参考
 - **JWT 鉴权**：`JwtUtil` 集中在 `tianji-common`，所有业务模块共享。jwt.secret 无默认值，未配置时启动报错
-- **内部端点**：`/api/order/internal`、`/api/cart/internal` 通过 `X-Internal-Token` 请求头鉴权（非 JWT），不从网关白名单暴露
+- **内部端点**：`/api/order/internal`、`/api/cart/internal`、`/api/product/internal` 通过 `X-Internal-Token` 请求头鉴权（非 JWT），网关中内部路径检查先于公开前缀匹配（`/api/product/internal` 是公开前缀 `/api/product` 的子路径）
 - **库存扣减**：使用 `UPDATE ... WHERE stock >= #{qty}` 原子操作，禁止 Java 侧读-改-写
 - **分布式锁**：`OrderService.createOrder` 使用 Redisson `getMultiLock`（锁 key 排序防死锁，waitTime=3s / leaseTime=10s），锁内重新读取库存。`cancelOrder` 恢复库存无并发竞争，不加锁
 - **商品缓存**：`ProductService.getProductById` / `getProductPage` 使用 `@Cacheable`，`deductStock` / `restoreStock` 使用 `@CacheEvict`。序列化器 `GenericJackson2JsonRedisSerializer`，TTL 30min
 - **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED），`OrderEventConsumer` 消费并留日志。异常不阻塞主流程。
 - **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient`）
-- **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）
+- **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）。存量回填走 `POST /api/product/internal/sync-vectors`（`syncAllVectors`，只同步 status=1 商品，返回 `{total, success, failed}` 统计，Milvus upsert 幂等可重复触发）
 - **RAG 管道**：`AiChatService.chat` 预检索 — 用户消息 → SiliconFlow Embedding（BAAI/bge-large-zh-v1.5, 1024 维）→ Milvus COSINE Top-5 → Feign 批量查商品 → 注入 System Prompt；RAG 失败降级为空列表，工具调用保留作 fallback。`VectorSearchService` 启动时自动建 collection（product_vectors, IVF_FLAT），Milvus 不可用时所有方法降级不抛异常
 - **Embedding**：**禁止引入 Spring AI**（2.0.x 需要 Spring Boot 4 / Framework 7，与本项目 Boot 3.2.5 运行时不兼容，编译能过但启动报 `ClassNotFoundException: RetryTemplate`）。Embedding 由 `EmbeddingClient`（RestTemplate 直连 SiliconFlow `/v1/embeddings`，OpenAI 兼容）实现
 - **ai-chat-service 依赖冲突 pin**：`protobuf-java 3.24.0`（mysql-connector-j 传递引入 3.21 与 milvus-sdk-java 冲突）+ `grpc-bom 1.59.1` dependencyManagement import（RocketMQ 传递引入 grpc 1.50.0，milvus-sdk-java 需要 1.59.1 的 `ForwardingChannelBuilder2`，就近解析选 1.50 会导致启动时 `NoClassDefFoundError`——这是 Error 不是 Exception，`@PostConstruct` 里的 `catch (Exception)` 兜不住）
