@@ -78,8 +78,10 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
 
     /**
      * 同步商品向量到 Milvus（best-effort，失败不影响主流程）
+     *
+     * @return 是否同步成功
      */
-    public void syncVector(Long productId, String name, String description) {
+    public boolean syncVector(Long productId, String name, String description) {
         try {
             Map<String, Object> body = Map.of(
                     "productId", productId,
@@ -87,8 +89,28 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
                     "description", description != null ? description : ""
             );
             aiChatFeignClient.upsertProductVector(body);
+            return true;
         } catch (Exception e) {
             log.warn("商品向量同步失败（不影响主流程）: productId={}", productId, e);
+            return false;
         }
+    }
+
+    /**
+     * 全量回填：把所有上架商品向量同步到 Milvus（Milvus upsert 幂等，可重复触发）
+     */
+    public Map<String, Integer> syncAllVectors() {
+        List<Product> products = list(new LambdaQueryWrapper<Product>()
+                .eq(Product::getStatus, 1));
+        int success = 0;
+        for (Product p : products) {
+            if (syncVector(p.getId(), p.getName(), p.getDescription())) {
+                success++;
+            }
+        }
+        log.info("商品向量回填完成: total={}, success={}", products.size(), success);
+        return Map.of("total", products.size(),
+                      "success", success,
+                      "failed", products.size() - success);
     }
 }
