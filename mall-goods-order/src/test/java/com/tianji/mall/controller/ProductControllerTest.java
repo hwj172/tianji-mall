@@ -13,10 +13,12 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -91,6 +93,21 @@ class ProductControllerTest {
                 .andExpect(status().isOk()) // BizException → GlobalExceptionHandler → 200
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("商品不存在或已下架"));
+    }
+
+    // ==================== POST /api/product/internal/sync-vectors ====================
+
+    @Test
+    void shouldTriggerVectorBackfill() throws Exception {
+        when(productService.syncAllVectors())
+                .thenReturn(Map.of("total", 12, "success", 12, "failed", 0));
+
+        mockMvc.perform(post("/api/product/internal/sync-vectors"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.total").value(12))
+                .andExpect(jsonPath("$.data.success").value(12))
+                .andExpect(jsonPath("$.data.failed").value(0));
     }
 
     // ==================== helpers ====================

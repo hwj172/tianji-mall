@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/product")
@@ -32,5 +33,12 @@ public class ProductController {
     @PostMapping("/batch")
     public R<List<Product>> batch(@RequestBody List<Long> ids) {
         return R.ok(productService.getProductBatch(ids));
+    }
+
+    // ===== 内部端点（网关 X-Internal-Token 鉴权，不暴露给前端）=====
+
+    @PostMapping("/internal/sync-vectors")
+    public R<Map<String, Integer>> syncVectors() {
+        return R.ok(productService.syncAllVectors());
     }
 }
