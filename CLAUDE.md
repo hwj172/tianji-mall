@@ -24,6 +24,37 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Windows 物理机** | IDEA 开发环境（6 个微服务）、natapp 内网穿透（→ localhost:8080）、前端项目 |
 | **Linux VM**（192.168.150.11） | Docker 中间件：Nacos、MySQL、Redis、RocketMQ、Milvus、SkyWalking、Sentinel |
 
+## 监控组件
+
+| 组件 | 端口 | 控制台 | 凭证 |
+|------|------|--------|------|
+| SkyWalking OAP | 11800 (gRPC) / 12800 (HTTP) | — | 无 |
+| SkyWalking UI | 8090 | http://192.168.150.11:8090 | 无 |
+| Sentinel Dashboard | 8858 | http://192.168.150.11:8858 | sentinel / sentinel |
+
+### SkyWalking（链路追踪）
+
+零代码侵入：javaagent 挂载，不需要 Maven 依赖。Agent 下载和配置见 `skywalking/README.md`。
+
+IDEA VM Options（每个服务 Run Configuration）：
+```
+-javaagent:D:\TEST\tianji-mall\skywalking\agent\skywalking-agent.jar
+-Dskywalking.agent.service_name={service-name}
+-Dskywalking.collector.backend_service=192.168.150.11:11800
+```
+
+### Sentinel（流量管控）
+
+依赖：gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配），其他 5 个服务使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。版本由父 POM dependencyManagement 管理（2023.0.1.0）。
+
+application.yml 配置：
+```yaml
+spring.cloud.sentinel.transport.dashboard: 192.168.150.11:8858
+spring.cloud.sentinel.eager: true
+```
+
+规则全部通过 Sentinel Dashboard 动态配置，不在代码中预设。Dashboard: http://192.168.150.11:8858（sentinel / sentinel）。
+
 ## 模块架构
 
 ```
@@ -62,12 +93,12 @@ mvn package -DskipTests
 | 模块 | 关键依赖 |
 |------|----------|
 | tianji-common | Lombok, Jackson, Jakarta Validation, jjwt 0.12.6 — **无 spring-boot-maven-plugin** |
-| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt — **不是 spring-boot-starter-web**, **test:** spring-boot-starter-test + reactor-test |
-| user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6, **test:** spring-boot-starter-test + H2 |
-| mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）+ **RocketMQ**（订单事件异步消息）, **test:** spring-boot-starter-test + H2 |
-| pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）, **test:** spring-boot-starter-test + H2 |
-| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer, **test:** spring-boot-starter-test + H2 |
-| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）+ milvus-sdk-java 2.3.4 + SiliconFlow Embedding（RestTemplate）, **test:** spring-boot-starter-test |
+| gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt, **spring-cloud-alibaba-sentinel-gateway** — **不是 spring-boot-starter-web**, **test:** spring-boot-starter-test + reactor-test |
+| user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6, **Sentinel**, **test:** spring-boot-starter-test + H2 |
+| mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）+ **RocketMQ**（订单事件异步消息）+ **Sentinel**, **test:** spring-boot-starter-test + H2 |
+| pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）+ **Sentinel**, **test:** spring-boot-starter-test + H2 |
+| mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer, **Sentinel**, **test:** spring-boot-starter-test + H2 |
+| ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）+ milvus-sdk-java 2.3.4 + SiliconFlow Embedding（RestTemplate）+ **Sentinel**, **test:** spring-boot-starter-test |
 
 ## 测试约定
 
@@ -99,6 +130,7 @@ mvn package -DskipTests
 - 排除 Nacos、Druid、Feign 自动配置（防止加载外部依赖）
 - `spring.sql.init.mode: always`（首次初始化 schema）
 - pay-service 额外需要 `alipay.*` fake 值（AlipayConfig `@Value` 注入）
+- `spring.cloud.sentinel.enabled: false`（禁用 Sentinel 自动配置，避免测试 Context 启动时连接 Dashboard）
 - **gateway 测试**：无需 H2/schema.sql（无数据库），`application-test.yml` 禁用 Nacos 即可。使用 Mockito 模拟 WebFlux 组件（`ServerWebExchange`、`ServerHttpRequest`），借助 jjwt 生成测试 Token
 
 **schema.sql 要点：**
@@ -152,6 +184,8 @@ mvn package -DskipTests
 - **Feign 注解参数名**：Spring 6 要求 `@PathVariable`、`@RequestParam` 显式写 value（如 `@PathVariable("id")`），不能省略
 - **Druid 数据源**：所有使用 MySQL 的服务必须引入 `druid-spring-boot-3-starter`（application.yml 中 `spring.datasource.type` 指向 Druid）
 - **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
+- **Sentinel**：Gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配），业务模块使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。版本由父 POM dependencyManagement 指定（2023.0.1.0）。测试中 `spring.cloud.sentinel.enabled: false`。规则全部通过 Dashboard 动态配置，不在代码中预设。
+- **SkyWalking**：纯 javaagent 挂载，零代码依赖。Agent 下载和 IDEA VM Options 见 `skywalking/README.md`。
 
 ## 行为准则
 
