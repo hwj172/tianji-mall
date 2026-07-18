@@ -44,6 +44,11 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
         </dependency>
+        <!-- sentinel-datasource-extension 被 SCA 声明为 optional，Gateway 需要显式引入 -->
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-datasource-extension</artifactId>
+        </dependency>
 
         <!-- Lombok -->
         <dependency>

@@ -141,10 +141,17 @@
             <dependency>
                 <groupId>com.alibaba.cloud</groupId>
                 <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+                <version>2023.0.1.0</version>
             </dependency>
             <dependency>
                 <groupId>com.alibaba.cloud</groupId>
                 <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
+                <version>2023.0.1.0</version>
+            </dependency>
+            <dependency>
+                <groupId>com.alibaba.csp</groupId>
+                <artifactId>sentinel-datasource-extension</artifactId>
+                <version>1.8.6</version>
             </dependency>
 
             <!-- H2 (test only) -->
