@@ -96,6 +96,101 @@ class UserServiceTest {
         verify(passwordEncoder).encode("plain_pw");
     }
 
+    // ==================== updateProfile ====================
+
+    @Test
+    void shouldUpdateProfile() {
+        User user = buildUser(1L, "oldname", "pw");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.updateProfile(1L, "newname", "13900001111", "new@email.com");
+
+        assertThat(user.getUsername()).isEqualTo("newname");
+        assertThat(user.getPhone()).isEqualTo("13900001111");
+        assertThat(user.getEmail()).isEqualTo("new@email.com");
+        verify(userMapper).updateById(user);
+    }
+
+    @Test
+    void shouldThrowWhenUpdateProfileUserNotFound() {
+        when(userMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> userService.updateProfile(999L, "name", "phone", "email"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("用户不存在");
+    }
+
+    // ==================== updateAvatar ====================
+
+    @Test
+    void shouldUpdateAvatar() {
+        User user = buildUser(1L, "testuser", "pw");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.updateAvatar(1L, "data:image/png;base64,abc123");
+
+        assertThat(user.getAvatar()).isEqualTo("data:image/png;base64,abc123");
+        verify(userMapper).updateById(user);
+    }
+
+    @Test
+    void shouldThrowWhenAvatarTooLarge() {
+        String huge = "x".repeat(600_001);
+
+        assertThatThrownBy(() -> userService.updateAvatar(1L, huge))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("过大");
+    }
+
+    @Test
+    void shouldThrowWhenUpdateAvatarUserNotFound() {
+        when(userMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> userService.updateAvatar(999L, "data:image/png;base64,abc"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("用户不存在");
+    }
+
+    // ==================== updatePassword ====================
+
+    @Test
+    void shouldUpdatePassword() {
+        User user = buildUser(1L, "testuser", "hashed_old_pw");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(passwordEncoder.matches("oldPass", "hashed_old_pw")).thenReturn(true);
+        when(passwordEncoder.encode("newPass")).thenReturn("hashed_new_pw");
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.updatePassword(1L, "oldPass", "newPass");
+
+        verify(passwordEncoder).matches("oldPass", "hashed_old_pw");
+        verify(passwordEncoder).encode("newPass");
+        assertThat(user.getPassword()).isEqualTo("hashed_new_pw");
+        verify(userMapper).updateById(user);
+    }
+
+    @Test
+    void shouldThrowWhenOldPasswordWrong() {
+        User user = buildUser(1L, "testuser", "hashed_old_pw");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(passwordEncoder.matches("wrongPwd", "hashed_old_pw")).thenReturn(false);
+
+        assertThatThrownBy(() -> userService.updatePassword(1L, "wrongPwd", "newPass"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("旧密码错误");
+    }
+
+    @Test
+    void shouldThrowWhenUpdatePasswordUserNotFound() {
+        when(userMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> userService.updatePassword(999L, "old", "new"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("用户不存在");
+    }
+
     // ==================== helpers ====================
 
     private User buildUser(Long id, String username, String password) {

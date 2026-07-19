@@ -57,6 +57,41 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         return new LoginResponse(user.getId(), user.getUsername(), token, user.getRole());
     }
 
+    public void updateProfile(Long userId, String username, String phone, String email) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        user.setUsername(username);
+        user.setPhone(phone);
+        user.setEmail(email);
+        updateById(user);
+    }
+
+    public void updateAvatar(Long userId, String avatar) {
+        if (avatar.length() > 600_000) {
+            throw new BizException("头像图片过大，最大 512KB");
+        }
+        User user = getById(userId);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        user.setAvatar(avatar);
+        updateById(user);
+    }
+
+    public void updatePassword(Long userId, String oldPassword, String newPassword) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        if (!passwordEncoder.matches(oldPassword, user.getPassword())) {
+            throw new BizException("旧密码错误");
+        }
+        user.setPassword(passwordEncoder.encode(newPassword));
+        updateById(user);
+    }
+
     public User getUserById(Long id) {
         User user = getById(id);
         if (user == null) {

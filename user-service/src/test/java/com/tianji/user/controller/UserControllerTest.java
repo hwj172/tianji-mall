@@ -20,6 +20,7 @@ import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -110,5 +111,72 @@ class UserControllerTest {
         mockMvc.perform(get("/api/user/info"))
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value(500));
+    }
+
+    // ==================== PUT /api/user/profile ====================
+
+    @Test
+    void shouldUpdateProfile() throws Exception {
+        mockMvc.perform(put("/api/user/profile")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"newname\",\"phone\":\"13900001111\",\"email\":\"new@test.com\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldRejectInvalidProfile() throws Exception {
+        // username 为空字符串（@Size(min=1) 不通过）
+        mockMvc.perform(put("/api/user/profile")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"\",\"phone\":\"139\",\"email\":\"invalid\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    // ==================== PUT /api/user/avatar ====================
+
+    @Test
+    void shouldUpdateAvatar() throws Exception {
+        mockMvc.perform(put("/api/user/avatar")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"avatar\":\"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldRejectEmptyAvatar() throws Exception {
+        mockMvc.perform(put("/api/user/avatar")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"avatar\":\"\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
+    }
+
+    // ==================== PUT /api/user/password ====================
+
+    @Test
+    void shouldUpdatePassword() throws Exception {
+        mockMvc.perform(put("/api/user/password")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"oldPassword\":\"old123456\",\"newPassword\":\"new123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldRejectShortNewPassword() throws Exception {
+        mockMvc.perform(put("/api/user/password")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"oldPassword\":\"old\",\"newPassword\":\"123\"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value(400));
     }
 }
