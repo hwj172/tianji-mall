@@ -5,6 +5,7 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.CartItemMapper;
 import com.tianji.mall.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,6 +39,9 @@ class CartServiceIntegrationTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     @Autowired
     private CartItemMapper cartItemMapper;

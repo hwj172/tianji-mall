@@ -5,12 +5,14 @@ import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.service.OrderService;
+import com.tianji.mall.service.RefundService;
 import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/order")
@@ -18,6 +20,7 @@ import java.util.List;
 public class OrderController {
 
     private final OrderService orderService;
+    private final RefundService refundService;
     private final JwtUtil jwtUtil;
 
     @PostMapping("/create")
@@ -45,6 +48,23 @@ public class OrderController {
                           @PathVariable("id") Long id) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         orderService.cancelOrder(userId, id);
+        return R.ok();
+    }
+
+    @PutMapping("/{id}/receive")
+    public R<Void> receive(@RequestHeader("Authorization") String authHeader,
+                           @PathVariable("id") Long id) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        orderService.confirmReceive(userId, id);
+        return R.ok();
+    }
+
+    @PostMapping("/{id}/refund")
+    public R<Void> refund(@RequestHeader("Authorization") String authHeader,
+                          @PathVariable("id") Long id,
+                          @RequestBody Map<String, String> body) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        refundService.requestRefund(userId, id, body.get("reason"));
         return R.ok();
     }
 

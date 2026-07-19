@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,9 @@ class ProductServiceIntegrationTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     @Autowired
     private ProductMapper productMapper;

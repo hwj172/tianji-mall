@@ -333,6 +333,49 @@ class OrderServiceTest {
                 .hasMessage("仅已发货订单可完成");
     }
 
+    // ==================== confirmReceive ====================
+
+    @Test
+    void shouldConfirmReceive() {
+        Order order = buildOrder(1L, 100L, 3); // SHIPPED
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        orderService.confirmReceive(100L, 1L);
+
+        assertThat(order.getStatus()).isEqualTo(4);
+        assertThat(order.getReceiveTime()).isNotNull();
+        verify(orderMapper).updateById(order);
+    }
+
+    @Test
+    void shouldThrowWhenConfirmReceiveNonExistentOrder() {
+        when(orderMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> orderService.confirmReceive(100L, 999L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("订单不存在");
+    }
+
+    @Test
+    void shouldThrowWhenConfirmReceiveForeignOrder() {
+        Order order = buildOrder(1L, 999L, 3);
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderService.confirmReceive(100L, 1L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("订单不存在");
+    }
+
+    @Test
+    void shouldThrowWhenConfirmReceiveNonShippedOrder() {
+        Order order = buildOrder(1L, 100L, 2); // PAID
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderService.confirmReceive(100L, 1L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("仅已发货订单可确认收货");
+    }
+
     private Address buildAddress(Long id, Long userId) {
         Address addr = new Address();
         addr.setId(id);

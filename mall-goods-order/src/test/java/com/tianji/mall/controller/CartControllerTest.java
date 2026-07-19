@@ -4,6 +4,7 @@ import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.dto.CartCheckRequest;
 import com.tianji.mall.dto.CartUpdateRequest;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.service.CartService;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,9 @@ class CartControllerTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     @BeforeEach
     void setUp() {

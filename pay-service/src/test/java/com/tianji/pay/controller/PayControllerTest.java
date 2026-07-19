@@ -99,6 +99,19 @@ class PayControllerTest {
                 .andExpect(jsonPath("$.data.orderId").value(10));
     }
 
+    // ==================== POST /api/pay/internal/refund ====================
+
+    @Test
+    void shouldRefundOrderInternal() throws Exception {
+        mockMvc.perform(post("/api/pay/internal/refund")
+                        .param("orderId", "10")
+                        .param("userId", "1")
+                        .param("amount", "99.90")
+                        .param("reason", "不想要了"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
     // ==================== exception scenarios ====================
 
     @Test

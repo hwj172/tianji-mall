@@ -2,6 +2,7 @@ package com.tianji.mall.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.ProductService;
 import org.junit.jupiter.api.Test;
@@ -41,6 +42,9 @@ class ProductControllerTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     // ==================== GET /api/product/list ====================
 

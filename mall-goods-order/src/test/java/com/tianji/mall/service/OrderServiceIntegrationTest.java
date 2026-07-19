@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.entity.*;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,6 +41,9 @@ class OrderServiceIntegrationTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     @Autowired
     private OrderMapper orderMapper;

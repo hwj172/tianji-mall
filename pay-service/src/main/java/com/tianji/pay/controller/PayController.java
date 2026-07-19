@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.Map;
 
 @Slf4j
@@ -54,5 +55,16 @@ public class PayController {
                             @PathVariable("orderId") Long orderId) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(payService.queryPayment(userId, orderId));
+    }
+
+    // ===== 内部端点（供其他服务 Feign 调用，无需 JWT 鉴权）=====
+
+    @PostMapping("/internal/refund")
+    public R<Void> refundOrder(@RequestParam("orderId") Long orderId,
+                               @RequestParam("userId") Long userId,
+                               @RequestParam("amount") BigDecimal amount,
+                               @RequestParam("reason") String reason) {
+        payService.refund(orderId, userId, amount, reason);
+        return R.ok();
     }
 }

@@ -4,6 +4,7 @@ import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
 import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
+import com.alipay.api.request.AlipayTradeRefundRequest;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
@@ -142,5 +143,37 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
             throw new BizException("支付记录不存在");
         }
         return payment;
+    }
+
+    @Transactional
+    public void refund(Long orderId, Long userId, BigDecimal refundAmount, String refundReason) {
+        Payment payment = getOne(new LambdaQueryWrapper<Payment>().eq(Payment::getOrderId, orderId));
+        if (payment == null || !payment.getUserId().equals(userId)) {
+            throw new BizException("支付记录不存在");
+        }
+        if (payment.getStatus() != 2) {
+            throw new BizException("订单未支付，无法退款");
+        }
+
+        String outRequestNo = "REFUND" + payment.getPaymentNo() + System.currentTimeMillis();
+        AlipayTradeRefundRequest request = new AlipayTradeRefundRequest();
+        request.setBizContent("{" +
+                "\"out_trade_no\":\"" + payment.getPaymentNo() + "\"," +
+                "\"refund_amount\":" + refundAmount + "," +
+                "\"out_request_no\":\"" + outRequestNo + "\"," +
+                "\"refund_reason\":\"" + (refundReason != null ? refundReason : "") + "\"" +
+                "}");
+        try {
+            com.alipay.api.response.AlipayTradeRefundResponse response = alipayClient.execute(request);
+            if (response.isSuccess()) {
+                log.info("退款成功: paymentNo={}, refundNo={}", payment.getPaymentNo(), outRequestNo);
+            } else {
+                log.error("退款失败: paymentNo={}, msg={}", payment.getPaymentNo(), response.getSubMsg());
+                throw new BizException("退款失败: " + response.getSubMsg());
+            }
+        } catch (AlipayApiException e) {
+            log.error("退款调用异常: orderId={}", orderId, e);
+            throw new BizException("退款调用失败");
+        }
     }
 }

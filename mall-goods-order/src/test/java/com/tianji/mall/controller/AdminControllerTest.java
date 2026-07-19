@@ -57,6 +57,9 @@ class AdminControllerTest {
     @MockBean
     private OrderService orderService;
 
+    @MockBean
+    private com.tianji.mall.feign.PayFeignClient payFeignClient;
+
     // ==================== GET /api/admin/category ====================
 
     @Test

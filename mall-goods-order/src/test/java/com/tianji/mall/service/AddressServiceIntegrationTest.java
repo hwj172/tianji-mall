@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.AddressRequest;
 import com.tianji.mall.entity.Address;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.AddressMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -35,6 +36,9 @@ class AddressServiceIntegrationTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     @Autowired
     private AddressMapper addressMapper;

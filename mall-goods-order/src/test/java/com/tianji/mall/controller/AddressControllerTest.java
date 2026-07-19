@@ -2,6 +2,7 @@ package com.tianji.mall.controller;
 
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.AddressRequest;
+import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.Address;
 import com.tianji.mall.service.AddressService;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,6 +46,9 @@ class AddressControllerTest {
 
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
+
+    @MockBean
+    private PayFeignClient payFeignClient;
 
     @BeforeEach
     void setUp() {

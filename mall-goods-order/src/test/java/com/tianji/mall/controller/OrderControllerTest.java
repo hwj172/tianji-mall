@@ -50,6 +50,9 @@ class OrderControllerTest {
     @MockBean
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
 
+    @MockBean
+    private com.tianji.mall.service.RefundService refundService;
+
     @BeforeEach
     void setUp() {
         when(jwtUtil.getUserId(anyString())).thenReturn(1L);
@@ -125,6 +128,33 @@ class OrderControllerTest {
 
         mockMvc.perform(put("/api/order/1/cancel")
                         .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== PUT /api/order/{id}/receive ====================
+
+    @Test
+    void shouldReceiveOrder() throws Exception {
+        doNothing().when(orderService).confirmReceive(1L, 1L);
+
+        mockMvc.perform(put("/api/order/1/receive")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== POST /api/order/{id}/refund ====================
+
+    @Test
+    void shouldRequestRefund() throws Exception {
+        when(refundService.requestRefund(eq(1L), eq(1L), eq("不想要了")))
+                .thenReturn(new com.tianji.mall.entity.Refund());
+
+        mockMvc.perform(post("/api/order/1/refund")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reason\":\"不想要了\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

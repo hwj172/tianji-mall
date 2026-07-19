@@ -253,6 +253,25 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         updateById(order);
     }
 
+    // ==================== 用户侧方法 ====================
+
+    @Transactional
+    public void confirmReceive(Long userId, Long orderId) {
+        Order order = getById(orderId);
+        if (order == null || !order.getUserId().equals(userId)) {
+            throw new BizException("订单不存在");
+        }
+        if (order.getStatus() != 3) {
+            throw new BizException("仅已发货订单可确认收货");
+        }
+        order.setStatus(4); // 已完成
+        order.setReceiveTime(LocalDateTime.now());
+        updateById(order);
+
+        // 发送订单完成事件
+        publishOrderEvent(order, "COMPLETED");
+    }
+
     private void publishOrderEvent(Order order, String eventType) {
         try {
             OrderEvent event = new OrderEvent(
