@@ -31,6 +31,19 @@ mybatis-plus:
     db-config:
       id-type: auto
 
+# ==================== Knife4j API 文档 ====================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
 alipay:
   gateway-url: https://openapi-sandbox.dl.alipaydev.com/gateway.do
   notify-url: https://t8e56477.natappfree.cc/api/pay/notify

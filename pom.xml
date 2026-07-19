@@ -47,6 +47,9 @@
 
         <!-- 支付宝 SDK -->
         <alipay-sdk.version>4.39.223.ALL</alipay-sdk.version>
+
+        <!-- API 文档 -->
+        <knife4j.version>4.5.0</knife4j.version>
     </properties>
 
     <!-- ==================== 依赖版本管理 ==================== -->
@@ -174,6 +177,13 @@
                 <groupId>org.projectlombok</groupId>
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
+            </dependency>
+
+            <!-- Knife4j API 文档（Spring Boot 3.x Jakarta 版本） -->
+            <dependency>
+                <groupId>com.github.xiaoymin</groupId>
+                <artifactId>knife4j-openapi3-jakarta-spring-boot-starter</artifactId>
+                <version>${knife4j.version}</version>
             </dependency>
 
             <!-- 支付宝沙盒 SDK -->

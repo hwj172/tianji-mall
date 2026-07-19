@@ -31,6 +31,19 @@ mybatis-plus:
     db-config:
       id-type: auto
 
+# ==================== Knife4j API 文档 ====================
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    tags-sorter: alpha
+    operations-sorter: alpha
+  api-docs:
+    path: /v3/api-docs
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
 deepseek:
   api-url: https://api.deepseek.com/v1/chat/completions
   model: deepseek-chat
