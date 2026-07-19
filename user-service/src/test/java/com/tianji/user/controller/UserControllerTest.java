@@ -69,7 +69,7 @@ class UserControllerTest {
 
     @Test
     void shouldLoginSuccessfully() throws Exception {
-        LoginResponse resp = new LoginResponse(1L, "testuser", "mock-jwt-token");
+        LoginResponse resp = new LoginResponse(1L, "testuser", "mock-jwt-token", "user");
         when(userService.login("testuser", "123456")).thenReturn(resp);
 
         mockMvc.perform(post("/api/user/login")

@@ -27,6 +27,9 @@ import java.util.List;
 @Component
 public class AuthGlobalFilter implements GlobalFilter, Ordered {
 
+    /** 管理员路径前缀，需要 admin 角色 */
+    private static final String ADMIN_PATH_PREFIX = "/api/admin/";
+
     /** 不需要鉴权的公开路径 */
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/user/login",
@@ -90,9 +93,21 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            // 将 userId 写入请求头，下游服务可直接使用
+            // 将 userId 和 role 写入请求头，下游服务可直接使用
             String userId = claims.getSubject();
+            String role = (String) claims.get("role");
+            if (role == null || role.isEmpty()) {
+                role = "user";
+            }
             exchange.getRequest().mutate().header("X-User-Id", userId);
+            exchange.getRequest().mutate().header("X-User-Role", role);
+
+            // admin 路径：必须有 admin 角色，否则返回 403
+            if (path.startsWith(ADMIN_PATH_PREFIX) && !"admin".equals(role)) {
+                log.warn("非管理员尝试访问 admin 路径: {}, role={}", path, role);
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
         } catch (ExpiredJwtException e) {
             log.warn("JWT 已过期: {}", path);
             exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);

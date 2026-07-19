@@ -52,6 +52,9 @@ CREATE TABLE IF NOT EXISTS `order` (
     status INT,
     pay_type INT,
     address_id BIGINT,
+    logistics_company VARCHAR(64),
+    tracking_number  VARCHAR(64),
+    receive_time     TIMESTAMP,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -65,4 +68,17 @@ CREATE TABLE IF NOT EXISTS order_item (
     quantity INT,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS refund (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id        BIGINT           NOT NULL,
+    user_id         BIGINT           NOT NULL,
+    amount          DECIMAL(10,2)    NOT NULL,
+    reason          VARCHAR(500)     NOT NULL,
+    status          VARCHAR(20)      NOT NULL DEFAULT 'processing',
+    alipay_refund_no VARCHAR(64),
+    fail_reason     VARCHAR(500),
+    created_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
 );

@@ -53,8 +53,8 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             throw new BizException("用户名或密码错误");
         }
 
-        String token = jwtUtil.generateToken(user.getId(), user.getUsername());
-        return new LoginResponse(user.getId(), user.getUsername(), token);
+        String token = jwtUtil.generateToken(user.getId(), user.getUsername(), user.getRole());
+        return new LoginResponse(user.getId(), user.getUsername(), token, user.getRole());
     }
 
     public User getUserById(Long id) {

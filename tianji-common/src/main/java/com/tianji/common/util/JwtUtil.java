@@ -26,10 +26,15 @@ public class JwtUtil {
     }
 
     public String generateToken(Long userId, String username) {
+        return generateToken(userId, username, "user");
+    }
+
+    public String generateToken(Long userId, String username, String role) {
         Date now = new Date();
         return Jwts.builder()
                 .subject(userId.toString())
                 .claim("username", username)
+                .claim("role", role == null ? "user" : role)
                 .issuedAt(now)
                 .expiration(new Date(now.getTime() + expiration))
                 .signWith(key)
@@ -42,6 +47,12 @@ public class JwtUtil {
                 .build()
                 .parseSignedClaims(token)
                 .getPayload();
+    }
+
+    public String getRole(String token) {
+        Claims claims = parseToken(token);
+        String role = (String) claims.get("role");
+        return role != null ? role : "user";
     }
 
     public Long getUserId(String token) {

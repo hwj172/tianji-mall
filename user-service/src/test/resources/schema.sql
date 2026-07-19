@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `user` (
     phone VARCHAR(20),
     email VARCHAR(128),
     avatar VARCHAR(512),
+    role VARCHAR(20) DEFAULT 'user',
     status INT DEFAULT 1,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP

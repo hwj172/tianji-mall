@@ -92,6 +92,16 @@ class AuthGlobalFilterTest {
                 .compact();
     }
 
+    private String createTokenWithRole(String userId, String role) {
+        return Jwts.builder()
+                .subject(userId)
+                .claim("role", role)
+                .issuedAt(new Date())
+                .expiration(new Date(System.currentTimeMillis() + 3600_000))
+                .signWith(KEY)
+                .compact();
+    }
+
     private String createExpiredToken(String userId) {
         return Jwts.builder()
                 .subject(userId)
@@ -261,7 +271,7 @@ class AuthGlobalFilterTest {
     class JwtAuth {
 
         @Test
-        @DisplayName("有效 JWT 放行并注入 X-User-Id 请求头")
+        @DisplayName("有效 JWT 放行并注入 X-User-Id 和 X-User-Role 请求头")
         void shouldPassThroughWithValidJwt() {
             String token = createValidToken("12345");
             HttpHeaders headers = new HttpHeaders();
@@ -273,11 +283,11 @@ class AuthGlobalFilterTest {
             verify(chain).filter(exchange);
             verify(response, never()).setStatusCode(any());
 
-            // 验证 X-User-Id 注入
+            // 验证 X-User-Id 和 X-User-Role 注入
             ServerHttpRequest req = exchange.getRequest();
-            verify(req).mutate();
             ServerHttpRequest.Builder builder = req.mutate();
             verify(builder).header("X-User-Id", "12345");
+            verify(builder).header("X-User-Role", "user");
         }
 
         @Test
@@ -450,6 +460,72 @@ class AuthGlobalFilterTest {
 
             verify(chain).filter(exchange);
             verify(response, never()).setStatusCode(any());
+        }
+    }
+
+    // ==================== Admin 路径鉴权 ====================
+
+    @Nested
+    @DisplayName("/api/admin/** — admin 角色鉴权")
+    class AdminPaths {
+
+        @Test
+        @DisplayName("admin 角色访问 /api/admin/product 放行并注入 X-User-Role")
+        void shouldPassThroughWithAdminRole() {
+            String token = createTokenWithRole("1", "admin");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/admin/product", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+            // 验证 X-User-Id 和 X-User-Role 注入
+            ServerHttpRequest req = exchange.getRequest();
+            ServerHttpRequest.Builder builder = req.mutate();
+            verify(builder).header("X-User-Id", "1");
+            verify(builder).header("X-User-Role", "admin");
+        }
+
+        @Test
+        @DisplayName("普通 user 角色访问 /api/admin/product 返回 403")
+        void shouldReturn403WithUserRole() {
+            String token = createTokenWithRole("1", "user");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/admin/product", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(response).setStatusCode(HttpStatus.FORBIDDEN);
+            verify(chain, never()).filter(any());
+        }
+
+        @Test
+        @DisplayName("无 role claim 的 JWT 访问 /api/admin/product 返回 403（默认 role=user）")
+        void shouldReturn403WithNoRoleClaim() {
+            String token = createValidToken("1");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/admin/product", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(response).setStatusCode(HttpStatus.FORBIDDEN);
+        }
+
+        @Test
+        @DisplayName("/api/admin/category 同属 admin 路径，user 角色返回 403")
+        void shouldReturn403ForAdminCategory() {
+            String token = createTokenWithRole("1", "user");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/admin/category", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(response).setStatusCode(HttpStatus.FORBIDDEN);
         }
     }
 }

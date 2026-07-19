@@ -19,6 +19,7 @@ public class User {
     private String phone;
     private String email;
     private String avatar;
+    private String role;
     private Integer status;
 
     private LocalDateTime createTime;
