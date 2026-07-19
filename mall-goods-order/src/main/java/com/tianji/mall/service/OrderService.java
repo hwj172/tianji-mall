@@ -136,6 +136,18 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             // 11. 发送订单创建事件
             publishOrderEvent(order, "CREATED");
 
+            // 12. 发送 30 分钟超时延迟消息（best-effort）
+            try {
+                org.springframework.messaging.Message<String> timeoutMsg =
+                        org.springframework.messaging.support.MessageBuilder
+                                .withPayload(order.getId().toString())
+                                .setHeader("DELAY", "16")
+                                .build();
+                rocketMQTemplate.syncSend("order-topic:TIMEOUT_CHECK", timeoutMsg, 3000);
+            } catch (Exception e) {
+                log.error("发送超时延迟消息失败: orderId={}", order.getId(), e);
+            }
+
             return order;
 
         } catch (InterruptedException e) {
@@ -251,6 +263,28 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setStatus(4); // 已完成
         order.setReceiveTime(LocalDateTime.now());
         updateById(order);
+    }
+
+    // ==================== 超时取消 ====================
+
+    @Transactional
+    public void cancelOrderByTimeout(Long orderId) {
+        Order order = getById(orderId);
+        if (order == null || order.getStatus() != 1) {
+            return; // 不在待付款状态，无需处理
+        }
+        order.setStatus(5); // 已取消
+        updateById(order);
+
+        // 恢复库存
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
+        for (OrderItem item : items) {
+            productService.restoreStock(item.getProductId(), item.getQuantity());
+        }
+
+        // 发送订单取消事件
+        publishOrderEvent(order, "CANCELLED");
     }
 
     // ==================== 用户侧方法 ====================
