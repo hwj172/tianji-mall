@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS product (
     description TEXT,
     price DECIMAL(10,2),
     stock INT,
+    sales INT DEFAULT 0,
     category_id BIGINT,
     images VARCHAR(1024),
     status INT DEFAULT 1,
@@ -81,4 +82,52 @@ CREATE TABLE IF NOT EXISTS refund (
     fail_reason     VARCHAR(500),
     created_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS review (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
+    product_id  BIGINT NOT NULL,
+    order_id    BIGINT NOT NULL,
+    rating      TINYINT NOT NULL,
+    content     VARCHAR(1000),
+    images      VARCHAR(2048),
+    status      TINYINT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_user_order_product UNIQUE (user_id, order_id, product_id)
+);
+
+CREATE TABLE IF NOT EXISTS coupon (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name             VARCHAR(128) NOT NULL,
+    discount_type    VARCHAR(20)  NOT NULL,
+    discount_value   DECIMAL(10,2) NOT NULL,
+    min_order_amount DECIMAL(10,2) DEFAULT 0.00,
+    total_quantity   INT NOT NULL,
+    used_quantity    INT DEFAULT 0,
+    status           TINYINT DEFAULT 1,
+    start_time       TIMESTAMP NOT NULL,
+    end_time         TIMESTAMP NOT NULL,
+    create_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS user_coupon (
+    id            BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id       BIGINT NOT NULL,
+    coupon_id     BIGINT NOT NULL,
+    status        VARCHAR(20) DEFAULT 'UNUSED',
+    used_time     TIMESTAMP,
+    used_order_id BIGINT,
+    create_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS favorite (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
+    product_id  BIGINT NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_product (user_id, product_id)
 );

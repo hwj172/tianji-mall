@@ -6,8 +6,9 @@ USE tianji_mall;
 
 -- ==================== 测试用户 ====================
 -- 密码: 123456 (BCrypt)
-INSERT INTO `user` (`id`, `username`, `password`, `phone`, `email`, `status`) VALUES
-(1, 'testuser', '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13800138000', 'test@tianji.com', 1);
+INSERT INTO `user` (`id`, `username`, `password`, `phone`, `email`, `role`, `status`) VALUES
+(1, 'testuser', '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13800138000', 'test@tianji.com', 'user', 1),
+(2, 'admin',    '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13900139000', 'admin@tianji.com',   'admin', 1);
 
 -- ==================== 商品分类 ====================
 INSERT INTO `category` (`id`, `name`, `parent_id`, `sort`) VALUES
