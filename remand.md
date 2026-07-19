@@ -20,10 +20,10 @@
 
 - 前端商城页面（仿淘宝用户端）
 - 开发调试工具：IDEA、Postman
-- 内网穿透工具 Ngrok/Natapp
+- 内网穿透工具 Natapp
   - 暴露 pay-service 支付宝异步回调地址
 
-### Linux 虚拟机（桥接静态IP）
+### Linux 虚拟机（NAT静态IP）
 
 #### 容器中间件组（Docker Compose 启动）
 
@@ -52,17 +52,27 @@
 
 ## 网络通信链路
 
-1. Windows 前端 → 虚拟机 Gateway 网关
+1. Windows 前端 → 本机 Gateway 网关
 2. IDEA 本地调试 → 远程连接虚拟机 Nacos、MySQL
 3. 虚拟机内部微服务互通：Nacos 注册发现 + OpenFeign
 4. MCP Client(ai-chat-service) ↔ MCP Server(mcp-server) 跨服务调用
-5. 支付宝沙盒 → Ngrok(Windows) → 转发到虚拟机 pay-service 回调接口
+5. 支付宝沙盒 → natapp(Windows) → 转发到本机 pay-service 回调接口
 
 ---
 
 ## 部署执行流程
 
-1. Linux 虚拟机安装 Docker、Docker Compose
+1. Linux 虚拟机安装 Docker（    
+   failed to dial "/run/containerd/containerd.sock": context deadline exceeded
+
+为什么：Docker 依赖 containerd 作为容器运行时。docker.service 启动 → dockerd 尝试连接 containerd.sock → containerd 进程不存在/socket 未就绪 → 超时退出。然后 systemd
+又自动重试，进入死循环。
+
+以后 VM 重启后的正确操作：
+
+systemctl start containerd   # 先拉起运行时
+systemctl start docker        # 再拉 Docker  ）
+、Docker Compose
 2. Compose 一键启动全部中间件
 3. Java 项目打包 jar，制作 Docker 镜像，启动 6 个微服务容器
 4. Windows 启动内网穿透，配置支付宝 notify 回调地址
