@@ -62,7 +62,7 @@ tianji-mall (父 POM)
 ├── tianji-common          # 公共模块（jar，无启动类）
 ├── gateway                # API 网关 — 8080
 ├── user-service           # 用户服务 — 8081
-├── mall-goods-order       # 商城核心（商品+购物车+订单+地址）— 8082
+├── mall-goods-order       # 商城核心（商品+购物车+订单+地址+退款+后台管理）— 8082
 ├── pay-service            # 支付宝沙盒支付 — 8083
 ├── mcp-server             # 工具网关（REST API，非 MCP 协议）— 8084
 └── ai-chat-service        # AI 智能导购（DeepSeek + 工具调用）— 8085
@@ -95,14 +95,14 @@ mvn package -DskipTests
 | tianji-common | Lombok, Jackson, Jakarta Validation, jjwt 0.12.6 — **无 spring-boot-maven-plugin** |
 | gateway | spring-cloud-starter-gateway, Nacos, LoadBalancer, jjwt, **spring-cloud-alibaba-sentinel-gateway** — **不是 spring-boot-starter-web**, **test:** spring-boot-starter-test + reactor-test |
 | user-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, jjwt 0.12.6, **Sentinel**, **test:** spring-boot-starter-test + H2 |
-| mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）+ **RocketMQ**（订单事件异步消息）+ **Sentinel**, **test:** spring-boot-starter-test + H2 |
+| mall-goods-order | 同 user-service + OpenFeign + **spring-boot-starter-data-redis + Redisson 3.32.0 + commons-pool2**（Redis 缓存 + 分布式锁）+ **RocketMQ**（订单事件异步消息 + 超时延迟取消）+ **Sentinel**, **test:** spring-boot-starter-test + H2 |
 | pay-service | 同 user-service + OpenFeign + LoadBalancer + 支付宝 SDK（需手动安装到本地仓库，见父 POM 注释）+ **Sentinel**, **test:** spring-boot-starter-test + H2 |
 | mcp-server | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign + LoadBalancer, **Sentinel**, **test:** spring-boot-starter-test + H2 |
 | ai-chat-service | spring-boot-starter-web, MyBatis-Plus, MySQL, Druid, Nacos, OpenFeign, LoadBalancer, jjwt + DeepSeek API（RestTemplate）+ milvus-sdk-java 2.3.4 + SiliconFlow Embedding（RestTemplate）+ **Sentinel**, **test:** spring-boot-starter-test |
 
 ## 测试约定
 
-**当前测试总数：178 (Gateway 30 + Controller 42 + Service 集成 26 + Service 单元 80)，8 个模块全覆盖。**
+**当前测试总数：238 (Gateway 30 + Controller 50 + Service 集成 26 + Service 单元 129 + Consumer 3)，8 个模块全覆盖。**
 
 ### 测试分层
 
@@ -149,7 +149,8 @@ mvn package -DskipTests
 | mall-goods-order | ProductControllerTest | 5 | 公开端点（无需 JWT） + BizException + 内部回填端点 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
-| mall-goods-order | OrderControllerTest | 9 | create/list/detail/cancel + @Valid + 内部端点 + 缺 Auth |
+| mall-goods-order | OrderControllerTest | 11 | create/list/detail/cancel/receive/refund + @Valid + 内部端点 + 缺 Auth |
+| mall-goods-order | AdminControllerTest | 23 | category/product/order CRUD + 非 admin 拒绝 |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
 | mcp-server | ToolControllerTest | 4 | JWT 手动提取 + 工具路由 + 未知工具 + 未授权 |
 | gateway | AuthGlobalFilterTest | 26 | 公开路径/内部路径/JWT 鉴权/非 API 路径/边界 + Mock WebFlux |
@@ -170,7 +171,7 @@ mvn package -DskipTests
 - **分布式锁**：`OrderService.createOrder` 使用 Redisson `getMultiLock`（锁 key 排序防死锁，waitTime=3s / leaseTime=10s），锁内重新读取库存。`cancelOrder` 恢复库存无并发竞争，不加锁
 - **商品缓存**：`ProductService.getProductById` / `getProductPage` 使用 `@Cacheable`，`deductStock` / `restoreStock` 使用 `@CacheEvict`。序列化器 `GenericJackson2JsonRedisSerializer`，TTL 30min
 - **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED），`OrderEventConsumer` 消费并留日志。异常不阻塞主流程。
-- **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient`）
+- **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient` + `@MockBean PayFeignClient`）
 - **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）。存量回填走 `POST /api/product/internal/sync-vectors`（`syncAllVectors`，只同步 status=1 商品，返回 `{total, success, failed}` 统计，Milvus upsert 幂等可重复触发）
 - **RAG 管道**：`AiChatService.chat` 预检索 — 用户消息 → SiliconFlow Embedding（BAAI/bge-large-zh-v1.5, 1024 维）→ Milvus COSINE Top-5 → Feign 批量查商品 → 注入 System Prompt；RAG 失败降级为空列表，工具调用保留作 fallback。`VectorSearchService` 启动时自动建 collection（product_vectors, IVF_FLAT），Milvus 不可用时所有方法降级不抛异常
 - **Embedding**：**禁止引入 Spring AI**（2.0.x 需要 Spring Boot 4 / Framework 7，与本项目 Boot 3.2.5 运行时不兼容，编译能过但启动报 `ClassNotFoundException: RetryTemplate`）。Embedding 由 `EmbeddingClient`（RestTemplate 直连 SiliconFlow `/v1/embeddings`，OpenAI 兼容）实现
@@ -186,6 +187,13 @@ mvn package -DskipTests
 - **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
 - **Sentinel**：Gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配），业务模块使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。版本由父 POM dependencyManagement 指定（2023.0.1.0）。测试中 `spring.cloud.sentinel.enabled: false`。规则全部通过 Dashboard 动态配置，不在代码中预设。
 - **SkyWalking**：纯 javaagent 挂载，零代码依赖。Agent 下载和 IDEA VM Options 见 `skywalking/README.md`。
+- **管理员鉴权**：User 表 `role` 字段（user/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
+- **后台管理**：`AdminController`（`/api/admin`）提供分类/商品/订单 CRUD。分类管理含树形结构查询 + 子分类保护（有子分类不可删）+ 商品数量检查。商品管理含分页查询/创建/更新/软删除（status=0）。订单管理含分页查询/发货（status 2→3）/完成（status 3→4）。
+- **订单状态**：1=待付款、2=已付款、3=已发货、4=已完成、5=已取消。退款状态独立在 `refund` 表（processing/success/fail）。
+- **订单收货**：用户侧 `PUT /api/order/{id}/receive`（`OrderService.confirmReceive`）——校验所有权 + status=3，设 status=4 + receiveTime。
+- **退款**：全单退款走支付宝 `AlipayTradeRefundRequest`。`RefundService.requestRefund()` 校验订单（status=2 + 所有权）+ 防重复，`PayFeignClient` 调用 pay-service 内部端点 `POST /api/pay/internal/refund` 执行实际退款。
+- **超时取消**：下单时 RocketMQ 延迟消息（delayLevel 16=30min，tag:TIMEOUT_CHECK），`OrderTimeoutConsumer` 消费检查订单状态，PENDING→CANCELLED + 恢复库存。best-effort（发送失败不阻塞主流程）。
+- **PayFeignClient**：mall-goods-order → pay-service Feign 调用（退款），测试中需 `@MockBean PayFeignClient`。
 
 ## 行为准则
 
