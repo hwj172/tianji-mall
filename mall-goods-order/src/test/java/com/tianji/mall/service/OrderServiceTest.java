@@ -248,6 +248,91 @@ class OrderServiceTest {
 
     // ==================== helpers ====================
 
+    // ==================== shipOrder ====================
+
+    @Test
+    void shouldShipOrder() {
+        Order order = buildOrder(1L, 100L, 2); // PAID
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        orderService.shipOrder(1L, "顺丰", "SF123456");
+
+        assertThat(order.getStatus()).isEqualTo(3);
+        assertThat(order.getLogisticsCompany()).isEqualTo("顺丰");
+        assertThat(order.getTrackingNumber()).isEqualTo("SF123456");
+        verify(orderMapper).updateById(order);
+    }
+
+    @Test
+    void shouldThrowWhenShipNonExistentOrder() {
+        when(orderMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> orderService.shipOrder(999L, "顺丰", "SF123"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("订单不存在");
+    }
+
+    @Test
+    void shouldThrowWhenShipNonPaidOrder() {
+        Order order = buildOrder(1L, 100L, 1); // PENDING
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderService.shipOrder(1L, "顺丰", "SF123"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("仅已付款订单可发货");
+    }
+
+    // ==================== getOrderListAdmin ====================
+
+    @Test
+    void shouldGetOrderListForAdmin() {
+        @SuppressWarnings("unchecked")
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> mockPage =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
+        when(orderMapper.selectPage(any(com.baomidou.mybatisplus.extension.plugins.pagination.Page.class),
+                any(LambdaQueryWrapper.class))).thenReturn(mockPage);
+
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> result =
+                orderService.getOrderListAdmin(1, 10, null);
+
+        assertThat(result).isNotNull();
+        verify(orderMapper).selectPage(any(com.baomidou.mybatisplus.extension.plugins.pagination.Page.class),
+                any(LambdaQueryWrapper.class));
+    }
+
+    // ==================== completeOrder ====================
+
+    @Test
+    void shouldCompleteOrder() {
+        Order order = buildOrder(1L, 100L, 3); // SHIPPED
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        orderService.completeOrder(1L);
+
+        assertThat(order.getStatus()).isEqualTo(4);
+        assertThat(order.getReceiveTime()).isNotNull();
+        verify(orderMapper).updateById(order);
+    }
+
+    @Test
+    void shouldThrowWhenCompleteNonExistentOrder() {
+        when(orderMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> orderService.completeOrder(999L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("订单不存在");
+    }
+
+    @Test
+    void shouldThrowWhenCompleteNonShippedOrder() {
+        Order order = buildOrder(1L, 100L, 2); // PAID, not SHIPPED
+        when(orderMapper.selectById(1L)).thenReturn(order);
+
+        assertThatThrownBy(() -> orderService.completeOrder(1L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("仅已发货订单可完成");
+    }
+
     private Address buildAddress(Long id, Long userId) {
         Address addr = new Address();
         addr.setId(id);

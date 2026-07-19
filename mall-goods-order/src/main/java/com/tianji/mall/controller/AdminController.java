@@ -1,10 +1,13 @@
 package com.tianji.mall.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.result.R;
 import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
+import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.CategoryService;
+import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -21,6 +24,7 @@ public class AdminController {
 
     private final CategoryService categoryService;
     private final ProductService productService;
+    private final OrderService orderService;
 
     // ==================== 分类管理 ====================
 
@@ -89,6 +93,29 @@ public class AdminController {
     @DeleteMapping("/product/{id}")
     public R<Void> deleteProduct(@PathVariable("id") Long id) {
         productService.deleteProduct(id);
+        return R.ok();
+    }
+
+    // ==================== 订单管理 ====================
+
+    @GetMapping("/order")
+    public R<Page<Order>> listOrders(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "status", required = false) Integer status) {
+        return R.ok(orderService.getOrderListAdmin(page, size, status));
+    }
+
+    @PutMapping("/order/{id}/ship")
+    public R<Void> shipOrder(@PathVariable("id") Long id,
+                              @RequestBody Map<String, String> body) {
+        orderService.shipOrder(id, body.get("logisticsCompany"), body.get("trackingNumber"));
+        return R.ok();
+    }
+
+    @PutMapping("/order/{id}/complete")
+    public R<Void> completeOrder(@PathVariable("id") Long id) {
+        orderService.completeOrder(id);
         return R.ok();
     }
 }

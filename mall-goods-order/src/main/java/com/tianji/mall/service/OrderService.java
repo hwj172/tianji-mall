@@ -214,6 +214,45 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         publishOrderEvent(order, "PAID");
     }
 
+    // ==================== 后台管理方法 ====================
+
+    @Transactional
+    public void shipOrder(Long orderId, String logisticsCompany, String trackingNumber) {
+        Order order = getById(orderId);
+        if (order == null) {
+            throw new BizException("订单不存在");
+        }
+        if (order.getStatus() != 2) {
+            throw new BizException("仅已付款订单可发货");
+        }
+        order.setStatus(3); // 已发货
+        order.setLogisticsCompany(logisticsCompany);
+        order.setTrackingNumber(trackingNumber);
+        updateById(order);
+    }
+
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> getOrderListAdmin(
+            int page, int size, Integer status) {
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
+                .eq(status != null, Order::getStatus, status)
+                .orderByDesc(Order::getCreateTime);
+        return page(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size), wrapper);
+    }
+
+    @Transactional
+    public void completeOrder(Long orderId) {
+        Order order = getById(orderId);
+        if (order == null) {
+            throw new BizException("订单不存在");
+        }
+        if (order.getStatus() != 3) {
+            throw new BizException("仅已发货订单可完成");
+        }
+        order.setStatus(4); // 已完成
+        order.setReceiveTime(LocalDateTime.now());
+        updateById(order);
+    }
+
     private void publishOrderEvent(Order order, String eventType) {
         try {
             OrderEvent event = new OrderEvent(

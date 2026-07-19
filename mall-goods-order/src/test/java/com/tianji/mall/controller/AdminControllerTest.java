@@ -3,8 +3,10 @@ package com.tianji.mall.controller;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.entity.Category;
+import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.CategoryService;
+import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +53,9 @@ class AdminControllerTest {
 
     @MockBean
     private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
+
+    @MockBean
+    private OrderService orderService;
 
     // ==================== GET /api/admin/category ====================
 
@@ -244,6 +249,84 @@ class AdminControllerTest {
                         .header("X-User-Role", "admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== GET /api/admin/order ====================
+
+    @Test
+    void shouldListOrders() throws Exception {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
+        page.setTotal(0);
+        when(orderService.getOrderListAdmin(1, 10, null)).thenReturn(page);
+
+        mockMvc.perform(get("/api/admin/order")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.total").value(0));
+    }
+
+    @Test
+    void shouldListOrdersWithStatusFilter() throws Exception {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
+        page.setTotal(5);
+        when(orderService.getOrderListAdmin(1, 10, 2)).thenReturn(page);
+
+        mockMvc.perform(get("/api/admin/order")
+                        .header("X-User-Role", "admin")
+                        .param("status", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(5));
+    }
+
+    // ==================== PUT /api/admin/order/{id}/ship ====================
+
+    @Test
+    void shouldShipOrder() throws Exception {
+        mockMvc.perform(put("/api/admin/order/1/ship")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"logisticsCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldReturnErrorWhenShipNonExistentOrder() throws Exception {
+        doThrow(new BizException("订单不存在"))
+                .when(orderService).shipOrder(eq(Long.valueOf(999)), any(), any());
+
+        mockMvc.perform(put("/api/admin/order/999/ship")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"logisticsCompany\":\"顺丰\",\"trackingNumber\":\"SF123\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.message").value("订单不存在"));
+    }
+
+    // ==================== PUT /api/admin/order/{id}/complete ====================
+
+    @Test
+    void shouldCompleteOrder() throws Exception {
+        mockMvc.perform(put("/api/admin/order/1/complete")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldReturnErrorWhenCompleteNonExistentOrder() throws Exception {
+        doThrow(new BizException("订单不存在"))
+                .when(orderService).completeOrder(eq(Long.valueOf(999)));
+
+        mockMvc.perform(put("/api/admin/order/999/complete")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.message").value("订单不存在"));
     }
 
     // ==================== auth: non-admin rejection ====================

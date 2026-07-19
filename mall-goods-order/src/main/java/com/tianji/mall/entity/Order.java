@@ -20,6 +20,9 @@ public class Order {
     private Integer status;
     private Integer payType;
     private Long addressId;
+    private String logisticsCompany;
+    private String trackingNumber;
+    private LocalDateTime receiveTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }
