@@ -23,6 +23,10 @@ spring:
       transport:
         dashboard: 192.168.150.11:8858
       eager: true
+  servlet:
+    multipart:
+      max-file-size: 5MB
+      max-request-size: 20MB
 
 mybatis-plus:
   configuration:
@@ -30,6 +34,9 @@ mybatis-plus:
   global-config:
     db-config:
       id-type: auto
+
+file:
+  upload-dir: ./uploads
 
 # ==================== Knife4j API 文档 ====================
 springdoc:

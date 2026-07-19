@@ -13,6 +13,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
+import org.springframework.web.multipart.MultipartFile;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -29,12 +30,14 @@ class UserServiceTest {
     private PasswordEncoder passwordEncoder;
     @Mock
     private JwtUtil jwtUtil;
+    @Mock
+    private FileStorageService fileStorageService;
 
     private UserService userService;
 
     @BeforeEach
     void setUp() {
-        userService = new UserService(passwordEncoder, jwtUtil);
+        userService = new UserService(passwordEncoder, jwtUtil, fileStorageService);
         ReflectionTestUtils.setField(userService, "baseMapper", userMapper);
     }
 
@@ -126,29 +129,26 @@ class UserServiceTest {
     @Test
     void shouldUpdateAvatar() {
         User user = buildUser(1L, "testuser", "pw");
+        MultipartFile file = mock(MultipartFile.class);
+        when(file.isEmpty()).thenReturn(false);
+        when(file.getOriginalFilename()).thenReturn("avatar.jpg");
+        when(fileStorageService.saveFile(file)).thenReturn("/uploads/avatar_abc.jpg");
         when(userMapper.selectById(1L)).thenReturn(user);
         when(userMapper.updateById(any(User.class))).thenReturn(1);
 
-        userService.updateAvatar(1L, "data:image/png;base64,abc123");
+        String url = userService.updateAvatar(1L, file);
 
-        assertThat(user.getAvatar()).isEqualTo("data:image/png;base64,abc123");
+        assertThat(url).isEqualTo("/uploads/avatar_abc.jpg");
+        assertThat(user.getAvatar()).isEqualTo("/uploads/avatar_abc.jpg");
         verify(userMapper).updateById(user);
     }
 
     @Test
-    void shouldThrowWhenAvatarTooLarge() {
-        String huge = "x".repeat(600_001);
-
-        assertThatThrownBy(() -> userService.updateAvatar(1L, huge))
-                .isInstanceOf(BizException.class)
-                .hasMessageContaining("过大");
-    }
-
-    @Test
     void shouldThrowWhenUpdateAvatarUserNotFound() {
+        MultipartFile file = mock(MultipartFile.class);
         when(userMapper.selectById(999L)).thenReturn(null);
 
-        assertThatThrownBy(() -> userService.updateAvatar(999L, "data:image/png;base64,abc"))
+        assertThatThrownBy(() -> userService.updateAvatar(999L, file))
                 .isInstanceOf(BizException.class)
                 .hasMessage("用户不存在");
     }

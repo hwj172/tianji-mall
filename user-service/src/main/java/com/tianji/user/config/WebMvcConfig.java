@@ -1,27 +1,18 @@
-package com.tianji.mall.config;
+package com.tianji.user.config;
 
-import com.tianji.mall.interceptor.AdminInterceptor;
-import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
+/**
+ * 配置上传文件的静态资源映射。
+ */
 @Configuration
-@RequiredArgsConstructor
 public class WebMvcConfig implements WebMvcConfigurer {
-
-    private final AdminInterceptor adminInterceptor;
 
     @Value("${file.upload-dir:./uploads}")
     private String uploadDir;
-
-    @Override
-    public void addInterceptors(InterceptorRegistry registry) {
-        registry.addInterceptor(adminInterceptor)
-                .addPathPatterns("/api/admin/**");
-    }
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {

@@ -12,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Service
 @RequiredArgsConstructor
@@ -19,6 +20,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
 
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
+    private final FileStorageService fileStorageService;
 
     public void register(RegisterRequest req) {
         // 检查用户名唯一
@@ -68,16 +70,15 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         updateById(user);
     }
 
-    public void updateAvatar(Long userId, String avatar) {
-        if (avatar.length() > 600_000) {
-            throw new BizException("头像图片过大，最大 512KB");
-        }
+    public String updateAvatar(Long userId, MultipartFile file) {
         User user = getById(userId);
         if (user == null) {
             throw new BizException("用户不存在");
         }
-        user.setAvatar(avatar);
+        String url = fileStorageService.saveFile(file);
+        user.setAvatar(url);
         updateById(user);
+        return url;
     }
 
     public void updatePassword(Long userId, String oldPassword, String newPassword) {

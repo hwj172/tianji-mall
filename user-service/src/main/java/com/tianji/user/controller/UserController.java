@@ -8,6 +8,7 @@ import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 @RestController
 @RequestMapping("/api/user")
@@ -46,11 +47,11 @@ public class UserController {
     }
 
     @PutMapping("/avatar")
-    public R<Void> updateAvatar(@RequestHeader("Authorization") String authHeader,
-                                 @Valid @RequestBody UpdateAvatarRequest req) {
+    public R<String> updateAvatar(@RequestHeader("Authorization") String authHeader,
+                                   @RequestParam("file") MultipartFile file) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        userService.updateAvatar(userId, req.getAvatar());
-        return R.ok();
+        String url = userService.updateAvatar(userId, file);
+        return R.ok(url);
     }
 
     @PutMapping("/password")

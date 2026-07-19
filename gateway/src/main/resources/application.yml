@@ -43,6 +43,26 @@ spring:
           uri: lb://mall-goods-order
           predicates:
             - Path=/api/address/**
+        - id: mall-admin
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/admin/**
+        - id: mall-coupon
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/coupon/**
+        - id: mall-favorite
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/favorite/**
+        - id: mall-review
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/review/**
+        - id: mall-upload
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/upload/**
         - id: pay-service
           uri: lb://pay-service
           predicates:
