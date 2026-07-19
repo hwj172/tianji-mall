@@ -3,6 +3,7 @@ package com.tianji.mall.controller;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.entity.Category;
+import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.CategoryService;
 import com.tianji.mall.service.ProductService;
 import org.junit.jupiter.api.Test;
@@ -160,6 +161,89 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("该分类下有子分类，无法删除"));
+    }
+
+    // ==================== GET /api/admin/product ====================
+
+    @Test
+    void shouldListProducts() throws Exception {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
+        page.setTotal(0);
+        when(productService.getProductPageAdmin(1, 10, null)).thenReturn(page);
+
+        mockMvc.perform(get("/api/admin/product")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.total").value(0));
+    }
+
+    @Test
+    void shouldListProductsWithCategoryFilter() throws Exception {
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product> page =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
+        page.setTotal(3);
+        when(productService.getProductPageAdmin(1, 10, 1L)).thenReturn(page);
+
+        mockMvc.perform(get("/api/admin/product")
+                        .header("X-User-Role", "admin")
+                        .param("categoryId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total").value(3));
+    }
+
+    // ==================== POST /api/admin/product ====================
+
+    @Test
+    void shouldCreateProduct() throws Exception {
+        when(productService.createProduct(anyString(), anyString(), any(), anyInt(), anyLong(), anyString()))
+                .thenReturn(new Product());
+
+        mockMvc.perform(post("/api/admin/product")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Test Product\",\"description\":\"desc\",\"price\":99.9,\"stock\":100,\"categoryId\":1}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== PUT /api/admin/product/{id} ====================
+
+    @Test
+    void shouldUpdateProduct() throws Exception {
+        mockMvc.perform(put("/api/admin/product/1")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Updated\",\"price\":199.9,\"status\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldReturnErrorWhenUpdateNonExistentProduct() throws Exception {
+        doThrow(new BizException("商品不存在"))
+                .when(productService).updateProduct(eq(Long.valueOf(1)), any(), any(), any(), any(), any(), any(), any());
+
+        mockMvc.perform(put("/api/admin/product/1")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Updated\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.message").value("商品不存在"));
+    }
+
+    // ==================== DELETE /api/admin/product/{id} ====================
+
+    @Test
+    void shouldDeleteProduct() throws Exception {
+        doNothing().when(productService).deleteProduct(1L);
+
+        mockMvc.perform(delete("/api/admin/product/1")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
     // ==================== auth: non-admin rejection ====================

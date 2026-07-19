@@ -14,6 +14,7 @@ import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -103,6 +104,59 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             log.warn("商品向量同步失败（不影响主流程）: productId={}", productId, e);
             return false;
         }
+    }
+
+    // ==================== 后台管理方法 ====================
+
+    /**
+     * 后台商品分页查询（含已下架商品，可选分类过滤）
+     */
+    public Page<Product> getProductPageAdmin(int page, int size, Long categoryId) {
+        LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
+        if (categoryId != null) {
+            wrapper.eq(Product::getCategoryId, categoryId);
+        }
+        wrapper.orderByDesc(Product::getCreateTime);
+        return page(new Page<>(page, size), wrapper);
+    }
+
+    public Product createProduct(String name, String description, BigDecimal price,
+                                  Integer stock, Long categoryId, String images) {
+        Product product = new Product();
+        product.setName(name);
+        product.setDescription(description);
+        product.setPrice(price);
+        product.setStock(stock);
+        product.setCategoryId(categoryId);
+        product.setImages(images);
+        product.setStatus(1);
+        save(product);
+        return product;
+    }
+
+    public void updateProduct(Long id, String name, String description, BigDecimal price,
+                               Integer stock, Long categoryId, Integer status, String images) {
+        Product product = getById(id);
+        if (product == null) {
+            throw new BizException("商品不存在");
+        }
+        if (name != null) product.setName(name);
+        if (description != null) product.setDescription(description);
+        if (price != null) product.setPrice(price);
+        if (stock != null) product.setStock(stock);
+        if (categoryId != null) product.setCategoryId(categoryId);
+        if (status != null) product.setStatus(status);
+        if (images != null) product.setImages(images);
+        updateById(product);
+    }
+
+    public void deleteProduct(Long id) {
+        Product product = getById(id);
+        if (product == null) {
+            throw new BizException("商品不存在");
+        }
+        product.setStatus(0);
+        updateById(product);
     }
 
     /**

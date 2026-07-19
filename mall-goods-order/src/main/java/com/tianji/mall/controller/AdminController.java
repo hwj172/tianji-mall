@@ -3,10 +3,13 @@ package com.tianji.mall.controller;
 import com.tianji.common.result.R;
 import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
+import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.CategoryService;
+import com.tianji.mall.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -17,6 +20,7 @@ import java.util.Map;
 public class AdminController {
 
     private final CategoryService categoryService;
+    private final ProductService productService;
 
     // ==================== 分类管理 ====================
 
@@ -44,6 +48,47 @@ public class AdminController {
     @DeleteMapping("/category/{id}")
     public R<Void> deleteCategory(@PathVariable("id") Long id) {
         categoryService.deleteCategory(id);
+        return R.ok();
+    }
+
+    // ==================== 商品管理 ====================
+
+    @GetMapping("/product")
+    public R<com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product>> listProducts(
+            @RequestParam(value = "page", defaultValue = "1") int page,
+            @RequestParam(value = "size", defaultValue = "10") int size,
+            @RequestParam(value = "categoryId", required = false) Long categoryId) {
+        return R.ok(productService.getProductPageAdmin(page, size, categoryId));
+    }
+
+    @PostMapping("/product")
+    public R<Void> createProduct(@RequestBody Map<String, Object> body) {
+        productService.createProduct(
+                (String) body.get("name"),
+                (String) body.get("description"),
+                body.get("price") != null ? new BigDecimal(body.get("price").toString()) : null,
+                body.get("stock") != null ? ((Number) body.get("stock")).intValue() : null,
+                body.get("categoryId") != null ? ((Number) body.get("categoryId")).longValue() : null,
+                (String) body.get("images"));
+        return R.ok();
+    }
+
+    @PutMapping("/product/{id}")
+    public R<Void> updateProduct(@PathVariable("id") Long id, @RequestBody Map<String, Object> body) {
+        productService.updateProduct(id,
+                (String) body.get("name"),
+                (String) body.get("description"),
+                body.get("price") != null ? new BigDecimal(body.get("price").toString()) : null,
+                body.get("stock") != null ? ((Number) body.get("stock")).intValue() : null,
+                body.get("categoryId") != null ? ((Number) body.get("categoryId")).longValue() : null,
+                body.get("status") != null ? ((Number) body.get("status")).intValue() : null,
+                (String) body.get("images"));
+        return R.ok();
+    }
+
+    @DeleteMapping("/product/{id}")
+    public R<Void> deleteProduct(@PathVariable("id") Long id) {
+        productService.deleteProduct(id);
         return R.ok();
     }
 }

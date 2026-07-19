@@ -103,6 +103,110 @@ class ProductServiceTest {
                 .hasMessage("商品不存在或已下架");
     }
 
+    // ==================== admin: getProductPageAdmin ====================
+
+    @Test
+    void shouldReturnAllProductsForAdmin() {
+        @SuppressWarnings("unchecked")
+        Page<Product> mockPage = new Page<>(1, 10);
+        when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
+
+        Page<Product> result = productService.getProductPageAdmin(1, 10, null);
+
+        assertThat(result).isNotNull();
+        verify(productMapper).selectPage(any(Page.class), any(LambdaQueryWrapper.class));
+    }
+
+    @Test
+    void shouldFilterByCategoryForAdmin() {
+        @SuppressWarnings("unchecked")
+        Page<Product> mockPage = new Page<>(1, 10);
+        when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
+
+        Page<Product> result = productService.getProductPageAdmin(1, 10, 1L);
+
+        assertThat(result).isNotNull();
+    }
+
+    // ==================== admin: createProduct ====================
+
+    @Test
+    void shouldCreateProduct() {
+        productService.createProduct("New Product", "desc", BigDecimal.valueOf(99.9), 100, 1L, "img.jpg");
+
+        ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+        verify(productMapper).insert(captor.capture());
+        Product saved = captor.getValue();
+        assertThat(saved.getName()).isEqualTo("New Product");
+        assertThat(saved.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(99.9));
+        assertThat(saved.getStock()).isEqualTo(100);
+        assertThat(saved.getStatus()).isEqualTo(1);
+    }
+
+    // ==================== admin: updateProduct ====================
+
+    @Test
+    void shouldUpdateProductAllFields() {
+        Product existing = buildProduct(1L, "Old", BigDecimal.TEN, 10, 1);
+        when(productMapper.selectById(1L)).thenReturn(existing);
+
+        productService.updateProduct(1L, "New Name", "New Desc",
+                BigDecimal.valueOf(199.9), 50, 2L, 0, "new.jpg");
+
+        verify(productMapper).updateById(existing);
+        assertThat(existing.getName()).isEqualTo("New Name");
+        assertThat(existing.getDescription()).isEqualTo("New Desc");
+        assertThat(existing.getPrice()).isEqualByComparingTo(BigDecimal.valueOf(199.9));
+        assertThat(existing.getStock()).isEqualTo(50);
+        assertThat(existing.getCategoryId()).isEqualTo(2L);
+        assertThat(existing.getStatus()).isEqualTo(0);
+        assertThat(existing.getImages()).isEqualTo("new.jpg");
+    }
+
+    @Test
+    void shouldUpdateProductPartialFields() {
+        Product existing = buildProduct(1L, "Old", BigDecimal.TEN, 10, 1);
+        existing.setDescription("Old Desc"); // pre-set description
+        when(productMapper.selectById(1L)).thenReturn(existing);
+
+        productService.updateProduct(1L, "New Name", null, null, null, null, null, null);
+
+        verify(productMapper).updateById(existing);
+        assertThat(existing.getName()).isEqualTo("New Name");
+        assertThat(existing.getDescription()).isEqualTo("Old Desc"); // unchanged
+    }
+
+    @Test
+    void shouldThrowWhenUpdateNonExistentProduct() {
+        when(productMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> productService.updateProduct(999L, "Name", null, null, null, null, null, null))
+                .isInstanceOf(BizException.class)
+                .hasMessage("商品不存在");
+    }
+
+    // ==================== admin: deleteProduct ====================
+
+    @Test
+    void shouldSoftDeleteProduct() {
+        Product existing = buildProduct(1L, "Product", BigDecimal.TEN, 10, 1);
+        when(productMapper.selectById(1L)).thenReturn(existing);
+
+        productService.deleteProduct(1L);
+
+        assertThat(existing.getStatus()).isEqualTo(0);
+        verify(productMapper).updateById(existing);
+    }
+
+    @Test
+    void shouldThrowWhenDeleteNonExistentProduct() {
+        when(productMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> productService.deleteProduct(999L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("商品不存在");
+    }
+
     // ==================== syncAllVectors ====================
 
     @Test
