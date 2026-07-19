@@ -65,6 +65,15 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     }
 
     /**
+     * 统计指定分类下的商品数量（供分类删除校验使用）
+     */
+    public long countByCategoryId(Long categoryId) {
+        return count(new LambdaQueryWrapper<Product>()
+                .eq(Product::getCategoryId, categoryId)
+                .eq(Product::getStatus, 1));
+    }
+
+    /**
      * 根据 ID 列表批量查询在售商品（供 AI RAG 管道使用）
      */
     public List<Product> getProductBatch(List<Long> ids) {
