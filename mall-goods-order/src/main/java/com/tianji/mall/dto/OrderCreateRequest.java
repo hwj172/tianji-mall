@@ -14,4 +14,6 @@ public class OrderCreateRequest {
 
     @NotEmpty(message = "购物车项不能为空")
     private List<Long> cartItemIds;
+
+    private Long couponId;  // 用户优惠券记录ID，可选
 }

@@ -37,6 +37,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final CartService cartService;
     private final ProductService productService;
     private final AddressService addressService;
+    private final CouponService couponService;
     private final RedissonClient redissonClient;
     private final RocketMQTemplate rocketMQTemplate;
 
@@ -106,37 +107,48 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
             }
 
-            // 6. 生成订单号
+            // 6. 优惠券折扣（锁内）
+            BigDecimal discount = BigDecimal.ZERO;
+            if (req.getCouponId() != null) {
+                discount = couponService.applyCoupon(userId, req.getCouponId(), totalAmount);
+            }
+
+            // 7. 生成订单号
             String orderNo = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                     + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
 
-            // 7. 创建订单
+            // 8. 创建订单
             Order order = new Order();
             order.setOrderNo(orderNo);
             order.setUserId(userId);
-            order.setTotalAmount(totalAmount);
+            order.setTotalAmount(totalAmount.subtract(discount));
             order.setStatus(1); // 待付款
             order.setAddressId(req.getAddressId());
             save(order);
 
-            // 8. 写入订单明细
+            // 绑定优惠券到订单ID
+            if (req.getCouponId() != null) {
+                couponService.bindOrderId(req.getCouponId(), order.getId());
+            }
+
+            // 9. 写入订单明细
             for (OrderItem item : orderItems) {
                 item.setOrderId(order.getId());
                 orderItemMapper.insert(item);
             }
 
-            // 9. 原子扣库存（通过 ProductService，自动清除缓存）
+            // 10. 原子扣库存（通过 ProductService，自动清除缓存）
             for (OrderItem item : orderItems) {
                 productService.deductStock(item.getProductId(), item.getQuantity());
             }
 
-            // 10. 清购物车
+            // 11. 清购物车
             cartService.removeByIds(req.getCartItemIds());
 
-            // 11. 发送订单创建事件
+            // 12. 发送订单创建事件
             publishOrderEvent(order, "CREATED");
 
-            // 12. 发送 30 分钟超时延迟消息（best-effort）
+            // 13. 发送 30 分钟超时延迟消息（best-effort）
             try {
                 org.springframework.messaging.Message<String> timeoutMsg =
                         org.springframework.messaging.support.MessageBuilder
@@ -200,6 +212,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
         for (OrderItem item : items) {
             productService.restoreStock(item.getProductId(), item.getQuantity());
+        }
+
+        // 恢复优惠券（best-effort）
+        try {
+            couponService.restoreCoupon(orderId);
+        } catch (Exception e) {
+            log.error("恢复优惠券失败: orderId={}", orderId, e);
         }
 
         // 发送订单取消事件
@@ -281,6 +300,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
         for (OrderItem item : items) {
             productService.restoreStock(item.getProductId(), item.getQuantity());
+        }
+
+        // 恢复优惠券（best-effort）
+        try {
+            couponService.restoreCoupon(orderId);
+        } catch (Exception e) {
+            log.error("恢复优惠券失败: orderId={}", orderId, e);
         }
 
         // 发送订单取消事件
