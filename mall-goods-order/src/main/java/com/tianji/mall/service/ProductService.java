@@ -65,6 +65,11 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         }
     }
 
+    @CacheEvict(value = "product", key = "#productId")
+    public void incrementSales(Long productId, int quantity) {
+        baseMapper.incrementSales(productId, quantity);
+    }
+
     /**
      * 统计指定分类下的商品数量（供分类删除校验使用）
      */

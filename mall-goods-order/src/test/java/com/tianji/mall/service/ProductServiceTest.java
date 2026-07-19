@@ -260,6 +260,17 @@ class ProductServiceTest {
         assertThat(wrapper.getParamNameValuePairs()).containsValue(1);
     }
 
+    // ==================== incrementSales ====================
+
+    @Test
+    void shouldIncrementSales() {
+        when(productMapper.incrementSales(1L, 5)).thenReturn(1);
+
+        productService.incrementSales(1L, 5);
+
+        verify(productMapper).incrementSales(1L, 5);
+    }
+
     private Product buildProduct(Long id, String name, BigDecimal price, int stock, int status) {
         Product p = new Product();
         p.setId(id);
