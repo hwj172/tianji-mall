@@ -3,9 +3,11 @@ package com.tianji.mall.controller;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.entity.Category;
+import com.tianji.mall.entity.Coupon;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.CategoryService;
+import com.tianji.mall.service.CouponService;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.ProductService;
 import org.junit.jupiter.api.Test;
@@ -56,6 +58,9 @@ class AdminControllerTest {
 
     @MockBean
     private OrderService orderService;
+
+    @MockBean
+    private CouponService couponService;
 
     @MockBean
     private com.tianji.mall.feign.PayFeignClient payFeignClient;
@@ -330,6 +335,81 @@ class AdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("订单不存在"));
+    }
+
+    // ==================== GET /api/admin/coupon ====================
+
+    @Test
+    void shouldListCoupons() throws Exception {
+        when(couponService.listByPage(1, 10)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/admin/coupon")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== POST /api/admin/coupon ====================
+
+    @Test
+    void shouldCreateCoupon() throws Exception {
+        Coupon coupon = new Coupon();
+        coupon.setId(1L);
+        coupon.setName("满100减20");
+        when(couponService.create(any())).thenReturn(coupon);
+
+        mockMvc.perform(post("/api/admin/coupon")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"满100减20\",\"discountType\":\"FIXED\",\"discountValue\":20,\"minOrderAmount\":100,\"totalQuantity\":100,\"startTime\":\"2026-07-19T10:00:00\",\"endTime\":\"2026-08-19T10:00:00\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.name").value("满100减20"));
+    }
+
+    @Test
+    void shouldReturn400OnMissingCouponFields() throws Exception {
+        mockMvc.perform(post("/api/admin/coupon")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"test\"}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    // ==================== PUT /api/admin/coupon/{id} ====================
+
+    @Test
+    void shouldUpdateCoupon() throws Exception {
+        mockMvc.perform(put("/api/admin/coupon/1")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"满200减50\",\"discountType\":\"FIXED\",\"discountValue\":50,\"minOrderAmount\":200,\"totalQuantity\":50,\"startTime\":\"2026-07-19T10:00:00\",\"endTime\":\"2026-08-19T10:00:00\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldReturnErrorWhenUpdateNonExistentCoupon() throws Exception {
+        doThrow(new BizException("优惠券不存在"))
+                .when(couponService).update(eq(Long.valueOf(999)), any());
+
+        mockMvc.perform(put("/api/admin/coupon/999")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"xxx\",\"discountType\":\"FIXED\",\"discountValue\":10,\"minOrderAmount\":50,\"totalQuantity\":10,\"startTime\":\"2026-07-19T10:00:00\",\"endTime\":\"2026-08-19T10:00:00\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.message").value("优惠券不存在"));
+    }
+
+    // ==================== DELETE /api/admin/coupon/{id} ====================
+
+    @Test
+    void shouldDisableCoupon() throws Exception {
+        mockMvc.perform(delete("/api/admin/coupon/1")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
     // ==================== auth: non-admin rejection ====================

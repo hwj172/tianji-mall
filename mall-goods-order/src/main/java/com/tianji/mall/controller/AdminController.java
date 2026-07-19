@@ -6,9 +6,13 @@ import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.dto.CouponRequest;
+import com.tianji.mall.entity.Coupon;
 import com.tianji.mall.service.CategoryService;
+import com.tianji.mall.service.CouponService;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.ProductService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -25,6 +29,7 @@ public class AdminController {
     private final CategoryService categoryService;
     private final ProductService productService;
     private final OrderService orderService;
+    private final CouponService couponService;
 
     // ==================== 分类管理 ====================
 
@@ -116,6 +121,31 @@ public class AdminController {
     @PutMapping("/order/{id}/complete")
     public R<Void> completeOrder(@PathVariable("id") Long id) {
         orderService.completeOrder(id);
+        return R.ok();
+    }
+
+    // ==================== 优惠券管理 ====================
+
+    @GetMapping("/coupon")
+    public R<List<Coupon>> listCoupons(@RequestParam(defaultValue = "1") int page,
+                                        @RequestParam(defaultValue = "10") int size) {
+        return R.ok(couponService.listByPage(page, size));
+    }
+
+    @PostMapping("/coupon")
+    public R<Coupon> createCoupon(@Valid @RequestBody CouponRequest req) {
+        return R.ok(couponService.create(req));
+    }
+
+    @PutMapping("/coupon/{id}")
+    public R<Void> updateCoupon(@PathVariable("id") Long id, @Valid @RequestBody CouponRequest req) {
+        couponService.update(id, req);
+        return R.ok();
+    }
+
+    @DeleteMapping("/coupon/{id}")
+    public R<Void> deleteCoupon(@PathVariable("id") Long id) {
+        couponService.disable(id);
         return R.ok();
     }
 }
