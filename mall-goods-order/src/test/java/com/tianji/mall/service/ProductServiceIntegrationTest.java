@@ -50,11 +50,11 @@ class ProductServiceIntegrationTest {
 
     @Test
     void shouldPageProducts() {
-        insertProduct("iPhone", BigDecimal.valueOf(6999), 1L, 10, 1);
-        insertProduct("iPad", BigDecimal.valueOf(4999), 1L, 5, 1);
-        insertProduct("已下架商品", BigDecimal.valueOf(100), 1L, 3, 0);
+        insertProduct("iPhone", "苹果手机", BigDecimal.valueOf(6999), 1L, 10, 1);
+        insertProduct("iPad", "苹果平板", BigDecimal.valueOf(4999), 1L, 5, 1);
+        insertProduct("已下架商品", "已下架", BigDecimal.valueOf(100), 1L, 3, 0);
 
-        Page<Product> page = productService.getProductPage(null, null, 1, 10);
+        Page<Product> page = productService.getProductPage(null, null, null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(2);
         assertThat(page.getRecords()).hasSize(2);
@@ -62,31 +62,81 @@ class ProductServiceIntegrationTest {
 
     @Test
     void shouldSearchByKeyword() {
-        insertProduct("iPhone 15 Pro", BigDecimal.valueOf(7999), 1L, 10, 1);
-        insertProduct("MacBook Pro", BigDecimal.valueOf(12999), 1L, 5, 1);
+        insertProduct("iPhone 15 Pro", "苹果旗舰手机", BigDecimal.valueOf(7999), 1L, 10, 1);
+        insertProduct("MacBook Pro", "苹果笔记本", BigDecimal.valueOf(12999), 1L, 5, 1);
 
-        Page<Product> page = productService.getProductPage(null, "iPhone", 1, 10);
+        Page<Product> page = productService.getProductPage(null, "iPhone", null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(1);
         assertThat(page.getRecords().get(0).getName()).contains("iPhone");
     }
 
     @Test
-    void shouldFilterByCategory() {
-        insertProduct("手机", BigDecimal.valueOf(5000), 1L, 10, 1);
-        insertProduct("笔记本", BigDecimal.valueOf(8000), 2L, 5, 1);
+    void shouldSearchByDescription() {
+        insertProduct("MBP", "MacBook Pro 笔记本电脑", BigDecimal.valueOf(12999), 1L, 10, 1);
+        insertProduct("iPad Air", "平板电脑", BigDecimal.valueOf(4999), 1L, 5, 1);
 
-        Page<Product> page = productService.getProductPage(2L, null, 1, 10);
+        Page<Product> page = productService.getProductPage(null, "笔记本", null, null, null, 1, 10);
+
+        assertThat(page.getTotal()).isEqualTo(1);
+        assertThat(page.getRecords().get(0).getName()).isEqualTo("MBP");
+    }
+
+    @Test
+    void shouldFilterByCategory() {
+        insertProduct("手机", "手机", BigDecimal.valueOf(5000), 1L, 10, 1);
+        insertProduct("笔记本", "笔记本", BigDecimal.valueOf(8000), 2L, 5, 1);
+
+        Page<Product> page = productService.getProductPage(2L, null, null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(1);
         assertThat(page.getRecords().get(0).getName()).isEqualTo("笔记本");
     }
 
+    @Test
+    void shouldFilterByPriceRange() {
+        insertProduct("便宜商品", "desc", BigDecimal.valueOf(99), 1L, 10, 1);
+        insertProduct("中等商品", "desc", BigDecimal.valueOf(500), 1L, 10, 1);
+        insertProduct("昂贵商品", "desc", BigDecimal.valueOf(5000), 1L, 10, 1);
+
+        Page<Product> page = productService.getProductPage(null, null,
+                BigDecimal.valueOf(100), BigDecimal.valueOf(1000), null, 1, 10);
+
+        assertThat(page.getTotal()).isEqualTo(1);
+        assertThat(page.getRecords().get(0).getName()).isEqualTo("中等商品");
+    }
+
+    @Test
+    void shouldSortByPriceAscending() {
+        insertProduct("B", "desc", BigDecimal.valueOf(200), 1L, 10, 1);
+        insertProduct("A", "desc", BigDecimal.valueOf(100), 1L, 10, 1);
+        insertProduct("C", "desc", BigDecimal.valueOf(300), 1L, 10, 1);
+
+        Page<Product> page = productService.getProductPage(null, null,
+                null, null, "price_asc", 1, 10);
+
+        assertThat(page.getRecords()).hasSize(3);
+        assertThat(page.getRecords().get(0).getPrice()).isEqualByComparingTo(BigDecimal.valueOf(100));
+        assertThat(page.getRecords().get(2).getPrice()).isEqualByComparingTo(BigDecimal.valueOf(300));
+    }
+
+    @Test
+    void shouldSortByPriceDescending() {
+        insertProduct("B", "desc", BigDecimal.valueOf(200), 1L, 10, 1);
+        insertProduct("A", "desc", BigDecimal.valueOf(100), 1L, 10, 1);
+
+        Page<Product> page = productService.getProductPage(null, null,
+                null, null, "price_desc", 1, 10);
+
+        assertThat(page.getRecords().get(0).getPrice()).isEqualByComparingTo(BigDecimal.valueOf(200));
+    }
+
     // ==================== helpers ====================
 
-    private void insertProduct(String name, BigDecimal price, Long categoryId, int stock, int status) {
+    private void insertProduct(String name, String description, BigDecimal price, Long categoryId, int stock, int status) {
         Product p = new Product();
         p.setName(name);
+        p.setDescription(description);
         p.setPrice(price);
         p.setCategoryId(categoryId);
         p.setStock(stock);

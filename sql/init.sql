@@ -56,7 +56,8 @@ CREATE TABLE IF NOT EXISTS `product` (
   `update_time` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_category_id` (`category_id`),
-  KEY `idx_status` (`status`)
+  KEY `idx_status` (`status`),
+  FULLTEXT INDEX `ft_name_desc` (`name`, `description`) WITH PARSER ngram
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品表';
 
 -- 4. 购物车表

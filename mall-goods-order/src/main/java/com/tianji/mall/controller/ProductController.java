@@ -7,6 +7,7 @@ import com.tianji.mall.service.ProductService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
 
@@ -20,9 +21,13 @@ public class ProductController {
     @GetMapping("/list")
     public R<Page<Product>> list(@RequestParam(required = false) Long categoryId,
                                   @RequestParam(required = false) String keyword,
+                                  @RequestParam(required = false) BigDecimal minPrice,
+                                  @RequestParam(required = false) BigDecimal maxPrice,
+                                  @RequestParam(required = false) String sortBy,
                                   @RequestParam(defaultValue = "1") int page,
                                   @RequestParam(defaultValue = "20") int size) {
-        return R.ok(productService.getProductPage(categoryId, keyword, page, size));
+        return R.ok(productService.getProductPage(categoryId, keyword,
+                minPrice, maxPrice, sortBy, page, size));
     }
 
     @GetMapping("/{id}")

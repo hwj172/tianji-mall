@@ -45,6 +45,9 @@ rocketmq:
 file:
   upload-dir: ./uploads
 
+search:
+  use-fulltext: true
+
 mybatis-plus:
   configuration:
     log-impl: org.apache.ibatis.logging.stdout.StdOutImpl

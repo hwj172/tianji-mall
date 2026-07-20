@@ -52,7 +52,7 @@ class ProductControllerTest {
     void shouldListProducts() throws Exception {
         Page<Product> page = new Page<>(1, 20);
         page.setTotal(0);
-        when(productService.getProductPage(isNull(), isNull(), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/product/list"))
@@ -65,7 +65,7 @@ class ProductControllerTest {
     void shouldSearchByKeyword() throws Exception {
         Page<Product> page = new Page<>(1, 20);
         page.setTotal(1);
-        when(productService.getProductPage(isNull(), eq("手机"), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), eq("手机"), isNull(), isNull(), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/product/list")

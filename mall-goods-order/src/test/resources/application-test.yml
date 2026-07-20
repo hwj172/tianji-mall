@@ -36,3 +36,6 @@ mybatis-plus:
 
 jwt:
   secret: test-secret-key-at-least-32-characters-long
+
+search:
+  use-fulltext: false

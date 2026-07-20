@@ -9,6 +9,7 @@ import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
@@ -25,18 +26,43 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
 
     private final AiChatFeignClient aiChatFeignClient;
 
+    @Value("${search.use-fulltext:true}")
+    private boolean useFulltext;
+
     @Cacheable(value = "productPage",
-               key = "'c' + #categoryId + '_k' + #keyword + '_p' + #page + '_s' + #size")
-    public Page<Product> getProductPage(Long categoryId, String keyword, int page, int size) {
+               key = "'c' + #categoryId + '_k' + #keyword + '_min' + #minPrice + '_max' + #maxPrice + '_sort' + #sortBy + '_p' + #page + '_sz' + #size")
+    public Page<Product> getProductPage(Long categoryId, String keyword,
+                                        BigDecimal minPrice, BigDecimal maxPrice,
+                                        String sortBy, int page, int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getStatus, 1);
         if (categoryId != null) {
             wrapper.eq(Product::getCategoryId, categoryId);
         }
-        if (StringUtils.hasText(keyword)) {
-            wrapper.like(Product::getName, keyword);
+        if (minPrice != null) {
+            wrapper.ge(Product::getPrice, minPrice);
         }
-        wrapper.orderByDesc(Product::getCreateTime);
+        if (maxPrice != null) {
+            wrapper.le(Product::getPrice, maxPrice);
+        }
+        if (StringUtils.hasText(keyword)) {
+            if (useFulltext) {
+                wrapper.apply("MATCH(name, description) AGAINST({0} IN BOOLEAN MODE)", keyword);
+            } else {
+                wrapper.and(w -> w.like(Product::getName, keyword)
+                        .or().like(Product::getDescription, keyword));
+            }
+        }
+        // 排序
+        if ("price_asc".equals(sortBy)) {
+            wrapper.orderByAsc(Product::getPrice);
+        } else if ("price_desc".equals(sortBy)) {
+            wrapper.orderByDesc(Product::getPrice);
+        } else if ("sales".equals(sortBy)) {
+            wrapper.orderByDesc(Product::getSales);
+        } else {
+            wrapper.orderByDesc(Product::getCreateTime);
+        }
         return page(new Page<>(page, size), wrapper);
     }
 
