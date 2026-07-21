@@ -61,4 +61,11 @@ public class UserController {
         userService.updatePassword(userId, req.getOldPassword(), req.getNewPassword());
         return R.ok();
     }
+
+    // ===== 内部端点（网关 X-Internal-Token 鉴权，不暴露给前端）=====
+
+    @GetMapping("/internal/count")
+    public R<Long> countUsers() {
+        return R.ok(userService.countUsers());
+    }
 }

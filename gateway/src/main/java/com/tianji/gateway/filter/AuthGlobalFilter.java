@@ -42,7 +42,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     private static final List<String> INTERNAL_PATHS = List.of(
             "/api/order/internal",
             "/api/cart/internal",
-            "/api/product/internal"
+            "/api/product/internal",
+            "/api/user/internal"
     );
 
     @Value("${jwt.secret}")

@@ -101,4 +101,8 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setPassword(null); // 不暴露密码
         return user;
     }
+
+    public long countUsers() {
+        return count();
+    }
 }
