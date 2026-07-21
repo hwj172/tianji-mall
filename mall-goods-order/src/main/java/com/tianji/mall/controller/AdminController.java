@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.result.R;
 import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
+import com.tianji.mall.dto.DashboardResponse;
 import com.tianji.mall.dto.SkuRequest;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
@@ -32,6 +33,7 @@ public class AdminController {
     private final CouponService couponService;
     private final ProductSkuService skuService;
     private final ProductAttributeService attributeService;
+    private final DashboardService dashboardService;
 
     // ==================== 分类管理 ====================
 
@@ -211,5 +213,12 @@ public class AdminController {
                                     @PathVariable("id") Long id) {
         attributeService.delete(productId, id);
         return R.ok();
+    }
+
+    // ==================== 数据看板 ====================
+
+    @GetMapping("/dashboard")
+    public R<DashboardResponse> getDashboard() {
+        return R.ok(dashboardService.getDashboard());
     }
 }

@@ -2,6 +2,7 @@ package com.tianji.mall.controller;
 
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CategoryTreeResponse;
+import com.tianji.mall.dto.DashboardResponse;
 import com.tianji.mall.entity.Category;
 import com.tianji.mall.entity.Coupon;
 import com.tianji.mall.entity.Order;
@@ -69,6 +70,9 @@ class AdminControllerTest {
 
     @MockBean
     private ProductAttributeService attributeService;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     // ==================== GET /api/admin/category ====================
 
@@ -509,6 +513,32 @@ class AdminControllerTest {
                         .header("X-User-Role", "admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== GET /api/admin/dashboard ====================
+
+    @Test
+    void shouldGetDashboard() throws Exception {
+        DashboardResponse resp = new DashboardResponse(
+                java.math.BigDecimal.valueOf(100000), 100L, 200L,
+                new DashboardResponse.TimeStats(java.math.BigDecimal.valueOf(5000), 10L),
+                new DashboardResponse.TimeStats(java.math.BigDecimal.valueOf(30000), 50L),
+                new DashboardResponse.TimeStats(java.math.BigDecimal.valueOf(80000), 80L),
+                List.of(new DashboardResponse.TopProduct(1L, "iPhone", 50L, java.math.BigDecimal.valueOf(499900))),
+                List.of(new DashboardResponse.OrderStatusDist(2, "已付款", 30L)),
+                List.of(new DashboardResponse.CategorySales(1L, "手机数码", java.math.BigDecimal.valueOf(50000)))
+        );
+        when(dashboardService.getDashboard()).thenReturn(resp);
+
+        mockMvc.perform(get("/api/admin/dashboard")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.totalGmv").value(100000))
+                .andExpect(jsonPath("$.data.totalOrders").value(100))
+                .andExpect(jsonPath("$.data.totalUsers").value(200))
+                .andExpect(jsonPath("$.data.today.orders").value(10))
+                .andExpect(jsonPath("$.data.topProducts[0].name").value("iPhone"));
     }
 
     // ==================== auth: non-admin rejection ====================
