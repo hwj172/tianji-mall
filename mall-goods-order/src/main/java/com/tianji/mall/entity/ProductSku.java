@@ -5,22 +5,25 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
+import java.io.Serializable;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("order_item")
-public class OrderItem {
+@TableName("product_sku")
+public class ProductSku implements Serializable {
+
+    private static final long serialVersionUID = 1L;
 
     @TableId(type = IdType.AUTO)
     private Long id;
-    private Long orderId;
     private Long productId;
-    private String productName;
+    private String skuCode;
+    private String specs;
     private BigDecimal price;
-    private Integer quantity;
-    private Long skuId;
-    private String skuSpecs;
+    private Integer stock;
+    private Integer sales;
+    private Integer status;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

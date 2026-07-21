@@ -14,6 +14,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
@@ -79,18 +80,19 @@ class ProductControllerTest {
     @Test
     void shouldGetProductDetail() throws Exception {
         Product product = buildProduct(1L, "iPhone", 6999);
-        when(productService.getProductById(1L)).thenReturn(product);
+        when(productService.getProductDetail(1L))
+                .thenReturn(Map.of("product", product, "skus", List.of(), "attributes", List.of()));
 
         mockMvc.perform(get("/api/product/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.name").value("iPhone"))
-                .andExpect(jsonPath("$.data.price").value(6999));
+                .andExpect(jsonPath("$.data.product.name").value("iPhone"))
+                .andExpect(jsonPath("$.data.product.price").value(6999));
     }
 
     @Test
     void shouldReturnErrorWhenProductNotFound() throws Exception {
-        when(productService.getProductById(999L))
+        when(productService.getProductDetail(999L))
                 .thenThrow(new BizException("商品不存在或已下架"));
 
         mockMvc.perform(get("/api/product/999"))

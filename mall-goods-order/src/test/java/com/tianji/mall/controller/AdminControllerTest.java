@@ -6,10 +6,9 @@ import com.tianji.mall.entity.Category;
 import com.tianji.mall.entity.Coupon;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
-import com.tianji.mall.service.CategoryService;
-import com.tianji.mall.service.CouponService;
-import com.tianji.mall.service.OrderService;
-import com.tianji.mall.service.ProductService;
+import com.tianji.mall.entity.ProductAttribute;
+import com.tianji.mall.entity.ProductSku;
+import com.tianji.mall.service.*;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -64,6 +63,12 @@ class AdminControllerTest {
 
     @MockBean
     private com.tianji.mall.feign.PayFeignClient payFeignClient;
+
+    @MockBean
+    private ProductSkuService skuService;
+
+    @MockBean
+    private ProductAttributeService attributeService;
 
     // ==================== GET /api/admin/category ====================
 
@@ -407,6 +412,100 @@ class AdminControllerTest {
     @Test
     void shouldDisableCoupon() throws Exception {
         mockMvc.perform(delete("/api/admin/coupon/1")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== SKU 管理端点 ====================
+
+    @Test
+    void shouldListSkus() throws Exception {
+        when(skuService.listByProductId(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/admin/product/1/sku")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldCreateSku() throws Exception {
+        ProductSku sku = new ProductSku();
+        sku.setId(1L);
+        sku.setSpecs("颜色:红;尺寸:XL");
+        when(skuService.create(eq(1L), eq("颜色:红;尺寸:XL"), eq("SKU001"), any(), eq(100)))
+                .thenReturn(sku);
+
+        mockMvc.perform(post("/api/admin/product/1/sku")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"specs\":\"颜色:红;尺寸:XL\",\"skuCode\":\"SKU001\",\"price\":199.9,\"stock\":100}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.specs").value("颜色:红;尺寸:XL"));
+    }
+
+    @Test
+    void shouldReturn400OnMissingSkuSpecs() throws Exception {
+        mockMvc.perform(post("/api/admin/product/1/sku")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"price\":199.9,\"stock\":100}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldUpdateSku() throws Exception {
+        mockMvc.perform(put("/api/admin/product/1/sku/10")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"specs\":\"颜色:蓝\",\"stock\":50}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldDeleteSku() throws Exception {
+        mockMvc.perform(delete("/api/admin/product/1/sku/10")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== 属性管理端点 ====================
+
+    @Test
+    void shouldListAttributes() throws Exception {
+        when(attributeService.listByProductId(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/admin/product/1/attribute")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldCreateAttribute() throws Exception {
+        ProductAttribute attr = new ProductAttribute();
+        attr.setId(1L);
+        attr.setName("屏幕尺寸");
+        attr.setValue("6.1英寸");
+        when(attributeService.create(eq(1L), eq("屏幕尺寸"), eq("6.1英寸"), eq(0)))
+                .thenReturn(attr);
+
+        mockMvc.perform(post("/api/admin/product/1/attribute")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"屏幕尺寸\",\"value\":\"6.1英寸\",\"sort\":0}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.name").value("屏幕尺寸"));
+    }
+
+    @Test
+    void shouldDeleteAttribute() throws Exception {
+        mockMvc.perform(delete("/api/admin/product/1/attribute/5")
                         .header("X-User-Role", "admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));

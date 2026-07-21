@@ -31,8 +31,8 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public R<Product> detail(@PathVariable("id") Long id) {
-        return R.ok(productService.getProductById(id));
+    public R<Map<String, Object>> detail(@PathVariable("id") Long id) {
+        return R.ok(productService.getProductDetail(id));
     }
 
     @PostMapping("/batch")

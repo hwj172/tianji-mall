@@ -36,6 +36,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final OrderItemMapper orderItemMapper;
     private final CartService cartService;
     private final ProductService productService;
+    private final ProductSkuService skuService;
     private final AddressService addressService;
     private final CouponService couponService;
     private final RedissonClient redissonClient;
@@ -69,10 +70,18 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 .distinct()
                 .toList();
 
-        // 3.5 获取分布式锁（按 productId 排序，避免死锁）
-        List<Long> lockKeys = productIds.stream().sorted().toList();
-        RLock[] lockArray = lockKeys.stream()
-                .map(id -> redissonClient.getLock("lock:product:" + id))
+        // 3.5 获取分布式锁（按 productId 和 skuId 排序，避免死锁）
+        List<String> lockKeyStrings = new ArrayList<>();
+        for (CartItem cartItem : cartItems) {
+            if (cartItem.getSkuId() != null) {
+                lockKeyStrings.add("lock:sku:" + cartItem.getSkuId());
+            } else {
+                lockKeyStrings.add("lock:product:" + cartItem.getProductId());
+            }
+        }
+        List<String> sortedLockKeys = lockKeyStrings.stream().sorted().distinct().toList();
+        RLock[] lockArray = sortedLockKeys.stream()
+                .map(key -> redissonClient.getLock(key))
                 .toArray(RLock[]::new);
         RLock multiLock = redissonClient.getMultiLock(lockArray);
 
@@ -93,18 +102,39 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 if (product == null || product.getStatus() == 0) {
                     throw new BizException("商品「" + (product != null ? product.getName() : "未知") + "」已下架");
                 }
-                if (product.getStock() < cartItem.getQuantity()) {
-                    throw new BizException("商品「" + product.getName() + "」库存不足");
+
+                BigDecimal itemPrice;
+                String skuSpecs = null;
+
+                if (cartItem.getSkuId() != null) {
+                    // SKU 商品：用 SKU 价格和库存
+                    ProductSku sku = skuService.getById(cartItem.getSkuId());
+                    if (sku == null || !sku.getProductId().equals(cartItem.getProductId())) {
+                        throw new BizException("商品「" + product.getName() + "」的规格已失效");
+                    }
+                    if (sku.getStock() < cartItem.getQuantity()) {
+                        throw new BizException("商品「" + product.getName() + "」库存不足");
+                    }
+                    itemPrice = sku.getPrice() != null ? sku.getPrice() : product.getPrice();
+                    skuSpecs = sku.getSpecs();
+                } else {
+                    // 无 SKU：用商品级价格和库存（向后兼容）
+                    if (product.getStock() < cartItem.getQuantity()) {
+                        throw new BizException("商品「" + product.getName() + "」库存不足");
+                    }
+                    itemPrice = product.getPrice();
                 }
 
                 OrderItem orderItem = new OrderItem();
                 orderItem.setProductId(product.getId());
                 orderItem.setProductName(product.getName());
-                orderItem.setPrice(product.getPrice());
+                orderItem.setPrice(itemPrice);
                 orderItem.setQuantity(cartItem.getQuantity());
+                orderItem.setSkuId(cartItem.getSkuId());
+                orderItem.setSkuSpecs(skuSpecs);
                 orderItems.add(orderItem);
 
-                totalAmount = totalAmount.add(product.getPrice().multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+                totalAmount = totalAmount.add(itemPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
             }
 
             // 6. 优惠券折扣（锁内）
@@ -137,9 +167,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 orderItemMapper.insert(item);
             }
 
-            // 10. 原子扣库存（通过 ProductService，自动清除缓存）
+            // 10. 原子扣库存
             for (OrderItem item : orderItems) {
-                productService.deductStock(item.getProductId(), item.getQuantity());
+                if (item.getSkuId() != null) {
+                    skuService.deductStock(item.getProductId(), item.getSkuId(), item.getQuantity());
+                } else {
+                    productService.deductStock(item.getProductId(), item.getQuantity());
+                }
             }
 
             // 11. 清购物车
@@ -186,7 +220,8 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
 
         List<OrderItemResponse> itemResponses = orderItems.stream()
-                .map(i -> new OrderItemResponse(i.getProductId(), i.getProductName(), i.getPrice(), i.getQuantity()))
+                .map(i -> new OrderItemResponse(i.getProductId(), i.getProductName(), i.getPrice(), i.getQuantity(),
+                        i.getSkuId(), i.getSkuSpecs()))
                 .toList();
 
         Address address = addressService.getById(order.getAddressId());
@@ -207,11 +242,15 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setStatus(5); // 已取消
         updateById(order);
 
-        // 原子恢复库存（通过 ProductService，自动清除缓存）
+        // 原子恢复库存
         List<OrderItem> items = orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
         for (OrderItem item : items) {
-            productService.restoreStock(item.getProductId(), item.getQuantity());
+            if (item.getSkuId() != null) {
+                skuService.restoreStock(item.getProductId(), item.getSkuId(), item.getQuantity());
+            } else {
+                productService.restoreStock(item.getProductId(), item.getQuantity());
+            }
         }
 
         // 恢复优惠券（best-effort）
@@ -299,7 +338,11 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         List<OrderItem> items = orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
         for (OrderItem item : items) {
-            productService.restoreStock(item.getProductId(), item.getQuantity());
+            if (item.getSkuId() != null) {
+                skuService.restoreStock(item.getProductId(), item.getSkuId(), item.getQuantity());
+            } else {
+                productService.restoreStock(item.getProductId(), item.getQuantity());
+            }
         }
 
         // 恢复优惠券（best-effort）

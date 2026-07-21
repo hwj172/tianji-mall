@@ -5,6 +5,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.entity.ProductAttribute;
+import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
@@ -25,6 +27,8 @@ import java.util.Map;
 public class ProductService extends ServiceImpl<ProductMapper, Product> {
 
     private final AiChatFeignClient aiChatFeignClient;
+    private final ProductSkuService skuService;
+    private final ProductAttributeService attributeService;
 
     @Value("${search.use-fulltext:true}")
     private boolean useFulltext;
@@ -73,6 +77,13 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             throw new BizException("商品不存在或已下架");
         }
         return product;
+    }
+
+    public Map<String, Object> getProductDetail(Long id) {
+        Product product = getProductById(id);
+        List<ProductSku> skus = skuService.listByProductId(id);
+        List<ProductAttribute> attrs = attributeService.listByProductId(id);
+        return Map.of("product", product, "skus", skus, "attributes", attrs);
     }
 
     @CacheEvict(value = "product", key = "#productId")

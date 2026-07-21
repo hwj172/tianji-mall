@@ -7,6 +7,7 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.mapper.CartItemMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,6 +22,7 @@ import java.util.List;
 public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
 
     private final ProductService productService;
+    private final ProductSkuService skuService;
 
     public List<CartItem> getCartList(Long userId) {
         return list(new LambdaQueryWrapper<CartItem>()
@@ -30,16 +32,34 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
 
     @Transactional
     public void addItem(Long userId, CartAddRequest req) {
-        // 检查商品是否存在且上架
         Product product = productService.getProductById(req.getProductId());
-        if (product.getStock() < req.getQuantity()) {
-            throw new BizException("库存不足");
+
+        // SKU 商品：校验 SKU 存在 + 库存
+        if (req.getSkuId() != null) {
+            ProductSku sku = skuService.getById(req.getSkuId());
+            if (sku == null || !sku.getProductId().equals(req.getProductId())) {
+                throw new BizException("SKU不存在");
+            }
+            if (sku.getStock() < req.getQuantity()) {
+                throw new BizException("库存不足");
+            }
+        } else {
+            // 无 SKU：使用商品级库存（向后兼容）
+            if (product.getStock() < req.getQuantity()) {
+                throw new BizException("库存不足");
+            }
         }
 
-        // 同一商品已存在则增加数量
-        CartItem existing = getOne(new LambdaQueryWrapper<CartItem>()
+        // 去重：productId + skuId 相同则合并数量
+        LambdaQueryWrapper<CartItem> wrapper = new LambdaQueryWrapper<CartItem>()
                 .eq(CartItem::getUserId, userId)
-                .eq(CartItem::getProductId, req.getProductId()));
+                .eq(CartItem::getProductId, req.getProductId());
+        if (req.getSkuId() != null) {
+            wrapper.eq(CartItem::getSkuId, req.getSkuId());
+        } else {
+            wrapper.isNull(CartItem::getSkuId);
+        }
+        CartItem existing = getOne(wrapper);
         if (existing != null) {
             existing.setQuantity(existing.getQuantity() + req.getQuantity());
             updateById(existing);
@@ -49,10 +69,12 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
         CartItem item = new CartItem();
         item.setUserId(userId);
         item.setProductId(req.getProductId());
+        item.setSkuId(req.getSkuId());
         item.setQuantity(req.getQuantity());
         item.setChecked(1);
         save(item);
-        log.info("加购成功: userId={}, productId={}, quantity={}", userId, req.getProductId(), req.getQuantity());
+        log.info("加购成功: userId={}, productId={}, skuId={}, quantity={}",
+                userId, req.getProductId(), req.getSkuId(), req.getQuantity());
     }
 
     @Transactional

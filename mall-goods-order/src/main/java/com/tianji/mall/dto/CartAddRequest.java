@@ -13,4 +13,6 @@ public class CartAddRequest {
     @NotNull(message = "数量不能为空")
     @Min(value = 1, message = "数量至少为1")
     private Integer quantity;
+
+    private Long skuId;
 }

@@ -26,6 +26,7 @@ CREATE TABLE IF NOT EXISTS cart_item (
     user_id BIGINT,
     product_id BIGINT,
     quantity INT,
+    sku_id BIGINT,
     checked INT DEFAULT 1,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
@@ -67,6 +68,8 @@ CREATE TABLE IF NOT EXISTS order_item (
     product_name VARCHAR(128),
     price DECIMAL(10,2),
     quantity INT,
+    sku_id BIGINT,
+    sku_specs VARCHAR(512),
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -130,4 +133,26 @@ CREATE TABLE IF NOT EXISTS favorite (
     product_id  BIGINT NOT NULL,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     UNIQUE KEY uk_user_product (user_id, product_id)
+);
+
+CREATE TABLE IF NOT EXISTS product_sku (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    sku_code VARCHAR(128),
+    specs VARCHAR(512) NOT NULL,
+    price DECIMAL(10,2),
+    stock INT DEFAULT 0,
+    sales INT DEFAULT 0,
+    status TINYINT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS product_attribute (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    name VARCHAR(64) NOT NULL,
+    `value` VARCHAR(256) NOT NULL,
+    sort INT DEFAULT 0,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );

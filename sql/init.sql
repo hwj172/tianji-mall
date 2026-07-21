@@ -66,6 +66,7 @@ CREATE TABLE IF NOT EXISTS `cart_item` (
   `user_id`     BIGINT   NOT NULL COMMENT '用户ID',
   `product_id`  BIGINT   NOT NULL COMMENT '商品ID',
   `quantity`    INT      NOT NULL DEFAULT 1 COMMENT '数量',
+  `sku_id`      BIGINT   DEFAULT NULL COMMENT 'SKU ID（有规格时必须选）',
   `checked`     TINYINT  NOT NULL DEFAULT 1 COMMENT '是否选中：1-是 0-否',
   `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -118,6 +119,8 @@ CREATE TABLE IF NOT EXISTS `order_item` (
   `product_name` VARCHAR(256)  NOT NULL COMMENT '商品名称（快照）',
   `price`        DECIMAL(10,2) NOT NULL COMMENT '单价（快照）',
   `quantity`     INT           NOT NULL COMMENT '数量',
+  `sku_id`       BIGINT        DEFAULT NULL COMMENT 'SKU ID',
+  `sku_specs`    VARCHAR(512)  DEFAULT NULL COMMENT 'SKU规格快照',
   `create_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -235,3 +238,35 @@ CREATE TABLE IF NOT EXISTS `ai_conversation` (
   PRIMARY KEY (`id`),
   KEY `idx_user_session` (`user_id`, `session_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI对话记录表';
+
+-- ============================================================
+-- 商品 SKU（规格组合）
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `product_sku` (
+  `id`          BIGINT         NOT NULL AUTO_INCREMENT COMMENT 'SKU ID',
+  `product_id`  BIGINT         NOT NULL COMMENT '商品ID',
+  `sku_code`    VARCHAR(128)   DEFAULT NULL COMMENT '商家自定义SKU编码',
+  `specs`       VARCHAR(512)   NOT NULL COMMENT '规格组合（如"颜色:深空黑;容量:256G"）',
+  `price`       DECIMAL(10,2)  DEFAULT NULL COMMENT 'SKU价格（NULL=使用商品默认价）',
+  `stock`       INT            NOT NULL DEFAULT 0 COMMENT 'SKU库存',
+  `sales`       INT            NOT NULL DEFAULT 0 COMMENT 'SKU销量',
+  `status`      TINYINT        NOT NULL DEFAULT 1 COMMENT '状态：1=启用 0=禁用',
+  `create_time` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_product_id` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品SKU表';
+
+-- ============================================================
+-- 商品属性参数
+-- ============================================================
+CREATE TABLE IF NOT EXISTS `product_attribute` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '属性ID',
+  `product_id`  BIGINT       NOT NULL COMMENT '商品ID',
+  `name`        VARCHAR(64)  NOT NULL COMMENT '属性名（如"屏幕尺寸"）',
+  `value`       VARCHAR(256) NOT NULL COMMENT '属性值（如"6.1英寸"）',
+  `sort`        INT          NOT NULL DEFAULT 0 COMMENT '排序',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_product_id` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品属性表';

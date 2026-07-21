@@ -60,6 +60,12 @@ class OrderServiceIntegrationTest {
     @Autowired
     private AddressMapper addressMapper;
 
+    @Autowired
+    private ProductSkuMapper skuMapper;
+
+    @Autowired
+    private ProductAttributeMapper attributeMapper;
+
     private Long addressId;
     private Long productId;
 
@@ -68,6 +74,8 @@ class OrderServiceIntegrationTest {
         orderItemMapper.delete(new LambdaQueryWrapper<>());
         orderMapper.delete(new LambdaQueryWrapper<>());
         cartItemMapper.delete(new LambdaQueryWrapper<>());
+        skuMapper.delete(new LambdaQueryWrapper<>());
+        attributeMapper.delete(new LambdaQueryWrapper<>());
         productMapper.delete(new LambdaQueryWrapper<>());
         addressMapper.delete(new LambdaQueryWrapper<>());
 
@@ -154,6 +162,71 @@ class OrderServiceIntegrationTest {
         // 库存已恢复
         Product product = productMapper.selectById(productId);
         assertThat(product.getStock()).isEqualTo(10);
+    }
+
+    // ==================== SKU 下单集成测试 ====================
+
+    @Test
+    void shouldCreateOrderWithSkuAndDeductSkuStock() {
+        // 插入 SKU
+        ProductSku sku = new ProductSku();
+        sku.setProductId(productId);
+        sku.setSpecs("颜色:红;容量:256G");
+        sku.setPrice(BigDecimal.valueOf(7999));
+        sku.setStock(5);
+        sku.setStatus(1);
+        skuMapper.insert(sku);
+
+        // 购物车加 SKU
+        CartItem cartItem = new CartItem();
+        cartItem.setUserId(1L);
+        cartItem.setProductId(productId);
+        cartItem.setSkuId(sku.getId());
+        cartItem.setQuantity(2);
+        cartItem.setChecked(1);
+        cartItemMapper.insert(cartItem);
+
+        OrderCreateRequest req = buildCreateRequest(addressId, List.of(cartItem.getId()));
+        Order order = orderService.createOrder(1L, req);
+
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(15998));
+
+        // SKU 库存已扣减
+        ProductSku updatedSku = skuMapper.selectById(sku.getId());
+        assertThat(updatedSku.getStock()).isEqualTo(3);
+
+        // order_item 记录了 SKU 信息
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId()));
+        assertThat(items.get(0).getSkuId()).isEqualTo(sku.getId());
+        assertThat(items.get(0).getSkuSpecs()).isEqualTo("颜色:红;容量:256G");
+    }
+
+    @Test
+    void shouldCancelOrderWithSkuAndRestoreSkuStock() {
+        ProductSku sku = new ProductSku();
+        sku.setProductId(productId);
+        sku.setSpecs("颜色:蓝");
+        sku.setPrice(BigDecimal.valueOf(5999));
+        sku.setStock(10);
+        sku.setStatus(1);
+        skuMapper.insert(sku);
+
+        CartItem cartItem = new CartItem();
+        cartItem.setUserId(1L);
+        cartItem.setProductId(productId);
+        cartItem.setSkuId(sku.getId());
+        cartItem.setQuantity(3);
+        cartItem.setChecked(1);
+        cartItemMapper.insert(cartItem);
+
+        OrderCreateRequest req = buildCreateRequest(addressId, List.of(cartItem.getId()));
+        Order order = orderService.createOrder(1L, req);
+
+        orderService.cancelOrder(1L, order.getId());
+
+        ProductSku restoredSku = skuMapper.selectById(sku.getId());
+        assertThat(restoredSku.getStock()).isEqualTo(10);
     }
 
     // ==================== helpers ====================

@@ -16,6 +16,7 @@ public class CartItem {
     private Long userId;
     private Long productId;
     private Integer quantity;
+    private Long skuId;
     private Integer checked;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;

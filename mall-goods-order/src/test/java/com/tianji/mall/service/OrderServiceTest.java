@@ -46,12 +46,14 @@ class OrderServiceTest {
     private org.apache.rocketmq.spring.core.RocketMQTemplate rocketMQTemplate;
     @Mock
     private CouponService couponService;
+    @Mock
+    private ProductSkuService skuService;
 
     private OrderService orderService;
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        orderService = new OrderService(orderItemMapper, cartService, productService, addressService, couponService, redissonClient, rocketMQTemplate);
+        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, redissonClient, rocketMQTemplate);
         ReflectionTestUtils.setField(orderService, "baseMapper", orderMapper);
 
         // 分布式锁 mock：所有锁操作默认成功（lenient 避免非锁路径报 UnnecessaryStubbing）
@@ -431,5 +433,78 @@ class OrderServiceTest {
         item.setPrice(BigDecimal.valueOf(1000));
         item.setQuantity(quantity);
         return item;
+    }
+
+    // ==================== SKU 下单测试 ====================
+
+    @Test
+    void shouldCreateOrderWithSkuItems() {
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(1L);
+        req.setCartItemIds(List.of(1L));
+
+        Address addr = buildAddress(1L, 100L);
+        CartItem cartItem = buildCartItem(1L, 100L, 1L, 2);
+        cartItem.setSkuId(10L);
+        Product product = buildProduct(1L, "iPhone", 100, 1);
+        ProductSku sku = buildSku(10L, 1L, "颜色:红;容量:256G", BigDecimal.valueOf(7999), 10);
+
+        when(addressService.getById(1L)).thenReturn(addr);
+        when(cartService.listByIds(List.of(1L))).thenReturn(List.of(cartItem));
+        when(productService.listByIds(List.of(1L))).thenReturn(List.of(product));
+        when(skuService.getById(10L)).thenReturn(sku);
+        when(orderMapper.insert(any(Order.class))).thenReturn(1);
+        when(orderItemMapper.insert(any(OrderItem.class))).thenReturn(1);
+
+        Order order = orderService.createOrder(100L, req);
+
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(15998));
+    }
+
+    @Test
+    void shouldThrowWhenSkuStockInsufficientForOrder() {
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(1L);
+        req.setCartItemIds(List.of(1L));
+
+        Address addr = buildAddress(1L, 100L);
+        CartItem cartItem = buildCartItem(1L, 100L, 1L, 5);
+        cartItem.setSkuId(10L);
+        Product product = buildProduct(1L, "iPhone", 100, 1);
+        ProductSku sku = buildSku(10L, 1L, "颜色:红", BigDecimal.valueOf(199), 3); // SKU only 3
+
+        when(addressService.getById(1L)).thenReturn(addr);
+        when(cartService.listByIds(List.of(1L))).thenReturn(List.of(cartItem));
+        when(productService.listByIds(List.of(1L))).thenReturn(List.of(product));
+        when(skuService.getById(10L)).thenReturn(sku);
+
+        assertThatThrownBy(() -> orderService.createOrder(100L, req))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("库存不足");
+    }
+
+    @Test
+    void shouldCancelOrderWithSkuAndRestoreSkuStock() {
+        Order order = buildOrder(1L, 100L, 1);
+        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.updateById(order)).thenReturn(1);
+        OrderItem item = buildOrderItem(1L, 1L, 1L, 2);
+        item.setSkuId(10L);
+        when(orderItemMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(item));
+
+        orderService.cancelOrder(100L, 1L);
+
+        verify(skuService).restoreStock(1L, 10L, 2);
+    }
+
+    private ProductSku buildSku(Long id, Long productId, String specs, BigDecimal price, int stock) {
+        ProductSku sku = new ProductSku();
+        sku.setId(id);
+        sku.setProductId(productId);
+        sku.setSpecs(specs);
+        sku.setPrice(price);
+        sku.setStock(stock);
+        sku.setStatus(1);
+        return sku;
     }
 }

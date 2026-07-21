@@ -41,11 +41,17 @@ class ProductServiceTest {
     @Mock
     private com.tianji.mall.feign.AiChatFeignClient aiChatFeignClient;
 
+    @Mock
+    private ProductSkuService skuService;
+
+    @Mock
+    private ProductAttributeService attributeService;
+
     private ProductService productService;
 
     @BeforeEach
     void setUp() {
-        productService = new ProductService(aiChatFeignClient);
+        productService = new ProductService(aiChatFeignClient, skuService, attributeService);
         ReflectionTestUtils.setField(productService, "baseMapper", productMapper);
     }
 
