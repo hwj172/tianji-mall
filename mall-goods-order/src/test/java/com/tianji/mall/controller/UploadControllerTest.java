@@ -3,6 +3,7 @@ package com.tianji.mall.controller;
 import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.FileStorageService;
+import com.tianji.mall.service.DashboardService;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -42,6 +43,9 @@ class UploadControllerTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @Test
     void shouldUploadSingleFile() throws Exception {

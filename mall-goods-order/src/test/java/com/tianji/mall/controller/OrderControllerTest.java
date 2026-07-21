@@ -7,6 +7,7 @@ import com.tianji.mall.dto.OrderItemResponse;
 import com.tianji.mall.entity.Address;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.service.OrderService;
+import com.tianji.mall.service.DashboardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -52,6 +53,9 @@ class OrderControllerTest {
 
     @MockBean
     private com.tianji.mall.service.RefundService refundService;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @BeforeEach
     void setUp() {

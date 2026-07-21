@@ -6,6 +6,7 @@ import com.tianji.mall.dto.AddressRequest;
 import com.tianji.mall.entity.Address;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.AddressMapper;
+import com.tianji.mall.service.DashboardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -39,6 +40,9 @@ class AddressServiceIntegrationTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @Autowired
     private AddressMapper addressMapper;

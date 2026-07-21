@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.ProductService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -46,6 +47,9 @@ class ProductControllerTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     // ==================== GET /api/product/list ====================
 

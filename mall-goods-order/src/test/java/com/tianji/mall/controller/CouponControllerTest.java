@@ -7,6 +7,7 @@ import com.tianji.mall.entity.UserCoupon;
 import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.CouponService;
+import com.tianji.mall.service.DashboardService;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -57,6 +58,9 @@ class CouponControllerTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @Test
     void shouldListAvailableCoupons() throws Exception {

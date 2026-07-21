@@ -7,6 +7,7 @@ import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.CartItemMapper;
+import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -42,6 +43,9 @@ class CartServiceIntegrationTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @Autowired
     private CartItemMapper cartItemMapper;

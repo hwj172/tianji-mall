@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
+import com.tianji.mall.service.DashboardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -37,6 +38,9 @@ class ProductServiceIntegrationTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @Autowired
     private ProductMapper productMapper;

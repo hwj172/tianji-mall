@@ -7,6 +7,7 @@ import com.tianji.mall.dto.CartUpdateRequest;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.service.CartService;
+import com.tianji.mall.service.DashboardService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,9 @@ class CartControllerTest {
 
     @MockBean
     private PayFeignClient payFeignClient;
+
+    @MockBean
+    private DashboardService dashboardService;
 
     @BeforeEach
     void setUp() {
