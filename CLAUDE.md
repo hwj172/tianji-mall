@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：419 (Common 28 + Gateway 34 + User 28 + Mall-Goods-Order 300 + Pay 6 + MCP 4 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：422 (Common 28 + Gateway 35 + User 28 + Mall-Goods-Order 302 + Pay 6 + MCP 4 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -146,7 +146,8 @@ mvn package -DskipTests
 | 模块 | 测试类 | Tests | 覆盖 |
 |------|--------|-------|------|
 | user-service | UserControllerTest | 5 | register/login/info + @Valid + 缺 Auth |
-| mall-goods-order | ProductControllerTest | 7 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 |
+| mall-goods-order | ProductControllerTest | 7 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 + 浏览足迹端点 |
+| mall-goods-order | RegionControllerTest | 2 | 省市区树形数据 + 31 省结构验证 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
 | mall-goods-order | OrderControllerTest | 11 | create/list/detail/cancel/receive/refund + @Valid + 内部端点 + 缺 Auth |
@@ -202,6 +203,7 @@ mvn package -DskipTests
 - **PayFeignClient**：mall-goods-order → pay-service Feign 调用（退款），测试中需 `@MockBean PayFeignClient`。
 - **商品描述富文本**：`product.description` 使用 `LONGTEXT`（支持图文混排）。前端可用 Quill/TinyMCE 等富文本编辑器，后端 JSON 中直接存 HTML 字符串。
 - **浏览足迹**：`browsing_history` 表（userId, productId, createTime），唯一约束 `uk_bh_user_product`。`ProductController.detail` 自动记录（JWT 可选，未登录跳过）。`GET /api/product/history`（最近 50 条）+ `DELETE /api/product/history`（清空）。`recordView` 用先删后插实现 UPSERT。`BrowsingHistoryServiceTest` 3 个单元测试。
+- **省市区级联**：`RegionController`（`GET /api/region/tree`，公开端点无需 JWT）从 `regions.json`（classpath 资源）加载行政区划树形数据（省→市→区三级，31 省，~137KB），`@PostConstruct` 时一次性加载到内存。供前端地址表单级联选择器使用，不改变 address 表结构（仍存文本）。网关白名单已放行 `/api/region` 前缀。`RegionControllerTest` 2 个端点测试。
 - **物流轨迹**：`logistics_track` 表（orderId, status, description, location, trackTime）。admin 发货时 `LogisticsService.generateTracks(orderId)` 自动生成 6 个模拟节点（PICKED_UP→IN_TRANSIT×2→OUT_FOR_DELIVERY×2→DELIVERED，时间从当前递增 28h）。用户端点 `GET /api/order/{id}/logistics`（JWT 鉴权 + 订单所有权校验 + status≥3）。`LogisticsServiceTest` 3 个单元测试。
 - **消息通知**：`notification` 表（userId, type, title, content, relatedOrderId, isRead）。`NotificationConsumer`（独立 consumerGroup `notification-consumer`，监听 order-topic）消费 SHIPPED/COMPLETED/CREATED 事件创建通知。用户端点：`GET /api/notification/list`（分页）、`GET /api/notification/unread-count`、`PUT /api/notification/{id}/read`、`PUT /api/notification/read-all`。`NotificationService.createNotification` best-effort（异常仅 log）。`NotificationServiceTest` 5 个单元测试 + `NotificationControllerTest` 4 个端点测试 + `NotificationConsumerTest` 3 个单元测试。所有 `@SpringBootTest` 类需 `@MockBean NotificationService`。
 - **@MockBean 补充**：涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService` + `@MockBean LogisticsService`；所有 `@SpringBootTest` 类需 `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）

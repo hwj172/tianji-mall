@@ -173,6 +173,17 @@ class AuthGlobalFilterTest {
         }
 
         @Test
+        @DisplayName("/api/region/tree 无需鉴权直接放行")
+        void shouldPassThroughRegionTree() {
+            ServerWebExchange exchange = createExchange("/api/region/tree");
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+
+        @Test
         @DisplayName("公开路径带 Authorization 头也放行（不报错）")
         void shouldPassThroughWithAuthHeader() {
             HttpHeaders headers = new HttpHeaders();
