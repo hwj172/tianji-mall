@@ -6,6 +6,7 @@ import com.tianji.mall.entity.Product;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.service.DashboardService;
+import com.tianji.mall.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -41,6 +42,9 @@ class ProductServiceIntegrationTest {
 
     @MockBean
     private DashboardService dashboardService;
+
+    @MockBean
+    private RecommendService recommendService;
 
     @Autowired
     private ProductMapper productMapper;

@@ -8,6 +8,7 @@ import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.ReviewService;
 import com.tianji.mall.service.DashboardService;
+import com.tianji.mall.service.RecommendService;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -63,6 +64,9 @@ class ReviewControllerTest {
 
     @MockBean
     private DashboardService dashboardService;
+
+    @MockBean
+    private RecommendService recommendService;
 
     @Test
     void shouldCreateReview() throws Exception {

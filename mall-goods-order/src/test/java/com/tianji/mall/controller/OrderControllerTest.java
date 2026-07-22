@@ -8,6 +8,7 @@ import com.tianji.mall.entity.Address;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.DashboardService;
+import com.tianji.mall.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -56,6 +57,9 @@ class OrderControllerTest {
 
     @MockBean
     private DashboardService dashboardService;
+
+    @MockBean
+    private RecommendService recommendService;
 
     @BeforeEach
     void setUp() {

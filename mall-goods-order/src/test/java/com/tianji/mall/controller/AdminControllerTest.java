@@ -10,6 +10,7 @@ import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.service.*;
+import com.tianji.mall.service.RecommendService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -73,6 +74,9 @@ class AdminControllerTest {
 
     @MockBean
     private DashboardService dashboardService;
+
+    @MockBean
+    private RecommendService recommendService;
 
     // ==================== GET /api/admin/category ====================
 

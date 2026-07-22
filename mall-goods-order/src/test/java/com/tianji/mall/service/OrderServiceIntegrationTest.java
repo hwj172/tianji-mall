@@ -7,6 +7,7 @@ import com.tianji.mall.entity.*;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.*;
 import com.tianji.mall.service.DashboardService;
+import com.tianji.mall.service.RecommendService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RLock;
@@ -48,6 +49,9 @@ class OrderServiceIntegrationTest {
 
     @MockBean
     private DashboardService dashboardService;
+
+    @MockBean
+    private RecommendService recommendService;
 
     @Autowired
     private OrderMapper orderMapper;
