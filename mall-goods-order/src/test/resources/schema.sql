@@ -116,6 +116,15 @@ CREATE TABLE IF NOT EXISTS logistics_track (
     KEY idx_lt_order (order_id)
 );
 
+CREATE TABLE IF NOT EXISTS browsing_history (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id     BIGINT NOT NULL,
+    product_id  BIGINT NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_bh_user_time (user_id, create_time DESC),
+    UNIQUE KEY uk_bh_user_product (user_id, product_id)
+);
+
 CREATE TABLE IF NOT EXISTS notification (
     id               BIGINT AUTO_INCREMENT PRIMARY KEY,
     user_id          BIGINT NOT NULL,

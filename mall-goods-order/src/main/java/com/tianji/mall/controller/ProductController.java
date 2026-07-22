@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.RecommendResponse;
+import com.tianji.mall.entity.BrowsingHistory;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.service.BrowsingHistoryService;
 import com.tianji.mall.service.ProductService;
 import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.SeckillService;
@@ -23,6 +25,7 @@ public class ProductController {
     private final ProductService productService;
     private final RecommendService recommendService;
     private final SeckillService seckillService;
+    private final BrowsingHistoryService browsingHistoryService;
     private final JwtUtil jwtUtil;
 
     @GetMapping("/list")
@@ -38,7 +41,13 @@ public class ProductController {
     }
 
     @GetMapping("/{id}")
-    public R<Map<String, Object>> detail(@PathVariable("id") Long id) {
+    public R<Map<String, Object>> detail(@PathVariable("id") Long id,
+                                          @RequestHeader(value = "Authorization", required = false) String authHeader) {
+        // 记录浏览足迹（JWT 可选，未登录跳过）
+        if (authHeader != null && authHeader.startsWith("Bearer ")) {
+            Long userId = jwtUtil.getUserId(authHeader.substring(7));
+            browsingHistoryService.recordView(userId, id);
+        }
         return R.ok(productService.getProductDetail(id));
     }
 
@@ -74,5 +83,20 @@ public class ProductController {
             userId = jwtUtil.getUserId(authHeader.substring(7));
         }
         return R.ok(recommendService.recommend(userId, count));
+    }
+
+    // ===== 浏览足迹 =====
+
+    @GetMapping("/history")
+    public R<List<BrowsingHistory>> history(@RequestHeader("Authorization") String authHeader) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        return R.ok(browsingHistoryService.getHistory(userId));
+    }
+
+    @DeleteMapping("/history")
+    public R<Void> clearHistory(@RequestHeader("Authorization") String authHeader) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        browsingHistoryService.clearHistory(userId);
+        return R.ok();
     }
 }

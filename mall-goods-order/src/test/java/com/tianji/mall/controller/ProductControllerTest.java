@@ -9,6 +9,8 @@ import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.ProductService;
 import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.SeckillService;
+import com.tianji.mall.entity.BrowsingHistory;
+import com.tianji.mall.service.BrowsingHistoryService;
 import com.tianji.mall.service.NotificationService;
 import com.tianji.common.util.JwtUtil;
 import org.junit.jupiter.api.Test;
@@ -25,8 +27,8 @@ import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.mockito.Mockito.doNothing;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -67,6 +69,9 @@ class ProductControllerTest {
 
     @MockBean
     private NotificationService notificationService;
+
+    @MockBean
+    private BrowsingHistoryService browsingHistoryService;
 
     // ==================== GET /api/product/list ====================
 
@@ -190,6 +195,30 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.total").value(0));
+    }
+
+    // ==================== GET/DELETE /api/product/history ====================
+
+    @Test
+    void shouldGetBrowsingHistory() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        when(browsingHistoryService.getHistory(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/product/history")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldClearBrowsingHistory() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        doNothing().when(browsingHistoryService).clearHistory(1L);
+
+        mockMvc.perform(delete("/api/product/history")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
     // ==================== helpers ====================
