@@ -23,6 +23,7 @@ public class Product implements Serializable {
     private Integer stock;
     private Integer sales;
     private Long categoryId;
+    private Long shopId;
     private String images;
     private Integer status;
     private BigDecimal seckillPrice;

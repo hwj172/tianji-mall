@@ -92,6 +92,12 @@ class AdminControllerTest {
     @MockBean
     private NotificationService notificationService;
 
+    @MockBean
+    private com.tianji.mall.service.ShopService shopService;
+
+    @MockBean
+    private com.tianji.mall.feign.UserFeignClient userFeignClient;
+
     // ==================== GET /api/admin/category ====================
 
     @Test

@@ -68,4 +68,10 @@ public class UserController {
     public R<Long> countUsers() {
         return R.ok(userService.countUsers());
     }
+
+    @PutMapping("/internal/promote")
+    public R<Void> promoteToSeller(@RequestParam("userId") Long userId) {
+        userService.promoteToSeller(userId);
+        return R.ok();
+    }
 }

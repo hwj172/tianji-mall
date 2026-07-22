@@ -105,4 +105,16 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     public long countUsers() {
         return count();
     }
+
+    public void promoteToSeller(Long userId) {
+        User user = getById(userId);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        if ("seller".equals(user.getRole())) {
+            throw new BizException("已经是商家");
+        }
+        user.setRole("seller");
+        updateById(user);
+    }
 }

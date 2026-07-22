@@ -56,6 +56,9 @@ class CartControllerTest {
     private PayFeignClient payFeignClient;
 
     @MockBean
+    private com.tianji.mall.feign.UserFeignClient userFeignClient;
+
+    @MockBean
     private DashboardService dashboardService;
 
     @MockBean
@@ -63,6 +66,9 @@ class CartControllerTest {
 
     @MockBean
     private NotificationService notificationService;
+
+    @MockBean
+    private com.tianji.mall.service.ShopService shopService;
 
     @BeforeEach
     void setUp() {

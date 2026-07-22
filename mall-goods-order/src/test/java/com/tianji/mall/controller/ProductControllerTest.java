@@ -56,6 +56,9 @@ class ProductControllerTest {
     private PayFeignClient payFeignClient;
 
     @MockBean
+    private com.tianji.mall.feign.UserFeignClient userFeignClient;
+
+    @MockBean
     private DashboardService dashboardService;
 
     @MockBean
@@ -73,13 +76,16 @@ class ProductControllerTest {
     @MockBean
     private BrowsingHistoryService browsingHistoryService;
 
+    @MockBean
+    private com.tianji.mall.service.ShopService shopService;
+
     // ==================== GET /api/product/list ====================
 
     @Test
     void shouldListProducts() throws Exception {
         Page<Product> page = new Page<>(1, 20);
         page.setTotal(0);
-        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/product/list"))
@@ -92,7 +98,7 @@ class ProductControllerTest {
     void shouldSearchByKeyword() throws Exception {
         Page<Product> page = new Page<>(1, 20);
         page.setTotal(1);
-        when(productService.getProductPage(isNull(), eq("手机"), isNull(), isNull(), isNull(), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), eq("手机"), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/product/list")

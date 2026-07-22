@@ -173,6 +173,17 @@ class AuthGlobalFilterTest {
         }
 
         @Test
+        @DisplayName("/api/shop/1 无需鉴权直接放行")
+        void shouldPassThroughShopDetail() {
+            ServerWebExchange exchange = createExchange("/api/shop/1");
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+
+        @Test
         @DisplayName("/api/region/tree 无需鉴权直接放行")
         void shouldPassThroughRegionTree() {
             ServerWebExchange exchange = createExchange("/api/region/tree");
@@ -471,6 +482,55 @@ class AuthGlobalFilterTest {
 
             verify(chain).filter(exchange);
             verify(response, never()).setStatusCode(any());
+        }
+    }
+
+    // ==================== Seller 路径鉴权 ====================
+
+    @Nested
+    @DisplayName("/api/seller/** — seller 角色鉴权")
+    class SellerPaths {
+
+        @Test
+        @DisplayName("seller 角色访问 /api/seller/shop 放行")
+        void shouldPassThroughWithSellerRole() {
+            String token = createTokenWithRole("2", "seller");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/seller/shop", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+
+        @Test
+        @DisplayName("admin 角色也能访问 /api/seller/shop")
+        void shouldPassThroughWithAdminRole() {
+            String token = createTokenWithRole("1", "admin");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/seller/shop", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+
+        @Test
+        @DisplayName("普通 user 角色访问 /api/seller/shop 返回 403")
+        void shouldReturn403WithUserRole() {
+            String token = createTokenWithRole("2", "user");
+            HttpHeaders headers = new HttpHeaders();
+            headers.set("Authorization", "Bearer " + token);
+            ServerWebExchange exchange = createExchange("/api/seller/shop", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(response).setStatusCode(HttpStatus.FORBIDDEN);
+            verify(chain, never()).filter(any());
         }
     }
 

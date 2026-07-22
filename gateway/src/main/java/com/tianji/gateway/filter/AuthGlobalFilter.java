@@ -30,12 +30,16 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     /** 管理员路径前缀，需要 admin 角色 */
     private static final String ADMIN_PATH_PREFIX = "/api/admin/";
 
+    /** 商家路径前缀，需要 seller 或 admin 角色 */
+    private static final String SELLER_PATH_PREFIX = "/api/seller/";
+
     /** 不需要鉴权的公开路径 */
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/user/login",
             "/api/user/register",
             "/api/product",
             "/api/region",
+            "/api/shop",
             "/api/pay/notify"
     );
 
@@ -107,6 +111,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             // admin 路径：必须有 admin 角色，否则返回 403
             if (path.startsWith(ADMIN_PATH_PREFIX) && !"admin".equals(role)) {
                 log.warn("非管理员尝试访问 admin 路径: {}, role={}", path, role);
+                exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
+                return exchange.getResponse().setComplete();
+            }
+
+            // seller 路径：必须有 seller 或 admin 角色，否则返回 403
+            if (path.startsWith(SELLER_PATH_PREFIX) && !"seller".equals(role) && !"admin".equals(role)) {
+                log.warn("非商家尝试访问 seller 路径: {}, role={}", path, role);
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();
             }

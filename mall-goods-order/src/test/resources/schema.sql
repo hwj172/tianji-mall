@@ -15,6 +15,7 @@ CREATE TABLE IF NOT EXISTS product (
     stock INT,
     sales INT DEFAULT 0,
     category_id BIGINT,
+    shop_id BIGINT DEFAULT NULL,
     images VARCHAR(1024),
     status INT DEFAULT 1,
     seckill_price DECIMAL(10,2),
@@ -203,6 +204,18 @@ CREATE TABLE IF NOT EXISTS product_similarity (
     UNIQUE KEY uk_pair (product_id, similar_product_id),
     KEY idx_product (product_id),
     KEY idx_score (score DESC)
+);
+
+CREATE TABLE IF NOT EXISTS shop (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name VARCHAR(64) NOT NULL,
+    logo VARCHAR(256),
+    description VARCHAR(512),
+    seller_id BIGINT NOT NULL,
+    status TINYINT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_seller (seller_id)
 );
 
 CREATE TABLE IF NOT EXISTS group_buy (

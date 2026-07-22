@@ -35,6 +35,9 @@ class RegionControllerTest {
     private PayFeignClient payFeignClient;
 
     @MockBean
+    private com.tianji.mall.feign.UserFeignClient userFeignClient;
+
+    @MockBean
     private DashboardService dashboardService;
 
     @MockBean
@@ -51,6 +54,9 @@ class RegionControllerTest {
 
     @MockBean
     private BrowsingHistoryService browsingHistoryService;
+
+    @MockBean
+    private com.tianji.mall.service.ShopService shopService;
 
     @Test
     void shouldReturnRegionTree() throws Exception {

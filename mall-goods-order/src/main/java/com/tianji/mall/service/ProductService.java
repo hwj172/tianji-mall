@@ -34,14 +34,17 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     private boolean useFulltext;
 
     @Cacheable(value = "productPage",
-               key = "'c' + #categoryId + '_k' + #keyword + '_min' + #minPrice + '_max' + #maxPrice + '_sort' + #sortBy + '_p' + #page + '_sz' + #size")
+               key = "'c' + #categoryId + '_k' + #keyword + '_min' + #minPrice + '_max' + #maxPrice + '_sort' + #sortBy + '_shop' + #shopId + '_p' + #page + '_sz' + #size")
     public Page<Product> getProductPage(Long categoryId, String keyword,
                                         BigDecimal minPrice, BigDecimal maxPrice,
-                                        String sortBy, int page, int size) {
+                                        String sortBy, Long shopId, int page, int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(Product::getStatus, 1);
         if (categoryId != null) {
             wrapper.eq(Product::getCategoryId, categoryId);
+        }
+        if (shopId != null) {
+            wrapper.eq(Product::getShopId, shopId);
         }
         if (minPrice != null) {
             wrapper.ge(Product::getPrice, minPrice);

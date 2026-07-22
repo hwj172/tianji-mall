@@ -90,6 +90,12 @@ class NotificationControllerTest {
     @MockBean
     private com.tianji.mall.feign.PayFeignClient payFeignClient;
 
+    @MockBean
+    private com.tianji.mall.service.ShopService shopService;
+
+    @MockBean
+    private com.tianji.mall.feign.UserFeignClient userFeignClient;
+
     @BeforeEach
     void setUp() {
         when(jwtUtil.getUserId(anyString())).thenReturn(1L);

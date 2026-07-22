@@ -62,7 +62,7 @@ tianji-mall (父 POM)
 ├── tianji-common          # 公共模块（jar，无启动类）
 ├── gateway                # API 网关 — 8080
 ├── user-service           # 用户服务 — 8081
-├── mall-goods-order       # 商城核心（商品+购物车+订单+地址+退款+评价+物流+通知+优惠券+收藏+秒杀+拼团+推荐+后台管理）— 8082
+├── mall-goods-order       # 商城核心（商品+购物车+订单+地址+退款+评价+物流+通知+优惠券+收藏+秒杀+拼团+推荐+店铺+后台管理）— 8082
 ├── pay-service            # 支付宝沙盒支付 — 8083
 ├── mcp-server             # 工具网关（REST API，非 MCP 协议）— 8084
 └── ai-chat-service        # AI 智能导购（DeepSeek + 工具调用）— 8085
@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：422 (Common 28 + Gateway 35 + User 28 + Mall-Goods-Order 302 + Pay 6 + MCP 4 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：439 (Common 28 + Gateway 39 + User 28 + Mall-Goods-Order 315 + Pay 6 + MCP 4 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -151,10 +151,12 @@ mvn package -DskipTests
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
 | mall-goods-order | OrderControllerTest | 11 | create/list/detail/cancel/receive/refund + @Valid + 内部端点 + 缺 Auth |
-| mall-goods-order | AdminControllerTest | 38 | category/product/order CRUD + SKU/属性/coupon CRUD + dashboard + 非 admin 拒绝 |
+| mall-goods-order | AdminControllerTest | 44 | category/product/order CRUD + SKU/属性/coupon CRUD + dashboard + 店铺管理 + 非 admin 拒绝 |
+| mall-goods-order | ShopControllerTest | 3 | 店铺详情（公开）+ 关店 404 + 注册开店（JWT） |
+| mall-goods-order | SellerControllerTest | 5 | 我的店铺/更新店铺/商品列表/创建商品/商家看板 |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
 | mcp-server | ToolControllerTest | 4 | JWT 手动提取 + 工具路由 + 未知工具 + 未授权 |
-| gateway | AuthGlobalFilterTest | 26 | 公开路径/内部路径/JWT 鉴权/非 API 路径/边界 + Mock WebFlux |
+| gateway | AuthGlobalFilterTest | 35 | 公开路径/内部路径/JWT 鉴权/seller 鉴权/非 API 路径/边界 + Mock WebFlux |
 | gateway | CorsConfigTest | 4 | CORS 过滤器 Bean 创建 + 预检/GET/无 Origin |
 
 ## 关键约定
@@ -190,7 +192,9 @@ mvn package -DskipTests
 - **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
 - **Sentinel**：Gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配），业务模块使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。版本由父 POM dependencyManagement 指定（2023.0.1.0）。测试中 `spring.cloud.sentinel.enabled: false`。规则全部通过 Dashboard 动态配置，不在代码中预设。
 - **SkyWalking**：纯 javaagent 挂载，零代码依赖。Agent 下载和 IDEA VM Options 见 `skywalking/README.md`。
-- **管理员鉴权**：User 表 `role` 字段（user/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
+- **管理员鉴权**：User 表 `role` 字段（user/seller/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin，对 `/api/seller/**` 路径校验 role=seller 或 admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
+- **商家角色**：用户可注册开店（`POST /api/shop/register`），成功后 user-service 通过内部端点 `PUT /api/user/internal/promote` 将角色提升为 seller（best-effort，失败不阻塞开店）。seller 可管理自己店铺的商品和订单。网关鉴权：`/api/seller/**` 需要 role=seller 或 admin。
+- **店铺系统**：`shop` 表（id, name, logo, description, sellerId UNIQUE, status）。`ShopService` 继承 `ServiceImpl<ShopMapper, Shop>`，提供 register/getBySellerId/updateShopInfo。`UserFeignClient` 注入使用 `@Autowired(required = false)`（测试环境 Feign 被排除，无 FeignClientFactory bean）。`Product` 表增加 `shop_id BIGINT DEFAULT NULL`（NULL=平台商品，非 NULL=店铺商品）。`ProductService.getProductPage` 新增第 6 个参数 `Long shopId`（非 null 时过滤店铺商品）。`ShopController`（`/api/shop`）公开端点：`GET /api/shop/{id}`（店铺详情+商品列表）。`SellerController`（`/api/seller`）商家后台：`GET /shop`/`PUT /shop`/`GET /products`/`POST /product`/`PUT /product/{id}`/`DELETE /product/{id}`/`GET /orders`/`PUT /order/{id}/ship`/`GET /dashboard`。Admin 管理端点：`GET /api/admin/shop/list` + `PUT /api/admin/shop/{id}/status` + `DELETE /api/admin/shop/{id}`。`ShopServiceTest` 5 个单元测试（MockitoExtension），`ShopControllerTest` 3 个端点测试 + `SellerControllerTest` 5 个端点测试（@SpringBootTest）。
 - **后台管理**：`AdminController`（`/api/admin`）提供分类/商品/订单 CRUD + SKU/属性管理（`/api/admin/product/{productId}/sku` 和 `/api/admin/product/{productId}/attribute`）。分类管理含树形结构查询 + 子分类保护（有子分类不可删）+ 商品数量检查。商品管理含分页查询/创建/更新/软删除（status=0）。订单管理含分页查询/发货（status 2→3）/完成（status 3→4）。
 - **数据看板**：`GET /api/admin/dashboard`（`AdminController.getDashboard` → `DashboardService.getDashboard()`）聚合 GMV/订单数/用户数 + 今日/本周/本月趋势 + Top 10 热销商品 + 订单状态分布 + 分类销售额。GMV 只统计 status 2/3/4（已付款/已发货/已完成）。用户数通过 OpenFeign 调用 user-service `/api/user/internal/count`，失败时降级为 0。`DashboardServiceTest` 5 个单元测试 Mock Mapper 和 Feign 客户端。
 - **首页推荐**：`GET /api/product/recommend`（`ProductController.recommend` → `RecommendService.recommend(userId, count)`），JWT 可选。热销榜（加权得分公式：`sales×0.5 + favorites×0.3 + reviews×0.2`）始终返回；猜你喜欢（基于用户购买品类偏好）仅 JWT 存在时返回；买了还买（订单共现矩阵关联规则）始终返回，无购买记录时用热销商品做种子。热销榜和关联矩阵用 `@Cacheable` 缓存（TTL 1小时），通过 `@Scheduled` 每小时 evict。关联规则存 `product_similarity` 表。`RecommendServiceTest` 5 个单元测试 + `ProductControllerTest` 2 个端点测试。
@@ -206,7 +210,7 @@ mvn package -DskipTests
 - **省市区级联**：`RegionController`（`GET /api/region/tree`，公开端点无需 JWT）从 `regions.json`（classpath 资源）加载行政区划树形数据（省→市→区三级，31 省，~137KB），`@PostConstruct` 时一次性加载到内存。供前端地址表单级联选择器使用，不改变 address 表结构（仍存文本）。网关白名单已放行 `/api/region` 前缀。`RegionControllerTest` 2 个端点测试。
 - **物流轨迹**：`logistics_track` 表（orderId, status, description, location, trackTime）。admin 发货时 `LogisticsService.generateTracks(orderId)` 自动生成 6 个模拟节点（PICKED_UP→IN_TRANSIT×2→OUT_FOR_DELIVERY×2→DELIVERED，时间从当前递增 28h）。用户端点 `GET /api/order/{id}/logistics`（JWT 鉴权 + 订单所有权校验 + status≥3）。`LogisticsServiceTest` 3 个单元测试。
 - **消息通知**：`notification` 表（userId, type, title, content, relatedOrderId, isRead）。`NotificationConsumer`（独立 consumerGroup `notification-consumer`，监听 order-topic）消费 SHIPPED/COMPLETED/CREATED 事件创建通知。用户端点：`GET /api/notification/list`（分页）、`GET /api/notification/unread-count`、`PUT /api/notification/{id}/read`、`PUT /api/notification/read-all`。`NotificationService.createNotification` best-effort（异常仅 log）。`NotificationServiceTest` 5 个单元测试 + `NotificationControllerTest` 4 个端点测试 + `NotificationConsumerTest` 3 个单元测试。所有 `@SpringBootTest` 类需 `@MockBean NotificationService`。
-- **@MockBean 补充**：涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService` + `@MockBean LogisticsService`；所有 `@SpringBootTest` 类需 `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）
+- **@MockBean 补充**：涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService` + `@MockBean LogisticsService`；所有 `@SpringBootTest` 类需 `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService` + `@MockBean ShopService` + `@MockBean UserFeignClient`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）
 
 ## 行为准则
 

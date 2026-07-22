@@ -40,6 +40,36 @@ public class AdminController {
     private final SeckillService seckillService;
     private final GroupBuyService groupBuyService;
     private final LogisticsService logisticsService;
+    private final ShopService shopService;
+
+    // ==================== 店铺管理 ====================
+
+    @GetMapping("/shop/list")
+    public R<List<com.tianji.mall.entity.Shop>> shopList() {
+        return R.ok(shopService.list());
+    }
+
+    @PutMapping("/shop/{id}/status")
+    public R<Void> updateShopStatus(@PathVariable("id") Long id,
+                                     @RequestParam("status") Integer status) {
+        com.tianji.mall.entity.Shop shop = shopService.getById(id);
+        if (shop == null) {
+            return R.fail(500, "店铺不存在");
+        }
+        shop.setStatus(status);
+        shopService.updateById(shop);
+        return R.ok();
+    }
+
+    @DeleteMapping("/shop/{id}")
+    public R<Void> deleteShop(@PathVariable("id") Long id) {
+        com.tianji.mall.entity.Shop shop = shopService.getById(id);
+        if (shop == null) {
+            return R.fail(500, "店铺不存在");
+        }
+        shopService.removeById(id);
+        return R.ok();
+    }
 
     // ==================== 分类管理 ====================
 

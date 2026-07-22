@@ -62,6 +62,9 @@ class CouponControllerTest {
     private PayFeignClient payFeignClient;
 
     @MockBean
+    private com.tianji.mall.feign.UserFeignClient userFeignClient;
+
+    @MockBean
     private DashboardService dashboardService;
 
     @MockBean
@@ -69,6 +72,9 @@ class CouponControllerTest {
 
     @MockBean
     private NotificationService notificationService;
+
+    @MockBean
+    private com.tianji.mall.service.ShopService shopService;
 
     @Test
     void shouldListAvailableCoupons() throws Exception {
