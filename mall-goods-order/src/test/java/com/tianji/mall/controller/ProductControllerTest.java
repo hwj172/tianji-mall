@@ -4,8 +4,11 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.dto.RecommendResponse;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.ProductService;
+import com.tianji.mall.service.RecommendService;
+import com.tianji.common.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -50,6 +53,12 @@ class ProductControllerTest {
 
     @MockBean
     private DashboardService dashboardService;
+
+    @MockBean
+    private RecommendService recommendService;
+
+    @MockBean
+    private JwtUtil jwtUtil;
 
     // ==================== GET /api/product/list ====================
 
@@ -118,6 +127,47 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.data.total").value(12))
                 .andExpect(jsonPath("$.data.success").value(12))
                 .andExpect(jsonPath("$.data.failed").value(0));
+    }
+
+    // ==================== GET /api/product/recommend ====================
+
+    @Test
+    void shouldRecommendWithoutJwt() throws Exception {
+        RecommendResponse resp = new RecommendResponse(
+                List.of(),
+                List.of(new RecommendResponse.RecommendItem(1L, "iPhone",
+                        java.math.BigDecimal.valueOf(6999), 5000L, "")),
+                List.of()
+        );
+        when(recommendService.recommend(isNull(), eq(10))).thenReturn(resp);
+
+        mockMvc.perform(get("/api/product/recommend"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.hotSales[0].name").value("iPhone"))
+                .andExpect(jsonPath("$.data.guessYouLike").isEmpty());
+    }
+
+    @Test
+    void shouldRecommendWithJwt() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+
+        RecommendResponse resp = new RecommendResponse(
+                List.of(new RecommendResponse.RecommendItem(2L, "保护壳",
+                        java.math.BigDecimal.valueOf(49), 3000L, "")),
+                List.of(),
+                List.of(new RecommendResponse.RecommendItem(3L, "数据线",
+                        java.math.BigDecimal.valueOf(29), 2000L, "和 iPhone 一起买"))
+        );
+        when(recommendService.recommend(eq(1L), eq(5))).thenReturn(resp);
+
+        mockMvc.perform(get("/api/product/recommend")
+                        .header("Authorization", "Bearer test-token")
+                        .param("count", "5"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.guessYouLike[0].name").value("保护壳"))
+                .andExpect(jsonPath("$.data.buyAfterBuy[0].name").value("数据线"));
     }
 
     // ==================== helpers ====================
