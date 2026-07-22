@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS category (
 CREATE TABLE IF NOT EXISTS product (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(128),
-    description TEXT,
+    description LONGTEXT,
     price DECIMAL(10,2),
     stock INT,
     sales INT DEFAULT 0,
