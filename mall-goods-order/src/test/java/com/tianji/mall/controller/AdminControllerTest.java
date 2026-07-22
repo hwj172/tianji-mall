@@ -78,6 +78,12 @@ class AdminControllerTest {
     @MockBean
     private RecommendService recommendService;
 
+    @MockBean
+    private SeckillService seckillService;
+
+    @MockBean
+    private GroupBuyService groupBuyService;
+
     // ==================== GET /api/admin/category ====================
 
     @Test
@@ -543,6 +549,71 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.data.totalUsers").value(200))
                 .andExpect(jsonPath("$.data.today.orders").value(10))
                 .andExpect(jsonPath("$.data.topProducts[0].name").value("iPhone"));
+    }
+
+    // ==================== 秒杀管理 ====================
+
+    @Test
+    void shouldSetSeckill() throws Exception {
+        mockMvc.perform(post("/api/admin/product/1/seckill")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"price\":1999,\"stock\":10,\"startTime\":\"2026-07-22T10:00:00\",\"endTime\":\"2026-07-22T18:00:00\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldReturn400OnMissingSeckillFields() throws Exception {
+        mockMvc.perform(post("/api/admin/product/1/seckill")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"price\":1999}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldClearSeckill() throws Exception {
+        mockMvc.perform(delete("/api/admin/product/1/seckill")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== 拼团管理 ====================
+
+    @Test
+    void shouldCreateGroupBuy() throws Exception {
+        com.tianji.mall.entity.GroupBuy gb = new com.tianji.mall.entity.GroupBuy();
+        gb.setId(1L);
+        when(groupBuyService.createActivity(any())).thenReturn(gb);
+
+        mockMvc.perform(post("/api/admin/group-buy")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":1,\"tiers\":[{\"count\":2,\"discount\":0.9},{\"count\":5,\"discount\":0.8}],\"startTime\":\"2026-07-22T10:00:00\",\"endTime\":\"2026-07-29T10:00:00\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.id").value(1));
+    }
+
+    @Test
+    void shouldReturn400OnMissingGroupBuyFields() throws Exception {
+        mockMvc.perform(post("/api/admin/group-buy")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":1}"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    void shouldUpdateGroupBuy() throws Exception {
+        mockMvc.perform(put("/api/admin/group-buy/1")
+                        .header("X-User-Role", "admin")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"productId\":1,\"tiers\":[{\"count\":3,\"discount\":0.85}],\"startTime\":\"2026-07-22T10:00:00\",\"endTime\":\"2026-07-30T10:00:00\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
     // ==================== auth: non-admin rejection ====================

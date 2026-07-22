@@ -5,13 +5,16 @@ import com.tianji.common.result.R;
 import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.dto.DashboardResponse;
+import com.tianji.mall.dto.GroupBuyActivityRequest;
+import com.tianji.mall.dto.SeckillSetRequest;
 import com.tianji.mall.dto.SkuRequest;
+import com.tianji.mall.entity.Coupon;
+import com.tianji.mall.entity.GroupBuy;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.dto.CouponRequest;
-import com.tianji.mall.entity.Coupon;
 import com.tianji.mall.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -34,6 +37,8 @@ public class AdminController {
     private final ProductSkuService skuService;
     private final ProductAttributeService attributeService;
     private final DashboardService dashboardService;
+    private final SeckillService seckillService;
+    private final GroupBuyService groupBuyService;
 
     // ==================== 分类管理 ====================
 
@@ -220,5 +225,32 @@ public class AdminController {
     @GetMapping("/dashboard")
     public R<DashboardResponse> getDashboard() {
         return R.ok(dashboardService.getDashboard());
+    }
+
+    // ==================== 秒杀管理 ====================
+
+    @PostMapping("/product/{id}/seckill")
+    public R<Void> setSeckill(@PathVariable("id") Long id, @Valid @RequestBody SeckillSetRequest req) {
+        seckillService.setSeckill(id, req.getPrice(), req.getStock(), req.getStartTime(), req.getEndTime());
+        return R.ok();
+    }
+
+    @DeleteMapping("/product/{id}/seckill")
+    public R<Void> clearSeckill(@PathVariable("id") Long id) {
+        seckillService.clearSeckill(id);
+        return R.ok();
+    }
+
+    // ==================== 拼团管理 ====================
+
+    @PostMapping("/group-buy")
+    public R<GroupBuy> createGroupBuy(@Valid @RequestBody GroupBuyActivityRequest req) {
+        return R.ok(groupBuyService.createActivity(req));
+    }
+
+    @PutMapping("/group-buy/{id}")
+    public R<Void> updateGroupBuy(@PathVariable("id") Long id, @Valid @RequestBody GroupBuyActivityRequest req) {
+        groupBuyService.updateActivity(id, req);
+        return R.ok();
     }
 }

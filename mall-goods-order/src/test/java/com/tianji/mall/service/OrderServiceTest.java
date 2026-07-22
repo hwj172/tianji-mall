@@ -7,6 +7,7 @@ import com.tianji.mall.dto.OrderDetailResponse;
 import com.tianji.mall.entity.*;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -48,12 +49,16 @@ class OrderServiceTest {
     private CouponService couponService;
     @Mock
     private ProductSkuService skuService;
+    @Mock
+    private SeckillService seckillService;
+    @Mock
+    private ProductMapper productMapper;
 
     private OrderService orderService;
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, redissonClient, rocketMQTemplate);
+        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, redissonClient, rocketMQTemplate, seckillService, productMapper);
         ReflectionTestUtils.setField(orderService, "baseMapper", orderMapper);
 
         // 分布式锁 mock：所有锁操作默认成功（lenient 避免非锁路径报 UnnecessaryStubbing）

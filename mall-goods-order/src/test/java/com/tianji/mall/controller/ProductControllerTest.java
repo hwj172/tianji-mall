@@ -8,6 +8,7 @@ import com.tianji.mall.dto.RecommendResponse;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.ProductService;
 import com.tianji.mall.service.RecommendService;
+import com.tianji.mall.service.SeckillService;
 import com.tianji.common.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -59,6 +60,9 @@ class ProductControllerTest {
 
     @MockBean
     private JwtUtil jwtUtil;
+
+    @MockBean
+    private SeckillService seckillService;
 
     // ==================== GET /api/product/list ====================
 
@@ -168,6 +172,20 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.guessYouLike[0].name").value("保护壳"))
                 .andExpect(jsonPath("$.data.buyAfterBuy[0].name").value("数据线"));
+    }
+
+    // ==================== GET /api/product/seckill/list ====================
+
+    @Test
+    void shouldListSeckillProducts() throws Exception {
+        Page<Product> page = new Page<>(1, 20);
+        page.setTotal(0);
+        when(seckillService.getSeckillList(1, 20)).thenReturn(page);
+
+        mockMvc.perform(get("/api/product/seckill/list"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.total").value(0));
     }
 
     // ==================== helpers ====================

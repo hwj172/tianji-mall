@@ -6,29 +6,22 @@ import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
 
 import java.io.Serializable;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("product")
-public class Product implements Serializable {
+@TableName("group_buy")
+public class GroupBuy implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String name;
-    private String description;
-    private BigDecimal price;
-    private Integer stock;
-    private Integer sales;
-    private Long categoryId;
-    private String images;
+    private Long productId;
+    private String tiers;
+    private LocalDateTime startTime;
+    private LocalDateTime endTime;
+    private Integer expireHours;
     private Integer status;
-    private BigDecimal seckillPrice;
-    private Integer seckillStock;
-    private LocalDateTime seckillStartTime;
-    private LocalDateTime seckillEndTime;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

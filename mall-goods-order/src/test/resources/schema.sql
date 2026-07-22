@@ -17,6 +17,10 @@ CREATE TABLE IF NOT EXISTS product (
     category_id BIGINT,
     images VARCHAR(1024),
     status INT DEFAULT 1,
+    seckill_price DECIMAL(10,2),
+    seckill_stock INT,
+    seckill_start_time TIMESTAMP,
+    seckill_end_time TIMESTAMP,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -167,4 +171,32 @@ CREATE TABLE IF NOT EXISTS product_similarity (
     UNIQUE KEY uk_pair (product_id, similar_product_id),
     KEY idx_product (product_id),
     KEY idx_score (score DESC)
+);
+
+CREATE TABLE IF NOT EXISTS group_buy (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    tiers VARCHAR(1024) NOT NULL,
+    start_time TIMESTAMP NOT NULL,
+    end_time TIMESTAMP NOT NULL,
+    expire_hours INT DEFAULT 24,
+    status TINYINT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_product (product_id)
+);
+
+CREATE TABLE IF NOT EXISTS group_buy_order (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    group_id VARCHAR(32) NOT NULL,
+    product_id BIGINT NOT NULL,
+    target_tier INT NOT NULL,
+    current_count INT DEFAULT 1,
+    status VARCHAR(20) DEFAULT 'OPEN',
+    expire_time TIMESTAMP NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_group_id (group_id),
+    KEY idx_gbo_product (product_id),
+    KEY idx_gbo_status (status)
 );

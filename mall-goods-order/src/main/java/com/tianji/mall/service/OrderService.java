@@ -10,6 +10,7 @@ import com.tianji.mall.dto.OrderItemResponse;
 import com.tianji.mall.entity.*;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
@@ -41,6 +42,8 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final CouponService couponService;
     private final RedissonClient redissonClient;
     private final RocketMQTemplate rocketMQTemplate;
+    private final SeckillService seckillService;
+    private final ProductMapper productMapper;
 
     @Transactional
     public Order createOrder(Long userId, OrderCreateRequest req) {
@@ -118,11 +121,18 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                     itemPrice = sku.getPrice() != null ? sku.getPrice() : product.getPrice();
                     skuSpecs = sku.getSpecs();
                 } else {
-                    // 无 SKU：用商品级价格和库存（向后兼容）
-                    if (product.getStock() < cartItem.getQuantity()) {
-                        throw new BizException("商品「" + product.getName() + "」库存不足");
+                    // 无 SKU：判秒杀窗口
+                    if (seckillService.isSeckillActive(product)) {
+                        if (product.getSeckillStock() < cartItem.getQuantity()) {
+                            throw new BizException("秒杀商品「" + product.getName() + "」库存不足");
+                        }
+                        itemPrice = product.getSeckillPrice();
+                    } else {
+                        if (product.getStock() < cartItem.getQuantity()) {
+                            throw new BizException("商品「" + product.getName() + "」库存不足");
+                        }
+                        itemPrice = product.getPrice();
                     }
-                    itemPrice = product.getPrice();
                 }
 
                 OrderItem orderItem = new OrderItem();
@@ -172,7 +182,15 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 if (item.getSkuId() != null) {
                     skuService.deductStock(item.getProductId(), item.getSkuId(), item.getQuantity());
                 } else {
-                    productService.deductStock(item.getProductId(), item.getQuantity());
+                    Product product = productMap.get(item.getProductId());
+                    if (product != null && seckillService.isSeckillActive(product)) {
+                        int affected = productMapper.deductSeckillStock(item.getProductId(), item.getQuantity());
+                        if (affected == 0) {
+                            throw new BizException("秒杀商品「" + product.getName() + "」库存不足");
+                        }
+                    } else {
+                        productService.deductStock(item.getProductId(), item.getQuantity());
+                    }
                 }
             }
 
@@ -249,7 +267,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             if (item.getSkuId() != null) {
                 skuService.restoreStock(item.getProductId(), item.getSkuId(), item.getQuantity());
             } else {
-                productService.restoreStock(item.getProductId(), item.getQuantity());
+                Product product = productMapper.selectById(item.getProductId());
+                if (product != null && product.getSeckillPrice() != null && product.getSeckillStock() != null) {
+                    productMapper.restoreSeckillStock(item.getProductId(), item.getQuantity());
+                } else {
+                    productService.restoreStock(item.getProductId(), item.getQuantity());
+                }
             }
         }
 
@@ -341,7 +364,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             if (item.getSkuId() != null) {
                 skuService.restoreStock(item.getProductId(), item.getSkuId(), item.getQuantity());
             } else {
-                productService.restoreStock(item.getProductId(), item.getQuantity());
+                Product product = productMapper.selectById(item.getProductId());
+                if (product != null && product.getSeckillPrice() != null && product.getSeckillStock() != null) {
+                    productMapper.restoreSeckillStock(item.getProductId(), item.getQuantity());
+                } else {
+                    productService.restoreStock(item.getProductId(), item.getQuantity());
+                }
             }
         }
 
