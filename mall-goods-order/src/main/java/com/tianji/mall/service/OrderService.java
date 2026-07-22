@@ -322,6 +322,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setLogisticsCompany(logisticsCompany);
         order.setTrackingNumber(trackingNumber);
         updateById(order);
+
+        // 发送发货事件
+        publishOrderEvent(order, "SHIPPED");
     }
 
     public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> getOrderListAdmin(
@@ -344,6 +347,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setStatus(4); // 已完成
         order.setReceiveTime(LocalDateTime.now());
         updateById(order);
+
+        // 发送完成事件
+        publishOrderEvent(order, "COMPLETED");
     }
 
     // ==================== 超时取消 ====================

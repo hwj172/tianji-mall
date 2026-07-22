@@ -3,7 +3,9 @@ package com.tianji.mall.controller;
 import com.tianji.common.result.R;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
+import com.tianji.mall.entity.LogisticsTrack;
 import com.tianji.mall.entity.Order;
+import com.tianji.mall.service.LogisticsService;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.RefundService;
 import com.tianji.common.util.JwtUtil;
@@ -22,6 +24,7 @@ public class OrderController {
     private final OrderService orderService;
     private final RefundService refundService;
     private final JwtUtil jwtUtil;
+    private final LogisticsService logisticsService;
 
     @PostMapping("/create")
     public R<Order> create(@RequestHeader("Authorization") String authHeader,
@@ -66,6 +69,20 @@ public class OrderController {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         refundService.requestRefund(userId, id, body.get("reason"));
         return R.ok();
+    }
+
+    @GetMapping("/{id}/logistics")
+    public R<List<LogisticsTrack>> logistics(@RequestHeader("Authorization") String authHeader,
+                                              @PathVariable("id") Long id) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        Order order = orderService.getById(id);
+        if (order == null || !order.getUserId().equals(userId)) {
+            return R.fail(500, "订单不存在");
+        }
+        if (order.getStatus() < 3) {
+            return R.fail(500, "订单尚未发货");
+        }
+        return R.ok(logisticsService.getTracks(id));
     }
 
     // ===== 内部端点（供其他服务 Feign 调用，无需 JWT 鉴权）=====

@@ -8,6 +8,7 @@ import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.AddressMapper;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.RecommendService;
+import com.tianji.mall.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -47,6 +48,9 @@ class AddressServiceIntegrationTest {
 
     @MockBean
     private RecommendService recommendService;
+
+    @MockBean
+    private NotificationService notificationService;
 
     @Autowired
     private AddressMapper addressMapper;

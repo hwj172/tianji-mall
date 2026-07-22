@@ -8,6 +8,7 @@ import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.FavoriteService;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.RecommendService;
+import com.tianji.mall.service.NotificationService;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -64,6 +65,9 @@ class FavoriteControllerTest {
 
     @MockBean
     private RecommendService recommendService;
+
+    @MockBean
+    private NotificationService notificationService;
 
     @Test
     void shouldToggleFavoriteAdd() throws Exception {

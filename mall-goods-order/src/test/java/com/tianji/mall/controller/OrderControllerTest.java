@@ -9,6 +9,9 @@ import com.tianji.mall.entity.Order;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.RecommendService;
+import com.tianji.mall.entity.LogisticsTrack;
+import com.tianji.mall.service.LogisticsService;
+import com.tianji.mall.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -60,6 +63,12 @@ class OrderControllerTest {
 
     @MockBean
     private RecommendService recommendService;
+
+    @MockBean
+    private LogisticsService logisticsService;
+
+    @MockBean
+    private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {
@@ -194,6 +203,21 @@ class OrderControllerTest {
         doNothing().when(orderService).payOrder(1L, 1L);
 
         mockMvc.perform(put("/api/order/internal/1/pay").param("userId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== logistics ====================
+
+    @Test
+    void shouldGetLogisticsTracks() throws Exception {
+        Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
+        order.setStatus(3); // shipped
+        when(orderService.getById(1L)).thenReturn(order);
+        when(logisticsService.getTracks(1L)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/order/1/logistics")
+                        .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

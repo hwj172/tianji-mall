@@ -68,6 +68,7 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
         review.setOrderId(req.getOrderId());
         review.setRating(req.getRating());
         review.setContent(req.getContent());
+        review.setImages(req.getImages());
         review.setStatus(1); // 默认审核通过
         save(review);
 

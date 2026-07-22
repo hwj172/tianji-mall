@@ -105,6 +105,29 @@ CREATE TABLE IF NOT EXISTS review (
     CONSTRAINT uk_user_order_product UNIQUE (user_id, order_id, product_id)
 );
 
+CREATE TABLE IF NOT EXISTS logistics_track (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    order_id    BIGINT NOT NULL,
+    status      VARCHAR(32) NOT NULL,
+    description VARCHAR(256) NOT NULL,
+    location    VARCHAR(128),
+    track_time  TIMESTAMP NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_lt_order (order_id)
+);
+
+CREATE TABLE IF NOT EXISTS notification (
+    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id          BIGINT NOT NULL,
+    type             VARCHAR(32) NOT NULL,
+    title            VARCHAR(128) NOT NULL,
+    content          VARCHAR(512) NOT NULL,
+    related_order_id BIGINT,
+    is_read          TINYINT DEFAULT 0,
+    create_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_n_user_read (user_id, is_read)
+);
+
 CREATE TABLE IF NOT EXISTS coupon (
     id               BIGINT AUTO_INCREMENT PRIMARY KEY,
     name             VARCHAR(128) NOT NULL,

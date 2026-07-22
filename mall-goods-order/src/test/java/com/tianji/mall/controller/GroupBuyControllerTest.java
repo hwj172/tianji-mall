@@ -10,6 +10,7 @@ import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.GroupBuyService;
 import com.tianji.mall.service.RecommendService;
+import com.tianji.mall.service.NotificationService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -64,6 +65,9 @@ class GroupBuyControllerTest {
 
     @MockBean
     private com.tianji.mall.service.SeckillService seckillService;
+
+    @MockBean
+    private NotificationService notificationService;
 
     // ==================== GET /api/group-buy/list ====================
 

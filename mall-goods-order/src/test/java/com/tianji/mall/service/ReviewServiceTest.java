@@ -146,6 +146,26 @@ class ReviewServiceTest {
     }
 
     @Test
+    void shouldCreateReviewWithImages() {
+        Order order = buildOrder(1L, 100L, 4);
+        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderItemMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(buildOrderItem(1L, 10L)));
+        when(reviewMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+
+        ReviewCreateRequest req = new ReviewCreateRequest();
+        req.setOrderId(1L);
+        req.setProductId(10L);
+        req.setRating(5);
+        req.setContent("很好");
+        req.setImages("/uploads/a.jpg,/uploads/b.jpg");
+
+        reviewService.createReview(100L, req);
+
+        verify(reviewMapper).insert(any(Review.class));
+    }
+
+    @Test
     void shouldGetProductReviews() {
         Review review = new Review();
         review.setId(1L);

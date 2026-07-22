@@ -20,4 +20,6 @@ public class ReviewCreateRequest {
     private Integer rating;
 
     private String content;
+
+    private String images; // 评价图片URL列表，JSON数组或逗号分隔
 }

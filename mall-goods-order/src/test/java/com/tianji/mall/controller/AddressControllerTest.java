@@ -7,6 +7,7 @@ import com.tianji.mall.entity.Address;
 import com.tianji.mall.service.AddressService;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.RecommendService;
+import com.tianji.mall.service.NotificationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -57,6 +58,9 @@ class AddressControllerTest {
 
     @MockBean
     private RecommendService recommendService;
+
+    @MockBean
+    private NotificationService notificationService;
 
     @BeforeEach
     void setUp() {

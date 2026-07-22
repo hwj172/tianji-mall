@@ -39,6 +39,7 @@ public class AdminController {
     private final DashboardService dashboardService;
     private final SeckillService seckillService;
     private final GroupBuyService groupBuyService;
+    private final LogisticsService logisticsService;
 
     // ==================== 分类管理 ====================
 
@@ -124,6 +125,7 @@ public class AdminController {
     public R<Void> shipOrder(@PathVariable("id") Long id,
                               @RequestBody Map<String, String> body) {
         orderService.shipOrder(id, body.get("logisticsCompany"), body.get("trackingNumber"));
+        logisticsService.generateTracks(id);
         return R.ok();
     }
 

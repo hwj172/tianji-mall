@@ -62,7 +62,7 @@ tianji-mall (父 POM)
 ├── tianji-common          # 公共模块（jar，无启动类）
 ├── gateway                # API 网关 — 8080
 ├── user-service           # 用户服务 — 8081
-├── mall-goods-order       # 商城核心（商品+购物车+订单+地址+退款+后台管理）— 8082
+├── mall-goods-order       # 商城核心（商品+购物车+订单+地址+退款+评价+物流+通知+优惠券+收藏+秒杀+拼团+推荐+后台管理）— 8082
 ├── pay-service            # 支付宝沙盒支付 — 8083
 ├── mcp-server             # 工具网关（REST API，非 MCP 协议）— 8084
 └── ai-chat-service        # AI 智能导购（DeepSeek + 工具调用）— 8085
@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：310 (Gateway 30 + Controller 66 + Service 集成 60 + Service 单元 151 + Consumer 3)，8 个模块全覆盖。**
+**当前测试总数：414 (Common 28 + Gateway 34 + User 28 + Mall-Goods-Order 295 + Pay 6 + MCP 4 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -172,8 +172,8 @@ mvn package -DskipTests
 - **购物车去重**：`CartService.addItem` 按 (productId + skuId) 去重（原仅 productId），同一商品不同 SKU 视为不同购物车项
 - **分布式锁**：`OrderService.createOrder` 使用 Redisson `getMultiLock`（有 SKU 时锁 key 为 `lock:sku:{id}`，无 SKU 时 `lock:product:{id}`，锁 key 排序防死锁，waitTime=3s / leaseTime=10s），锁内重新读取库存。`cancelOrder`/`cancelOrderByTimeout` 恢复库存无并发竞争，不加锁，SKU 商品调用 `skuService.restoreStock`
 - **商品缓存**：`ProductService.getProductById` / `getProductPage` 使用 `@Cacheable`，`deductStock` / `restoreStock` 使用 `@CacheEvict`。序列化器 `GenericJackson2JsonRedisSerializer`，TTL 30min
-- **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED），`OrderEventConsumer` 消费并留日志。异常不阻塞主流程。
-- **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient` + `@MockBean PayFeignClient`；涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService`）；所有 `@SpringBootTest` 类需 `@MockBean RecommendService`（ProductController 还需 `@MockBean JwtUtil`）；所有 `@SpringBootTest` Controller 测试需 `@MockBean SeckillService` + `@MockBean GroupBuyService`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）
+- **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder/shipOrder/completeOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED/SHIPPED/COMPLETED），`OrderEventConsumer` 消费并留日志，`NotificationConsumer`（独立 consumerGroup）消费 CREATED/SHIPPED/COMPLETED 创建通知。异常不阻塞主流程。
+- **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate` + `@MockBean AiChatFeignClient` + `@MockBean PayFeignClient` + `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService`（mall-goods-order）；详见下方 `@MockBean 补充`
 - **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）。存量回填走 `POST /api/product/internal/sync-vectors`（`syncAllVectors`，只同步 status=1 商品，返回 `{total, success, failed}` 统计，Milvus upsert 幂等可重复触发）
 - **RAG 管道**：`AiChatService.chat` 预检索 — 用户消息 → SiliconFlow Embedding（BAAI/bge-large-zh-v1.5, 1024 维）→ Milvus COSINE Top-5 → Feign 批量查商品 → 注入 System Prompt；RAG 失败降级为空列表，工具调用保留作 fallback。`VectorSearchService` 启动时自动建 collection（product_vectors, IVF_FLAT），Milvus 不可用时所有方法降级不抛异常
 - **Embedding**：**禁止引入 Spring AI**（2.0.x 需要 Spring Boot 4 / Framework 7，与本项目 Boot 3.2.5 运行时不兼容，编译能过但启动报 `ClassNotFoundException: RetryTemplate`）。Embedding 由 `EmbeddingClient`（RestTemplate 直连 SiliconFlow `/v1/embeddings`，OpenAI 兼容）实现
@@ -200,6 +200,9 @@ mvn package -DskipTests
 - **退款**：全单退款走支付宝 `AlipayTradeRefundRequest`。`RefundService.requestRefund()` 校验订单（status=2 + 所有权）+ 防重复，`PayFeignClient` 调用 pay-service 内部端点 `POST /api/pay/internal/refund` 执行实际退款。
 - **超时取消**：下单时 RocketMQ 延迟消息（delayLevel 16=30min，tag:TIMEOUT_CHECK），`OrderTimeoutConsumer` 消费检查订单状态，PENDING→CANCELLED + 恢复库存。best-effort（发送失败不阻塞主流程）。
 - **PayFeignClient**：mall-goods-order → pay-service Feign 调用（退款），测试中需 `@MockBean PayFeignClient`。
+- **物流轨迹**：`logistics_track` 表（orderId, status, description, location, trackTime）。admin 发货时 `LogisticsService.generateTracks(orderId)` 自动生成 6 个模拟节点（PICKED_UP→IN_TRANSIT×2→OUT_FOR_DELIVERY×2→DELIVERED，时间从当前递增 28h）。用户端点 `GET /api/order/{id}/logistics`（JWT 鉴权 + 订单所有权校验 + status≥3）。`LogisticsServiceTest` 3 个单元测试。
+- **消息通知**：`notification` 表（userId, type, title, content, relatedOrderId, isRead）。`NotificationConsumer`（独立 consumerGroup `notification-consumer`，监听 order-topic）消费 SHIPPED/COMPLETED/CREATED 事件创建通知。用户端点：`GET /api/notification/list`（分页）、`GET /api/notification/unread-count`、`PUT /api/notification/{id}/read`、`PUT /api/notification/read-all`。`NotificationService.createNotification` best-effort（异常仅 log）。`NotificationServiceTest` 5 个单元测试 + `NotificationControllerTest` 4 个端点测试 + `NotificationConsumerTest` 3 个单元测试。所有 `@SpringBootTest` 类需 `@MockBean NotificationService`。
+- **@MockBean 补充**：涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService` + `@MockBean LogisticsService`；所有 `@SpringBootTest` 类需 `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）
 
 ## 行为准则
 

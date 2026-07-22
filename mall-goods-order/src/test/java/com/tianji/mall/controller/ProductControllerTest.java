@@ -9,6 +9,7 @@ import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.ProductService;
 import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.SeckillService;
+import com.tianji.mall.service.NotificationService;
 import com.tianji.common.util.JwtUtil;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +64,9 @@ class ProductControllerTest {
 
     @MockBean
     private SeckillService seckillService;
+
+    @MockBean
+    private NotificationService notificationService;
 
     // ==================== GET /api/product/list ====================
 
