@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：278 (Gateway 30 + Controller 51 + Service 集成 60 + Service 单元 134 + Consumer 3)，8 个模块全覆盖。**
+**当前测试总数：285 (Gateway 30 + Controller 53 + Service 集成 60 + Service 单元 139 + Consumer 3)，8 个模块全覆盖。**
 
 ### 测试分层
 
@@ -146,7 +146,7 @@ mvn package -DskipTests
 | 模块 | 测试类 | Tests | 覆盖 |
 |------|--------|-------|------|
 | user-service | UserControllerTest | 5 | register/login/info + @Valid + 缺 Auth |
-| mall-goods-order | ProductControllerTest | 5 | 公开端点（无需 JWT） + BizException + 内部回填端点 |
+| mall-goods-order | ProductControllerTest | 7 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
 | mall-goods-order | OrderControllerTest | 11 | create/list/detail/cancel/receive/refund + @Valid + 内部端点 + 缺 Auth |
@@ -173,7 +173,7 @@ mvn package -DskipTests
 - **分布式锁**：`OrderService.createOrder` 使用 Redisson `getMultiLock`（有 SKU 时锁 key 为 `lock:sku:{id}`，无 SKU 时 `lock:product:{id}`，锁 key 排序防死锁，waitTime=3s / leaseTime=10s），锁内重新读取库存。`cancelOrder`/`cancelOrderByTimeout` 恢复库存无并发竞争，不加锁，SKU 商品调用 `skuService.restoreStock`
 - **商品缓存**：`ProductService.getProductById` / `getProductPage` 使用 `@Cacheable`，`deductStock` / `restoreStock` 使用 `@CacheEvict`。序列化器 `GenericJackson2JsonRedisSerializer`，TTL 30min
 - **RocketMQ**：`OrderService` 在 createOrder/cancelOrder/payOrder 后发送 `order-topic` 消息（Tag: CREATED/PAID/CANCELLED），`OrderEventConsumer` 消费并留日志。异常不阻塞主流程。
-- **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient` + `@MockBean PayFeignClient`；涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService`）
+- **测试中 Redis/MQ**：`application-test.yml` 排除 `RedisAutoConfiguration` + `RocketMQAutoConfiguration` + `NacosConfigEndpointAutoConfiguration`，所有 `@SpringBootTest` 类需 `@MockBean RedissonClient` + `@MockBean RocketMQTemplate`（mall-goods-order 额外需 `@MockBean AiChatFeignClient` + `@MockBean PayFeignClient`；涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService`）；所有 `@SpringBootTest` 类需 `@MockBean RecommendService`（ProductController 还需 `@MockBean JwtUtil`）
 - **向量同步**：mall-goods-order 通过 `AiChatFeignClient` 调用 ai-chat-service 的 `POST /api/vector/upsert`，`ProductService.syncVector` best-effort（异常仅 warn，不阻塞主流程）。存量回填走 `POST /api/product/internal/sync-vectors`（`syncAllVectors`，只同步 status=1 商品，返回 `{total, success, failed}` 统计，Milvus upsert 幂等可重复触发）
 - **RAG 管道**：`AiChatService.chat` 预检索 — 用户消息 → SiliconFlow Embedding（BAAI/bge-large-zh-v1.5, 1024 维）→ Milvus COSINE Top-5 → Feign 批量查商品 → 注入 System Prompt；RAG 失败降级为空列表，工具调用保留作 fallback。`VectorSearchService` 启动时自动建 collection（product_vectors, IVF_FLAT），Milvus 不可用时所有方法降级不抛异常
 - **Embedding**：**禁止引入 Spring AI**（2.0.x 需要 Spring Boot 4 / Framework 7，与本项目 Boot 3.2.5 运行时不兼容，编译能过但启动报 `ClassNotFoundException: RetryTemplate`）。Embedding 由 `EmbeddingClient`（RestTemplate 直连 SiliconFlow `/v1/embeddings`，OpenAI 兼容）实现
@@ -192,6 +192,7 @@ mvn package -DskipTests
 - **管理员鉴权**：User 表 `role` 字段（user/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
 - **后台管理**：`AdminController`（`/api/admin`）提供分类/商品/订单 CRUD + SKU/属性管理（`/api/admin/product/{productId}/sku` 和 `/api/admin/product/{productId}/attribute`）。分类管理含树形结构查询 + 子分类保护（有子分类不可删）+ 商品数量检查。商品管理含分页查询/创建/更新/软删除（status=0）。订单管理含分页查询/发货（status 2→3）/完成（status 3→4）。
 - **数据看板**：`GET /api/admin/dashboard`（`AdminController.getDashboard` → `DashboardService.getDashboard()`）聚合 GMV/订单数/用户数 + 今日/本周/本月趋势 + Top 10 热销商品 + 订单状态分布 + 分类销售额。GMV 只统计 status 2/3/4（已付款/已发货/已完成）。用户数通过 OpenFeign 调用 user-service `/api/user/internal/count`，失败时降级为 0。`DashboardServiceTest` 5 个单元测试 Mock Mapper 和 Feign 客户端。
+- **首页推荐**：`GET /api/product/recommend`（`ProductController.recommend` → `RecommendService.recommend(userId, count)`），JWT 可选。热销榜（加权得分公式：`sales×0.5 + favorites×0.3 + reviews×0.2`）始终返回；猜你喜欢（基于用户购买品类偏好）仅 JWT 存在时返回；买了还买（订单共现矩阵关联规则）始终返回，无购买记录时用热销商品做种子。热销榜和关联矩阵用 `@Cacheable` 缓存（TTL 1小时），通过 `@Scheduled` 每小时 evict。关联规则存 `product_similarity` 表。`RecommendServiceTest` 5 个单元测试 + `ProductControllerTest` 2 个端点测试。
 - **订单状态**：1=待付款、2=已付款、3=已发货、4=已完成、5=已取消。退款状态独立在 `refund` 表（processing/success/fail）。
 - **订单收货**：用户侧 `PUT /api/order/{id}/receive`（`OrderService.confirmReceive`）——校验所有权 + status=3，设 status=4 + receiveTime。
 - **退款**：全单退款走支付宝 `AlipayTradeRefundRequest`。`RefundService.requestRefund()` 校验订单（status=2 + 所有权）+ 防重复，`PayFeignClient` 调用 pay-service 内部端点 `POST /api/pay/internal/refund` 执行实际退款。
