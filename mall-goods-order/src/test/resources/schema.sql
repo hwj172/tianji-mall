@@ -156,3 +156,15 @@ CREATE TABLE IF NOT EXISTS product_attribute (
     sort INT DEFAULT 0,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS product_similarity (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    product_id BIGINT NOT NULL,
+    similar_product_id BIGINT NOT NULL,
+    co_count INT DEFAULT 0,
+    score DECIMAL(10,4) DEFAULT 0,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_pair (product_id, similar_product_id),
+    KEY idx_product (product_id),
+    KEY idx_score (score DESC)
+);
