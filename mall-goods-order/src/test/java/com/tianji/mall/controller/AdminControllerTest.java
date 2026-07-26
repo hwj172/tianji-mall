@@ -100,6 +100,9 @@ class AdminControllerTest {
     @MockBean
     private com.tianji.mall.feign.UserFeignClient userFeignClient;
 
+    @MockBean
+    private BannerService bannerService;
+
     // ==================== GET /api/admin/category ====================
 
     @Test

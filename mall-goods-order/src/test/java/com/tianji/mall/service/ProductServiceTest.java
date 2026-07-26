@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.mapper.ProductMapper;
+import com.tianji.mall.mapper.ReviewMapper;
+import com.tianji.mall.mapper.ShopMapper;
 import org.apache.ibatis.builder.MapperBuilderAssistant;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -47,11 +49,17 @@ class ProductServiceTest {
     @Mock
     private ProductAttributeService attributeService;
 
+    @Mock
+    private ReviewMapper reviewMapper;
+
+    @Mock
+    private ShopMapper shopMapper;
+
     private ProductService productService;
 
     @BeforeEach
     void setUp() {
-        productService = new ProductService(aiChatFeignClient, skuService, attributeService);
+        productService = new ProductService(aiChatFeignClient, skuService, attributeService, reviewMapper, shopMapper);
         ReflectionTestUtils.setField(productService, "baseMapper", productMapper);
     }
 

@@ -399,3 +399,16 @@ CREATE TABLE IF NOT EXISTS `group_buy_participant` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order` (`order_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='拼团参团记录表';
+
+-- Banner 轮播图表
+CREATE TABLE IF NOT EXISTS `banner` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT 'Banner ID',
+  `title`       VARCHAR(128) NOT NULL COMMENT '标题',
+  `image_url`   VARCHAR(512) NOT NULL COMMENT '图片 URL',
+  `link_url`    VARCHAR(512) DEFAULT NULL COMMENT '跳转链接',
+  `sort`        INT          NOT NULL DEFAULT 0 COMMENT '排序（越小越前）',
+  `status`      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态：1-启用 0-停用',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Banner 轮播图表';

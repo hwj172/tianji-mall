@@ -7,8 +7,11 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.entity.ProductSku;
+import com.tianji.mall.entity.Shop;
 import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
+import com.tianji.mall.mapper.ReviewMapper;
+import com.tianji.mall.mapper.ShopMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -18,6 +21,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -29,6 +33,8 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     private final AiChatFeignClient aiChatFeignClient;
     private final ProductSkuService skuService;
     private final ProductAttributeService attributeService;
+    private final ReviewMapper reviewMapper;
+    private final ShopMapper shopMapper;
 
     @Value("${search.use-fulltext:true}")
     private boolean useFulltext;
@@ -86,7 +92,49 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         Product product = getProductById(id);
         List<ProductSku> skus = skuService.listByProductId(id);
         List<ProductAttribute> attrs = attributeService.listByProductId(id);
-        return Map.of("product", product, "skus", skus, "attributes", attrs);
+
+        // 评价统计
+        Map<String, Object> reviewStats = new LinkedHashMap<>();
+        try {
+            Map<String, Object> stats = reviewMapper.selectStatsByProductId(id);
+            long count = ((Number) stats.get("count")).longValue();
+            double avgRating = ((Number) stats.get("avgRating")).doubleValue();
+            long goodCount = ((Number) stats.get("goodCount")).longValue();
+            reviewStats.put("count", count);
+            reviewStats.put("avgRating", Math.round(avgRating * 10.0) / 10.0);
+            reviewStats.put("goodRate", count > 0 ? Math.round(goodCount * 100.0 / count) / 100.0 : 0.0);
+        } catch (Exception e) {
+            log.warn("查询评价统计失败: productId={}", id, e);
+            reviewStats.put("count", 0);
+            reviewStats.put("avgRating", 0.0);
+            reviewStats.put("goodRate", 0.0);
+        }
+
+        // 店铺信息
+        Map<String, Object> shop = null;
+        if (product.getShopId() != null) {
+            Shop s = shopMapper.selectById(product.getShopId());
+            if (s != null) {
+                shop = Map.of("id", s.getId(), "name", s.getName(), "logo", s.getLogo() != null ? s.getLogo() : "");
+            }
+        }
+
+        // SKU 规格选择器数据
+        Map<String, Object> specSelector = skuService.buildSpecSelectorData(skus);
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("product", product);
+        result.put("attributes", attrs);
+        result.put("reviewStats", reviewStats);
+        result.put("shop", shop);
+        if (specSelector != null) {
+            result.put("specTree", specSelector.get("specTree"));
+            result.put("skuMatrix", specSelector.get("skuMatrix"));
+        } else {
+            result.put("specTree", null);
+            result.put("skuMatrix", null);
+        }
+        return result;
     }
 
     @CacheEvict(value = "product", key = "#productId")

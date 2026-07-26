@@ -8,6 +8,7 @@ import com.tianji.mall.dto.DashboardResponse;
 import com.tianji.mall.dto.GroupBuyActivityRequest;
 import com.tianji.mall.dto.SeckillSetRequest;
 import com.tianji.mall.dto.SkuRequest;
+import com.tianji.mall.entity.Banner;
 import com.tianji.mall.entity.Coupon;
 import com.tianji.mall.entity.GroupBuy;
 import com.tianji.mall.entity.Order;
@@ -42,6 +43,7 @@ public class AdminController {
     private final GroupBuyService groupBuyService;
     private final LogisticsService logisticsService;
     private final ShopService shopService;
+    private final BannerService bannerService;
     private final UserFeignClient userFeignClient;
 
     // ==================== 店铺管理 ====================
@@ -309,5 +311,47 @@ public class AdminController {
     public R<Void> updateUserRole(@PathVariable("id") Long id,
                                    @RequestParam("role") String role) {
         return userFeignClient.updateUserRole(id, role);
+    }
+
+    // ==================== Banner 管理 ====================
+
+    @GetMapping("/banner")
+    public R<List<Banner>> listBanners() {
+        return R.ok(bannerService.list(
+                new com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper<Banner>()
+                        .orderByAsc(Banner::getSort)));
+    }
+
+    @PostMapping("/banner")
+    public R<Void> createBanner(@RequestBody Map<String, Object> body) {
+        Banner banner = new Banner();
+        banner.setTitle((String) body.get("title"));
+        banner.setImageUrl((String) body.get("imageUrl"));
+        banner.setLinkUrl((String) body.get("linkUrl"));
+        banner.setSort(body.get("sort") != null ? ((Number) body.get("sort")).intValue() : 0);
+        banner.setStatus(1);
+        bannerService.save(banner);
+        return R.ok();
+    }
+
+    @PutMapping("/banner/{id}")
+    public R<Void> updateBanner(@PathVariable("id") Long id, @RequestBody Map<String, Object> body) {
+        Banner banner = bannerService.getById(id);
+        if (banner == null) {
+            return R.fail(500, "Banner 不存在");
+        }
+        if (body.containsKey("title")) banner.setTitle((String) body.get("title"));
+        if (body.containsKey("imageUrl")) banner.setImageUrl((String) body.get("imageUrl"));
+        if (body.containsKey("linkUrl")) banner.setLinkUrl((String) body.get("linkUrl"));
+        if (body.containsKey("sort")) banner.setSort(((Number) body.get("sort")).intValue());
+        if (body.containsKey("status")) banner.setStatus(((Number) body.get("status")).intValue());
+        bannerService.updateById(banner);
+        return R.ok();
+    }
+
+    @DeleteMapping("/banner/{id}")
+    public R<Void> deleteBanner(@PathVariable("id") Long id) {
+        bannerService.removeById(id);
+        return R.ok();
     }
 }
