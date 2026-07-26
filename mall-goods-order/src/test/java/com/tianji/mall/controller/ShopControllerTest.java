@@ -68,6 +68,12 @@ class ShopControllerTest {
     @MockBean
     private BrowsingHistoryService browsingHistoryService;
 
+    @MockBean
+    private GroupBuyService groupBuyService;
+
+    @MockBean
+    private ShopFollowService shopFollowService;
+
     @Test
     void shouldGetShopDetail() throws Exception {
         Shop shop = new Shop();
@@ -81,11 +87,38 @@ class ShopControllerTest {
         when(shopService.getById(1L)).thenReturn(shop);
         when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), eq(1), eq(20)))
                 .thenReturn(page);
+        when(shopFollowService.countFollowers(1L)).thenReturn(42L);
 
         mockMvc.perform(get("/api/shop/1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.shop.name").value("测试店铺"));
+                .andExpect(jsonPath("$.data.shop.name").value("测试店铺"))
+                .andExpect(jsonPath("$.data.followerCount").value(42))
+                .andExpect(jsonPath("$.data.isFollowing").value(false));
+    }
+
+    @Test
+    void shouldGetShopDetailWithJwt() throws Exception {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        shop.setName("测试店铺");
+        shop.setStatus(1);
+
+        Page<Product> page = new Page<>(1, 20);
+        page.setTotal(0);
+
+        when(shopService.getById(1L)).thenReturn(shop);
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), eq(1), eq(20)))
+                .thenReturn(page);
+        when(shopFollowService.countFollowers(1L)).thenReturn(5L);
+        when(shopFollowService.isFollowing(1L, 1L)).thenReturn(true);
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+
+        mockMvc.perform(get("/api/shop/1")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.isFollowing").value(true));
     }
 
     @Test
@@ -117,5 +150,29 @@ class ShopControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.name").value("新店铺"));
+    }
+
+    @Test
+    void shouldFollowShop() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        when(shopFollowService.toggle(1L, 1L))
+                .thenReturn(java.util.Map.of("followed", true, "shopId", 1L, "followerCount", 1));
+
+        mockMvc.perform(post("/api/shop/1/follow")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.followed").value(true));
+    }
+
+    @Test
+    void shouldListFollowing() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        when(shopFollowService.listFollowing(1L)).thenReturn(java.util.List.of());
+
+        mockMvc.perform(get("/api/shop/following")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 }

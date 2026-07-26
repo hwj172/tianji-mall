@@ -109,19 +109,24 @@ public class SellerController {
                                   @RequestParam(defaultValue = "20") int size) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
-        return R.ok(orderService.page(new Page<>(page, size)));
+        return R.ok(orderService.getOrdersByShop(shop.getId(), page, size));
     }
 
     @PutMapping("/order/{id}/ship")
     public R<Void> shipOrder(@RequestHeader("Authorization") String authHeader,
-                              @PathVariable("id") Long id) {
+                              @PathVariable("id") Long id,
+                              @RequestBody(required = false) Map<String, String> body) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
-        Order order = orderService.getById(id);
-        if (order == null) {
-            return R.fail(500, "订单不存在");
+        // 校验订单包含本店商品
+        Page<Order> myOrders = orderService.getOrdersByShop(shop.getId(), 1, 1000);
+        boolean ownsOrder = myOrders.getRecords().stream().anyMatch(o -> o.getId().equals(id));
+        if (!ownsOrder) {
+            return R.fail(500, "订单不属于本店");
         }
-        orderService.shipOrder(id, "", "");
+        String company = body != null ? body.getOrDefault("logisticsCompany", "") : "";
+        String tracking = body != null ? body.getOrDefault("trackingNumber", "") : "";
+        orderService.shipOrder(id, company, tracking);
         return R.ok();
     }
 

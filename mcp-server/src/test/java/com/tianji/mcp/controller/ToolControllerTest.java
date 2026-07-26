@@ -96,4 +96,32 @@ class ToolControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items").isArray());
     }
+
+    @Test
+    void shouldExecuteCreateOrder() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        ToolResponse mockResp = ToolResponse.ok(Map.of("id", 100, "orderNo", "TEST001"));
+        when(orderTools.createOrder(eq(1L), anyMap())).thenReturn(mockResp);
+
+        mockMvc.perform(post("/api/tool/execute")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tool\":\"create_order\",\"parameters\":{\"addressId\":1,\"cartItemIds\":[1,2]}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void shouldExecutePayOrder() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        ToolResponse mockResp = ToolResponse.ok(null);
+        when(orderTools.payOrder(eq(1L), anyMap())).thenReturn(mockResp);
+
+        mockMvc.perform(post("/api/tool/execute")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tool\":\"pay_order\",\"parameters\":{\"orderId\":100}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
 }

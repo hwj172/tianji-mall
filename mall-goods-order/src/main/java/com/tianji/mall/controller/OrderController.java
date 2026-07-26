@@ -102,4 +102,21 @@ public class OrderController {
         orderService.payOrder(id, userId);
         return R.ok();
     }
+
+    @PostMapping("/internal/create/{userId}")
+    public R<Map<String, Object>> createInternal(@PathVariable("userId") Long userId,
+                                                  @Valid @RequestBody OrderCreateRequest req) {
+        Order order = orderService.createOrder(userId, req);
+        return R.ok(Map.of(
+                "id", order.getId(),
+                "orderNo", order.getOrderNo(),
+                "totalAmount", order.getTotalAmount(),
+                "status", order.getStatus()));
+    }
+
+    @PostMapping("/internal/pay/{id}")
+    public R<Void> payInternal(@PathVariable("id") Long id, @RequestParam("userId") Long userId) {
+        orderService.payOrder(id, userId);
+        return R.ok();
+    }
 }

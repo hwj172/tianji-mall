@@ -1,6 +1,7 @@
 package com.tianji.mall.controller;
 
 import com.tianji.common.exception.BizException;
+import com.tianji.common.result.R;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.dto.DashboardResponse;
 import com.tianji.mall.entity.Category;
@@ -29,6 +30,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
@@ -657,5 +659,47 @@ class AdminControllerTest {
                         .content("{\"name\":\"新名称\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(403));
+    }
+
+    // ==================== 用户管理 ====================
+
+    @Test
+    void shouldListUsers() throws Exception {
+        java.util.Map<String, Object> data = new java.util.HashMap<>();
+        data.put("records", List.of());
+        data.put("total", 0);
+        data.put("page", 1);
+        data.put("size", 20);
+        when(userFeignClient.listUsers(eq(1), eq(20), isNull(), isNull(), isNull()))
+                .thenReturn(R.ok(data));
+
+        mockMvc.perform(get("/api/admin/user/list")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldUpdateUserStatus() throws Exception {
+        when(userFeignClient.updateUserStatus(eq(1L), eq(0)))
+                .thenReturn(R.ok());
+
+        mockMvc.perform(put("/api/admin/user/1/status")
+                        .header("X-User-Role", "admin")
+                        .param("status", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldUpdateUserRole() throws Exception {
+        when(userFeignClient.updateUserRole(eq(1L), eq("admin")))
+                .thenReturn(R.ok());
+
+        mockMvc.perform(put("/api/admin/user/1/role")
+                        .header("X-User-Role", "admin")
+                        .param("role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 }

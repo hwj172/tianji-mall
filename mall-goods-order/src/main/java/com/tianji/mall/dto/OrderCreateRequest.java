@@ -16,4 +16,7 @@ public class OrderCreateRequest {
     private List<Long> cartItemIds;
 
     private Long couponId;  // 用户优惠券记录ID，可选
+
+    private String groupBuyGroupId;      // 拼团团ID（join时传入，start不传）
+    private java.math.BigDecimal groupBuyDiscount; // 拼团折扣金额
 }

@@ -11,3 +11,6 @@ jwt:
 
 deepseek:
   api-key: 你的 DeepSeek API Key
+
+siliconflow:
+  api-key: 你的 SiliconFlow API Key

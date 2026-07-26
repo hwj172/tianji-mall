@@ -213,6 +213,28 @@ class OrderControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
     }
 
+    @Test
+    void shouldCreateOrderInternal() throws Exception {
+        Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
+        when(orderService.createOrder(eq(1L), any(OrderCreateRequest.class))).thenReturn(order);
+
+        mockMvc.perform(post("/api/order/internal/create/1")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"addressId\":10,\"cartItemIds\":[1,2]}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.id").value(1));
+    }
+
+    @Test
+    void shouldPayOrderInternalByPost() throws Exception {
+        doNothing().when(orderService).payOrder(1L, 1L);
+
+        mockMvc.perform(post("/api/order/internal/pay/1").param("userId", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
     // ==================== logistics ====================
 
     @Test

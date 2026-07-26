@@ -1,6 +1,7 @@
 package com.tianji.user.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.user.dto.RegisterRequest;
@@ -9,11 +10,14 @@ import com.tianji.user.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -189,6 +193,98 @@ class UserServiceTest {
         assertThatThrownBy(() -> userService.updatePassword(999L, "old", "new"))
                 .isInstanceOf(BizException.class)
                 .hasMessage("用户不存在");
+    }
+
+    // ==================== listUsers (admin) ====================
+
+    @Test
+    void shouldListUsersWithPagination() {
+        User user = buildUser(1L, "testuser", "pw");
+        Page<User> mockPage = new Page<>(1, 20);
+        mockPage.setRecords(List.of(user));
+        mockPage.setTotal(1);
+        when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
+
+        Page<User> result = userService.listUsers(1, 20, null, null, null);
+
+        assertThat(result.getTotal()).isEqualTo(1);
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getPassword()).isNull(); // 密码脱敏
+    }
+
+    @Test
+    void shouldListUsersWithKeywordFilter() {
+        when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+                .thenReturn(new Page<>(1, 20));
+
+        userService.listUsers(1, 20, "test", null, null);
+
+        ArgumentCaptor<LambdaQueryWrapper<User>> captor = ArgumentCaptor.forClass(LambdaQueryWrapper.class);
+        verify(userMapper).selectPage(any(Page.class), captor.capture());
+        // wrapper 应包含 keyword 条件（无法直接断言 SQL，但验证调用即可）
+        assertThat(captor.getValue()).isNotNull();
+    }
+
+    @Test
+    void shouldListUsersWithRoleFilter() {
+        when(userMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+                .thenReturn(new Page<>(1, 20));
+
+        userService.listUsers(1, 20, null, "admin", null);
+
+        verify(userMapper).selectPage(any(Page.class), any(LambdaQueryWrapper.class));
+    }
+
+    // ==================== updateStatus (admin) ====================
+
+    @Test
+    void shouldUpdateUserStatus() {
+        User user = buildUser(1L, "testuser", "pw");
+        user.setStatus(1);
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.updateStatus(1L, 0);
+
+        assertThat(user.getStatus()).isEqualTo(0);
+        verify(userMapper).updateById(user);
+    }
+
+    @Test
+    void shouldRejectInvalidStatus() {
+        assertThatThrownBy(() -> userService.updateStatus(1L, 2))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("状态值无效");
+
+        assertThatThrownBy(() -> userService.updateStatus(1L, null))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("状态值无效");
+    }
+
+    // ==================== updateRole (admin) ====================
+
+    @Test
+    void shouldUpdateUserRole() {
+        User user = buildUser(1L, "testuser", "pw");
+        user.setRole("user");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.updateRole(1L, "admin");
+
+        assertThat(user.getRole()).isEqualTo("admin");
+        verify(userMapper).updateById(user);
+    }
+
+    @Test
+    void shouldRejectInvalidRole() {
+        assertThatThrownBy(() -> userService.updateRole(1L, "superadmin"))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("角色无效");
+
+        assertThatThrownBy(() -> userService.updateRole(1L, null))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("角色无效");
     }
 
     // ==================== helpers ====================

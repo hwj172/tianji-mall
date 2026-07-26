@@ -1,5 +1,7 @@
 package com.tianji.user.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.dto.UserDTO;
 import com.tianji.common.result.R;
 import com.tianji.user.dto.*;
 import com.tianji.user.entity.User;
@@ -9,6 +11,10 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/user")
@@ -72,6 +78,48 @@ public class UserController {
     @PutMapping("/internal/promote")
     public R<Void> promoteToSeller(@RequestParam("userId") Long userId) {
         userService.promoteToSeller(userId);
+        return R.ok();
+    }
+
+    @GetMapping("/internal/list")
+    public R<Map<String, Object>> listUsers(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "20") int size,
+            @RequestParam(required = false) String keyword,
+            @RequestParam(required = false) String role,
+            @RequestParam(required = false) Integer status) {
+        Page<User> userPage = userService.listUsers(page, size, keyword, role, status);
+        List<UserDTO> dtos = userPage.getRecords().stream().map(u -> {
+            UserDTO dto = new UserDTO();
+            dto.setId(u.getId());
+            dto.setUsername(u.getUsername());
+            dto.setPhone(u.getPhone());
+            dto.setEmail(u.getEmail());
+            dto.setAvatar(u.getAvatar());
+            dto.setRole(u.getRole());
+            dto.setStatus(u.getStatus());
+            dto.setCreateTime(u.getCreateTime());
+            return dto;
+        }).toList();
+        Map<String, Object> result = new HashMap<>();
+        result.put("records", dtos);
+        result.put("total", userPage.getTotal());
+        result.put("page", page);
+        result.put("size", size);
+        return R.ok(result);
+    }
+
+    @PutMapping("/internal/{id}/status")
+    public R<Void> updateUserStatus(@PathVariable("id") Long id,
+                                     @RequestParam("status") Integer status) {
+        userService.updateStatus(id, status);
+        return R.ok();
+    }
+
+    @PutMapping("/internal/{id}/role")
+    public R<Void> updateUserRole(@PathVariable("id") Long id,
+                                   @RequestParam("role") String role) {
+        userService.updateRole(id, role);
         return R.ok();
     }
 }

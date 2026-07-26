@@ -50,7 +50,7 @@ deepseek:
 
 # SiliconFlow Embedding API（OpenAI 兼容）
 siliconflow:
-  api-key: ${SILICONFLOW_API_KEY:sk-sbkcnrewdutwpkewypfxuesnkkspblvfznnuqioruchpslcd}
+  api-key: ${SILICONFLOW_API_KEY:}
   base-url: https://api.siliconflow.cn/v1
   embedding-model: BAAI/bge-large-zh-v1.5
 

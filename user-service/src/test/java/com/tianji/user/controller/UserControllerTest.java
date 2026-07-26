@@ -1,5 +1,6 @@
 package com.tianji.user.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.user.dto.LoginResponse;
 import com.tianji.user.entity.User;
@@ -15,8 +16,13 @@ import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -180,5 +186,31 @@ class UserControllerTest {
                         .content("{\"oldPassword\":\"old\",\"newPassword\":\"123\"}"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value(400));
+    }
+
+    // ==================== internal endpoints ====================
+
+    @Test
+    void shouldListUsersInternal() throws Exception {
+        Page<User> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        when(userService.listUsers(anyInt(), anyInt(), any(), any(), any()))
+                .thenReturn(page);
+
+        mockMvc.perform(get("/api/user/internal/list")
+                        .param("page", "1")
+                        .param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.total").value(0));
+    }
+
+    @Test
+    void shouldUpdateUserStatusInternal() throws Exception {
+        mockMvc.perform(put("/api/user/internal/1/status")
+                        .param("status", "0"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 }

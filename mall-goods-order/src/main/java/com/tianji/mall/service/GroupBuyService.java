@@ -7,19 +7,28 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.GroupBuyActivityRequest;
 import com.tianji.mall.dto.GroupBuyDetailResponse;
 import com.tianji.mall.dto.GroupBuyTier;
+import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.entity.GroupBuy;
 import com.tianji.mall.entity.GroupBuyOrder;
+import com.tianji.mall.entity.GroupBuyParticipant;
+import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.mapper.GroupBuyMapper;
 import com.tianji.mall.mapper.GroupBuyOrderMapper;
+import com.tianji.mall.mapper.GroupBuyParticipantMapper;
 import com.tianji.mall.mapper.ProductMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.messaging.Message;
+import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -29,7 +38,10 @@ public class GroupBuyService {
 
     private final GroupBuyMapper groupBuyMapper;
     private final GroupBuyOrderMapper groupBuyOrderMapper;
+    private final GroupBuyParticipantMapper participantMapper;
     private final ProductMapper productMapper;
+    private final OrderService orderService;
+    private final RocketMQTemplate rocketMQTemplate;
 
     private static final ObjectMapper objectMapper = new ObjectMapper();
 
@@ -94,17 +106,25 @@ public class GroupBuyService {
     }
 
     @Transactional
-    public GroupBuyOrder startGroup(Long userId, Long activityId, int targetCount, Long addressId) {
+    public Map<String, Object> startGroup(Long userId, Long activityId, int targetCount,
+                                          OrderCreateRequest orderReq) {
         GroupBuy activity = groupBuyMapper.selectById(activityId);
-        if (activity == null || activity.getStatus() != 1) throw new BizException("拼团活动不存在或已结束");
+        if (activity == null || activity.getStatus() != 1) {
+            throw new BizException("拼团活动不存在或已结束");
+        }
 
-        List<GroupBuyTier> tiers = parseTiers(activity.getTiers());
-        tiers.stream().filter(t -> t.getCount().equals(targetCount)).findFirst()
-                .orElseThrow(() -> new BizException("不支持的拼团人数"));
+        GroupBuyTier tier = findTier(activity, targetCount);
+        BigDecimal discount = calculateDiscount(activity, tier);
+        orderReq.setGroupBuyDiscount(discount);
 
+        // 创建订单（锁+库存+coupon 全包）
+        Order order = orderService.createOrder(userId, orderReq);
+
+        // 创建团
         String groupId = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
         GroupBuyOrder gbo = new GroupBuyOrder();
         gbo.setGroupId(groupId);
+        gbo.setUserId(userId);
         gbo.setProductId(activity.getProductId());
         gbo.setTargetTier(targetCount);
         gbo.setCurrentCount(1);
@@ -112,21 +132,51 @@ public class GroupBuyService {
         gbo.setExpireTime(LocalDateTime.now().plusHours(activity.getExpireHours()));
         groupBuyOrderMapper.insert(gbo);
 
-        return gbo;
+        // 记录参团
+        insertParticipant(gbo.getId(), userId, order.getId());
+
+        // 发送拼团超时延迟消息
+        sendTimeoutMessage(gbo.getId(), activity.getExpireHours());
+
+        return Map.of("orderId", order.getId(), "groupId", groupId,
+                "discount", discount, "status", gbo.getStatus());
     }
 
     @Transactional
-    public void joinGroup(String groupId, Long userId) {
+    public Map<String, Object> joinGroup(String groupId, Long userId, OrderCreateRequest orderReq) {
         GroupBuyOrder gbo = groupBuyOrderMapper.selectByGroupIdForUpdate(groupId);
-        if (gbo == null || !"OPEN".equals(gbo.getStatus())) throw new BizException("团不存在或已结束");
+        if (gbo == null || !"OPEN".equals(gbo.getStatus())) {
+            throw new BizException("团不存在或已结束");
+        }
         if (gbo.getExpireTime().isBefore(LocalDateTime.now())) {
             gbo.setStatus("FAIL");
             groupBuyOrderMapper.updateById(gbo);
             throw new BizException("团已过期");
         }
 
+        GroupBuy activity = groupBuyMapper.selectByProductId(gbo.getProductId());
+        GroupBuyTier tier = findTier(activity, gbo.getTargetTier());
+        BigDecimal discount = calculateDiscount(activity, tier);
+        orderReq.setGroupBuyGroupId(groupId);
+        orderReq.setGroupBuyDiscount(discount);
+
+        // 创建订单
+        Order order = orderService.createOrder(userId, orderReq);
+
+        // 原子参团（CAS: current_count < target_tier AND status = 'OPEN'）
         int affected = groupBuyOrderMapper.incrementCount(gbo.getId());
-        if (affected == 0) throw new BizException("团已满员");
+        if (affected == 0) {
+            throw new BizException("团已满员");
+        }
+
+        // 记录参团
+        insertParticipant(gbo.getId(), userId, order.getId());
+
+        // 重新读取最新状态
+        gbo = groupBuyOrderMapper.selectById(gbo.getId());
+        return Map.of("orderId", order.getId(), "groupId", groupId,
+                "currentCount", gbo.getCurrentCount(), "status", gbo.getStatus(),
+                "discount", discount);
     }
 
     public List<GroupBuyOrder> getMyGroups(Long userId) {
@@ -140,6 +190,41 @@ public class GroupBuyService {
             return objectMapper.readValue(tiersJson, new TypeReference<List<GroupBuyTier>>() {});
         } catch (Exception e) {
             throw new BizException("拼团阶梯配置异常");
+        }
+    }
+
+    private GroupBuyTier findTier(GroupBuy activity, int targetCount) {
+        return parseTiers(activity.getTiers()).stream()
+                .filter(t -> t.getCount().equals(targetCount))
+                .findFirst()
+                .orElseThrow(() -> new BizException("不支持的拼团人数"));
+    }
+
+    private BigDecimal calculateDiscount(GroupBuy activity, GroupBuyTier tier) {
+        Product product = productMapper.selectById(activity.getProductId());
+        if (product == null) throw new BizException("商品不存在");
+        // discount 是折扣系数（0.9 = 9折），折扣金额 = 原价 × (1 - discount)
+        return product.getPrice().multiply(BigDecimal.ONE.subtract(tier.getDiscount()));
+    }
+
+    private void insertParticipant(Long gboId, Long userId, Long orderId) {
+        GroupBuyParticipant p = new GroupBuyParticipant();
+        p.setGroupBuyOrderId(gboId);
+        p.setUserId(userId);
+        p.setOrderId(orderId);
+        participantMapper.insert(p);
+    }
+
+    private void sendTimeoutMessage(Long gboId, int expireHours) {
+        try {
+            String delayLevel = expireHours <= 2 ? String.valueOf(16 + expireHours) : "18";
+            Message<String> msg = MessageBuilder.withPayload(gboId.toString())
+                    .setHeader("DELAY", delayLevel)
+                    .build();
+            rocketMQTemplate.syncSend("group-buy-topic:TIMEOUT_CHECK", msg, 3000);
+            log.info("拼团超时消息已发送: gboId={}, expireHours={}, delayLevel={}", gboId, expireHours, delayLevel);
+        } catch (Exception e) {
+            log.error("发送拼团超时消息失败: gboId={}", gboId, e);
         }
     }
 }

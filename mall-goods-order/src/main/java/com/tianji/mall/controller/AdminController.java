@@ -15,6 +15,7 @@ import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.dto.CouponRequest;
+import com.tianji.mall.feign.UserFeignClient;
 import com.tianji.mall.service.*;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -41,6 +42,7 @@ public class AdminController {
     private final GroupBuyService groupBuyService;
     private final LogisticsService logisticsService;
     private final ShopService shopService;
+    private final UserFeignClient userFeignClient;
 
     // ==================== 店铺管理 ====================
 
@@ -284,5 +286,28 @@ public class AdminController {
     public R<Void> updateGroupBuy(@PathVariable("id") Long id, @Valid @RequestBody GroupBuyActivityRequest req) {
         groupBuyService.updateActivity(id, req);
         return R.ok();
+    }
+
+    // ==================== 用户管理 ====================
+
+    @GetMapping("/user/list")
+    public R<Map> listUsers(@RequestParam(defaultValue = "1") int page,
+                            @RequestParam(defaultValue = "20") int size,
+                            @RequestParam(required = false) String keyword,
+                            @RequestParam(required = false) String role,
+                            @RequestParam(required = false) Integer status) {
+        return userFeignClient.listUsers(page, size, keyword, role, status);
+    }
+
+    @PutMapping("/user/{id}/status")
+    public R<Void> updateUserStatus(@PathVariable("id") Long id,
+                                     @RequestParam("status") Integer status) {
+        return userFeignClient.updateUserStatus(id, status);
+    }
+
+    @PutMapping("/user/{id}/role")
+    public R<Void> updateUserRole(@PathVariable("id") Long id,
+                                   @RequestParam("role") String role) {
+        return userFeignClient.updateUserRole(id, role);
     }
 }

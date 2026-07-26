@@ -176,6 +176,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         product.setImages(images);
         product.setStatus(1);
         save(product);
+        syncVector(product.getId(), product.getName(), product.getDescription());
         return product;
     }
 
@@ -193,6 +194,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         if (status != null) product.setStatus(status);
         if (images != null) product.setImages(images);
         updateById(product);
+        syncVector(product.getId(), product.getName(), product.getDescription());
     }
 
     public void deleteProduct(Long id) {

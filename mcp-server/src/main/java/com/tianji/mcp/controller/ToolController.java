@@ -51,6 +51,8 @@ public class ToolController {
                 }
                 case "get_cart" -> cartTools.getCart(realUserId);
                 case "add_to_cart" -> cartTools.addToCart(realUserId, req.getParameters());
+                case "create_order" -> orderTools.createOrder(realUserId, req.getParameters());
+                case "pay_order" -> orderTools.payOrder(realUserId, req.getParameters());
                 default -> ToolResponse.fail("未知工具: " + req.getTool());
             };
         } catch (feign.FeignException e) {

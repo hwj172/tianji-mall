@@ -1,6 +1,7 @@
 package com.tianji.user.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
 import com.tianji.user.dto.LoginResponse;
@@ -12,7 +13,11 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
+
+import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
@@ -115,6 +120,54 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             throw new BizException("已经是商家");
         }
         user.setRole("seller");
+        updateById(user);
+    }
+
+    // ===== Admin 用户管理 =====
+
+    private static final Set<String> VALID_ROLES = Set.of("user", "seller", "admin");
+
+    public Page<User> listUsers(int page, int size, String keyword, String role, Integer status) {
+        LambdaQueryWrapper<User> wrapper = new LambdaQueryWrapper<>();
+        if (StringUtils.hasText(keyword)) {
+            wrapper.and(w -> w.like(User::getUsername, keyword)
+                    .or().like(User::getPhone, keyword)
+                    .or().like(User::getEmail, keyword));
+        }
+        if (StringUtils.hasText(role)) {
+            wrapper.eq(User::getRole, role);
+        }
+        if (status != null) {
+            wrapper.eq(User::getStatus, status);
+        }
+        wrapper.orderByDesc(User::getCreateTime);
+        Page<User> userPage = page(new Page<>(page, size), wrapper);
+        // 脱敏：清除密码
+        userPage.getRecords().forEach(u -> u.setPassword(null));
+        return userPage;
+    }
+
+    public void updateStatus(Long id, Integer status) {
+        if (status == null || (status != 0 && status != 1)) {
+            throw new BizException("状态值无效，只能是 0 或 1");
+        }
+        User user = getById(id);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        user.setStatus(status);
+        updateById(user);
+    }
+
+    public void updateRole(Long id, String role) {
+        if (role == null || !VALID_ROLES.contains(role)) {
+            throw new BizException("角色无效，只能是 user、seller 或 admin");
+        }
+        User user = getById(id);
+        if (user == null) {
+            throw new BizException("用户不存在");
+        }
+        user.setRole(role);
         updateById(user);
     }
 }

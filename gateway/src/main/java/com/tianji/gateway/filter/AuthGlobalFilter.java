@@ -40,6 +40,7 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/product",
             "/api/region",
             "/api/shop",
+            "/api/group-buy",
             "/api/pay/notify"
     );
 

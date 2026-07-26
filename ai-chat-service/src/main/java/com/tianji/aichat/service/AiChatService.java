@@ -312,13 +312,16 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
                 - 搜索和浏览商品（search_products）
                 - 查看商品详情（get_product）
                 - 管理购物车（add_to_cart / get_cart）
+                - 创建订单（create_order）
+                - 支付订单（pay_order）
                 - 查询订单状态和详情（get_orders / get_order_detail）
 
                 核心规则（必须遵守）：
                 1. 当用户提到任何商品相关需求（推荐、搜索、比较、价格、库存等），优先使用下方[RAG检索结果]中的真实商品数据
                 2. 如果[RAG检索结果]不存在或其中的商品不匹配用户需求，调用 search_products 工具搜索
                 3. 不要凭空猜测商品信息（价格、名称、库存），一切以实际数据为准
-                4. 用热情、专业的中文回复。基于真实数据简要说明推荐理由
+                4. 用户下单前，先确认收货地址和购物车内容。不要跳过确认直接下单
+                5. 用热情、专业的中文回复。基于真实数据简要说明推荐理由
                 """;
 
         if (ragProducts == null || ragProducts.isEmpty()) {
@@ -369,7 +372,21 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
                                 "productId", Map.of("type", "integer", "description", "商品ID"),
                                 "quantity", Map.of("type", "integer", "description", "数量，默认1")
                         ),
-                        List.of("productId"))
+                        List.of("productId")),
+
+                createTool("create_order", "从购物车创建订单。需要用户已添加商品到购物车并确认收货地址。",
+                        Map.of(
+                                "addressId", Map.of("type", "integer", "description", "收货地址ID，先让用户确认地址"),
+                                "cartItemIds", Map.of("type", "array",
+                                        "items", Map.of("type", "integer"),
+                                        "description", "购物车项ID列表，从get_cart获取"),
+                                "couponId", Map.of("type", "integer", "description", "优惠券ID（可选）")
+                        ),
+                        List.of("addressId", "cartItemIds")),
+
+                createTool("pay_order", "支付订单。用户确认下单后调用。",
+                        Map.of("orderId", Map.of("type", "integer", "description", "订单ID，从create_order或get_orders获取")),
+                        List.of("orderId"))
         );
     }
 

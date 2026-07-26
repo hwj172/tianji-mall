@@ -51,7 +51,12 @@ CREATE TABLE IF NOT EXISTS `product` (
   `sales`       INT            NOT NULL DEFAULT 0 COMMENT '销量',
   `category_id` BIGINT         NOT NULL COMMENT '所属分类ID',
   `images`      VARCHAR(2048)  DEFAULT NULL COMMENT '商品图片（JSON数组）',
-  `status`      TINYINT        NOT NULL DEFAULT 1 COMMENT '状态：1-上架 0-下架',
+  `status`             TINYINT        NOT NULL DEFAULT 1 COMMENT '状态：1-上架 0-下架',
+  `shop_id`             BIGINT         DEFAULT NULL COMMENT '店铺ID（NULL=平台商品）',
+  `seckill_price`       DECIMAL(10,2)  DEFAULT NULL COMMENT '秒杀价格',
+  `seckill_stock`       INT            DEFAULT NULL COMMENT '秒杀库存',
+  `seckill_start_time`  DATETIME       DEFAULT NULL COMMENT '秒杀开始时间',
+  `seckill_end_time`    DATETIME       DEFAULT NULL COMMENT '秒杀结束时间',
   `create_time` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
@@ -270,3 +275,127 @@ CREATE TABLE IF NOT EXISTS `product_attribute` (
   PRIMARY KEY (`id`),
   KEY `idx_product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品属性表';
+
+-- ============================================================
+-- 补充表（后续迭代新增）
+-- ============================================================
+
+-- 物流轨迹表
+CREATE TABLE IF NOT EXISTS `logistics_track` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '轨迹ID',
+  `order_id`    BIGINT       NOT NULL COMMENT '订单ID',
+  `status`      VARCHAR(32)  NOT NULL COMMENT '状态：PICKED_UP/IN_TRANSIT/OUT_FOR_DELIVERY/DELIVERED',
+  `description` VARCHAR(256) NOT NULL COMMENT '状态描述',
+  `location`    VARCHAR(128) DEFAULT NULL COMMENT '所在城市',
+  `track_time`  DATETIME     NOT NULL COMMENT '轨迹时间',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_order_id` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='物流轨迹表';
+
+-- 浏览足迹表
+CREATE TABLE IF NOT EXISTS `browsing_history` (
+  `id`          BIGINT   NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `user_id`     BIGINT   NOT NULL COMMENT '用户ID',
+  `product_id`  BIGINT   NOT NULL COMMENT '商品ID',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '浏览时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_time` (`user_id`, `create_time` DESC),
+  UNIQUE KEY `uk_user_product` (`user_id`, `product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='浏览足迹表';
+
+-- 消息通知表
+CREATE TABLE IF NOT EXISTS `notification` (
+  `id`               BIGINT       NOT NULL AUTO_INCREMENT COMMENT '通知ID',
+  `user_id`          BIGINT       NOT NULL COMMENT '用户ID',
+  `type`             VARCHAR(32)  NOT NULL COMMENT '通知类型',
+  `title`            VARCHAR(128) NOT NULL COMMENT '通知标题',
+  `content`          VARCHAR(512) NOT NULL COMMENT '通知内容',
+  `related_order_id` BIGINT       DEFAULT NULL COMMENT '关联订单ID',
+  `is_read`          TINYINT      NOT NULL DEFAULT 0 COMMENT '是否已读：1-是 0-否',
+  `create_time`      DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_read` (`user_id`, `is_read`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='消息通知表';
+
+-- 商品相似度表（推荐引擎）
+CREATE TABLE IF NOT EXISTS `product_similarity` (
+  `id`                 BIGINT        NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `product_id`         BIGINT        NOT NULL COMMENT '商品ID',
+  `similar_product_id` BIGINT        NOT NULL COMMENT '相似商品ID',
+  `co_count`           INT           NOT NULL DEFAULT 0 COMMENT '共现次数',
+  `score`              DECIMAL(10,4) NOT NULL DEFAULT 0 COMMENT '相似度得分',
+  `update_time`        DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_pair` (`product_id`, `similar_product_id`),
+  KEY `idx_product` (`product_id`),
+  KEY `idx_score` (`score` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品相似度表';
+
+-- 店铺关注表
+CREATE TABLE IF NOT EXISTS `shop_follow` (
+  `id`          BIGINT   NOT NULL AUTO_INCREMENT COMMENT '关注ID',
+  `user_id`     BIGINT   NOT NULL COMMENT '用户ID',
+  `shop_id`     BIGINT   NOT NULL COMMENT '店铺ID',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '关注时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_sf_user_shop` (`user_id`, `shop_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='店铺关注表';
+
+-- 店铺表
+CREATE TABLE IF NOT EXISTS `shop` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '店铺ID',
+  `name`        VARCHAR(64)  NOT NULL COMMENT '店铺名称',
+  `logo`        VARCHAR(256) DEFAULT NULL COMMENT '店铺Logo',
+  `description` VARCHAR(512) DEFAULT NULL COMMENT '店铺简介',
+  `seller_id`   BIGINT       NOT NULL COMMENT '店主用户ID',
+  `status`      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态：1-营业 0-关店',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_seller` (`seller_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='店铺表';
+
+-- 拼团活动表
+CREATE TABLE IF NOT EXISTS `group_buy` (
+  `id`          BIGINT        NOT NULL AUTO_INCREMENT COMMENT '活动ID',
+  `product_id`  BIGINT        NOT NULL COMMENT '商品ID',
+  `tiers`       VARCHAR(1024) NOT NULL COMMENT '阶梯配置（JSON）',
+  `start_time`  DATETIME      NOT NULL COMMENT '开始时间',
+  `end_time`    DATETIME      NOT NULL COMMENT '结束时间',
+  `expire_hours` INT          NOT NULL DEFAULT 24 COMMENT '成团超时（小时）',
+  `status`      TINYINT       NOT NULL DEFAULT 1 COMMENT '状态：1-启用 0-停用',
+  `create_time` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time` DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_product` (`product_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='拼团活动表';
+
+-- 拼团订单表
+CREATE TABLE IF NOT EXISTS `group_buy_order` (
+  `id`            BIGINT      NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `group_id`      VARCHAR(32) NOT NULL COMMENT '团ID',
+  `user_id`       BIGINT      NOT NULL DEFAULT 0 COMMENT '团长用户ID',
+  `product_id`    BIGINT      NOT NULL COMMENT '商品ID',
+  `target_tier`   INT         NOT NULL COMMENT '目标阶梯人数',
+  `current_count` INT         NOT NULL DEFAULT 1 COMMENT '当前人数',
+  `status`        VARCHAR(20) NOT NULL DEFAULT 'OPEN' COMMENT '状态：OPEN/SUCCESS/FAIL',
+  `expire_time`   DATETIME    NOT NULL COMMENT '过期时间',
+  `create_time`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`   DATETIME    NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_group_id` (`group_id`),
+  KEY `idx_product` (`product_id`),
+  KEY `idx_status` (`status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='拼团订单表';
+
+-- 拼团参团记录表
+CREATE TABLE IF NOT EXISTS `group_buy_participant` (
+  `id`                 BIGINT   NOT NULL AUTO_INCREMENT COMMENT '记录ID',
+  `group_buy_order_id` BIGINT   NOT NULL COMMENT '拼团订单ID',
+  `user_id`            BIGINT   NOT NULL COMMENT '用户ID',
+  `order_id`           BIGINT   NOT NULL COMMENT '关联订单ID',
+  `create_time`        DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_order` (`order_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='拼团参团记录表';

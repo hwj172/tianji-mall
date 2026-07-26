@@ -153,6 +153,11 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 discount = couponService.applyCoupon(userId, req.getCouponId(), totalAmount);
             }
 
+            // 6.5 拼团折扣（锁内，与优惠券叠加）
+            if (req.getGroupBuyDiscount() != null) {
+                discount = discount.add(req.getGroupBuyDiscount());
+            }
+
             // 7. 生成订单号
             String orderNo = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                     + String.format("%06d", ThreadLocalRandom.current().nextInt(1000000));
@@ -331,6 +336,31 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             int page, int size, Integer status) {
         LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
                 .eq(status != null, Order::getStatus, status)
+                .orderByDesc(Order::getCreateTime);
+        return page(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size), wrapper);
+    }
+
+    /** 按店铺商品过滤订单（卖家只看到自己店铺的订单） */
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> getOrdersByShop(
+            Long shopId, int page, int size) {
+        // 本店所有商品 ID
+        List<Long> productIds = productService.lambdaQuery()
+                .eq(Product::getShopId, shopId)
+                .select(Product::getId)
+                .list()
+                .stream()
+                .map(Product::getId)
+                .collect(Collectors.toList());
+        if (productIds.isEmpty()) {
+            return new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+        }
+        // 包含本店商品的订单 ID
+        List<Long> orderIds = orderItemMapper.selectOrderIdsByProductIds(productIds);
+        if (orderIds.isEmpty()) {
+            return new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size);
+        }
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
+                .in(Order::getId, orderIds)
                 .orderByDesc(Order::getCreateTime);
         return page(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size), wrapper);
     }

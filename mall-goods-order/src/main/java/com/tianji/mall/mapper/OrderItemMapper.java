@@ -11,6 +11,13 @@ import java.util.Map;
 @Mapper
 public interface OrderItemMapper extends BaseMapper<OrderItem> {
 
+    @Select("<script>" +
+            "SELECT DISTINCT oi.order_id FROM order_item oi " +
+            "WHERE oi.product_id IN " +
+            "<foreach item='id' collection='list' open='(' separator=',' close=')'>#{id}</foreach>" +
+            "</script>")
+    List<Long> selectOrderIdsByProductIds(List<Long> productIds);
+
     @Select("SELECT oi.product_id, p.name, SUM(oi.quantity) as sales, " +
             "SUM(oi.price * oi.quantity) as amount " +
             "FROM order_item oi JOIN product p ON oi.product_id = p.id " +

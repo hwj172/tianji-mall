@@ -1,8 +1,10 @@
 package com.tianji.mall.controller;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.GroupBuyDetailResponse;
+import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.entity.GroupBuy;
 import com.tianji.mall.entity.GroupBuyOrder;
 import com.tianji.mall.service.GroupBuyService;
@@ -19,6 +21,7 @@ public class GroupBuyController {
 
     private final GroupBuyService groupBuyService;
     private final JwtUtil jwtUtil;
+    private static final ObjectMapper objectMapper = new ObjectMapper();
 
     @GetMapping("/list")
     public R<List<GroupBuy>> list() {
@@ -31,21 +34,21 @@ public class GroupBuyController {
     }
 
     @PostMapping("/start")
-    public R<GroupBuyOrder> start(@RequestBody Map<String, Object> body,
-                                   @RequestHeader("Authorization") String authHeader) {
+    public R<Map<String, Object>> start(@RequestBody Map<String, Object> body,
+                                         @RequestHeader("Authorization") String authHeader) {
         Long userId = jwtUtil.getUserId(authHeader.substring(7));
-        Long activityId = ((Number) body.get("activityId")).longValue();
-        int targetCount = ((Number) body.get("targetCount")).intValue();
-        Long addressId = body.get("addressId") != null ? ((Number) body.get("addressId")).longValue() : null;
-        return R.ok(groupBuyService.startGroup(userId, activityId, targetCount, addressId));
+        Long activityId = ((Number) body.remove("activityId")).longValue();
+        int targetCount = ((Number) body.remove("targetCount")).intValue();
+        OrderCreateRequest orderReq = objectMapper.convertValue(body, OrderCreateRequest.class);
+        return R.ok(groupBuyService.startGroup(userId, activityId, targetCount, orderReq));
     }
 
     @PostMapping("/join/{groupId}")
-    public R<Void> join(@PathVariable("groupId") String groupId,
-                         @RequestHeader("Authorization") String authHeader) {
+    public R<Map<String, Object>> join(@PathVariable("groupId") String groupId,
+                                        @RequestHeader("Authorization") String authHeader,
+                                        @RequestBody OrderCreateRequest orderReq) {
         Long userId = jwtUtil.getUserId(authHeader.substring(7));
-        groupBuyService.joinGroup(groupId, userId);
-        return R.ok();
+        return R.ok(groupBuyService.joinGroup(groupId, userId, orderReq));
     }
 
     @GetMapping("/my")

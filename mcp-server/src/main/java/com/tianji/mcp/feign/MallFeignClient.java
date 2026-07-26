@@ -25,4 +25,12 @@ public interface MallFeignClient {
 
     @PostMapping("/api/cart/internal/add")
     Map<String, Object> addToCart(@RequestBody Map<String, Object> body);
+
+    @PostMapping("/api/order/internal/create/{userId}")
+    Map<String, Object> createOrder(@PathVariable("userId") Long userId,
+                                     @RequestBody Map<String, Object> body);
+
+    @PostMapping("/api/order/internal/pay/{id}")
+    Map<String, Object> payOrder(@PathVariable("id") Long id,
+                                  @RequestParam("userId") Long userId);
 }

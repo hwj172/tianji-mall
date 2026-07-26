@@ -4,13 +4,14 @@ import com.tianji.common.exception.BizException;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.GroupBuyDetailResponse;
 import com.tianji.mall.dto.GroupBuyTier;
+import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.entity.GroupBuy;
 import com.tianji.mall.entity.GroupBuyOrder;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.GroupBuyService;
-import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.NotificationService;
+import com.tianji.mall.service.RecommendService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -119,19 +121,19 @@ class GroupBuyControllerTest {
     @Test
     void shouldStartGroup() throws Exception {
         when(jwtUtil.getUserId("test-token")).thenReturn(1L);
-        GroupBuyOrder gbo = new GroupBuyOrder();
-        gbo.setId(1L);
-        gbo.setGroupId("abc12345");
-        gbo.setStatus("OPEN");
-        when(groupBuyService.startGroup(eq(1L), eq(1L), eq(3), any())).thenReturn(gbo);
+        Map<String, Object> result = Map.of("orderId", 100, "groupId", "abc12345",
+                "discount", 699.9, "status", "OPEN");
+        when(groupBuyService.startGroup(eq(1L), eq(1L), eq(3), any(OrderCreateRequest.class)))
+                .thenReturn(result);
 
         mockMvc.perform(post("/api/group-buy/start")
                         .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"activityId\":1,\"targetCount\":3}"))
+                        .content("{\"activityId\":1,\"targetCount\":3,\"addressId\":1,\"cartItemIds\":[1,2]}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data.groupId").value("abc12345"));
+                .andExpect(jsonPath("$.data.groupId").value("abc12345"))
+                .andExpect(jsonPath("$.data.orderId").value(100));
     }
 
     // ==================== POST /api/group-buy/join/{groupId} ====================
@@ -139,11 +141,18 @@ class GroupBuyControllerTest {
     @Test
     void shouldJoinGroup() throws Exception {
         when(jwtUtil.getUserId("test-token")).thenReturn(2L);
+        Map<String, Object> result = Map.of("orderId", 200, "groupId", "abc12345",
+                "currentCount", 4, "status", "OPEN", "discount", 699.9);
+        when(groupBuyService.joinGroup(eq("abc12345"), eq(2L), any(OrderCreateRequest.class)))
+                .thenReturn(result);
 
         mockMvc.perform(post("/api/group-buy/join/abc12345")
-                        .header("Authorization", "Bearer test-token"))
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"addressId\":1,\"cartItemIds\":[3]}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.orderId").value(200));
     }
 
     // ==================== GET /api/group-buy/my ====================

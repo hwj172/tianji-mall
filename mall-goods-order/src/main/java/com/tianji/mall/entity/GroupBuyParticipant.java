@@ -9,20 +9,15 @@ import java.io.Serializable;
 import java.time.LocalDateTime;
 
 @Data
-@TableName("group_buy_order")
-public class GroupBuyOrder implements Serializable {
+@TableName("group_buy_participant")
+public class GroupBuyParticipant implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
     @TableId(type = IdType.AUTO)
     private Long id;
-    private String groupId;
+    private Long groupBuyOrderId;
     private Long userId;
-    private Long productId;
-    private Integer targetTier;
-    private Integer currentCount;
-    private String status;
-    private LocalDateTime expireTime;
+    private Long orderId;
     private LocalDateTime createTime;
-    private LocalDateTime updateTime;
 }

@@ -206,6 +206,14 @@ CREATE TABLE IF NOT EXISTS product_similarity (
     KEY idx_score (score DESC)
 );
 
+CREATE TABLE IF NOT EXISTS shop_follow (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    shop_id BIGINT NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_sf_user_shop (user_id, shop_id)
+);
+
 CREATE TABLE IF NOT EXISTS shop (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     name VARCHAR(64) NOT NULL,
@@ -234,6 +242,7 @@ CREATE TABLE IF NOT EXISTS group_buy (
 CREATE TABLE IF NOT EXISTS group_buy_order (
     id BIGINT AUTO_INCREMENT PRIMARY KEY,
     group_id VARCHAR(32) NOT NULL,
+    user_id BIGINT NOT NULL DEFAULT 0,
     product_id BIGINT NOT NULL,
     target_tier INT NOT NULL,
     current_count INT DEFAULT 1,
@@ -244,4 +253,13 @@ CREATE TABLE IF NOT EXISTS group_buy_order (
     UNIQUE KEY uk_group_id (group_id),
     KEY idx_gbo_product (product_id),
     KEY idx_gbo_status (status)
+);
+
+CREATE TABLE IF NOT EXISTS group_buy_participant (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    group_buy_order_id BIGINT NOT NULL,
+    user_id BIGINT NOT NULL,
+    order_id BIGINT NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_order (order_id)
 );

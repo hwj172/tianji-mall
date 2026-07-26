@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：439 (Common 28 + Gateway 39 + User 28 + Mall-Goods-Order 315 + Pay 6 + MCP 4 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：463 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 328 + Pay 6 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -145,17 +145,17 @@ mvn package -DskipTests
 
 | 模块 | 测试类 | Tests | 覆盖 |
 |------|--------|-------|------|
-| user-service | UserControllerTest | 5 | register/login/info + @Valid + 缺 Auth |
+| user-service | UserControllerTest | 12 | register/login/info/profile/avatar/password + @Valid + 缺 Auth + 内部端点 |
 | mall-goods-order | ProductControllerTest | 7 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 + 浏览足迹端点 |
 | mall-goods-order | RegionControllerTest | 2 | 省市区树形数据 + 31 省结构验证 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
-| mall-goods-order | OrderControllerTest | 11 | create/list/detail/cancel/receive/refund + @Valid + 内部端点 + 缺 Auth |
-| mall-goods-order | AdminControllerTest | 44 | category/product/order CRUD + SKU/属性/coupon CRUD + dashboard + 店铺管理 + 非 admin 拒绝 |
-| mall-goods-order | ShopControllerTest | 3 | 店铺详情（公开）+ 关店 404 + 注册开店（JWT） |
+| mall-goods-order | OrderControllerTest | 14 | create/list/detail/cancel/receive/refund + @Valid + 内部端点（createInternal/payInternal）+ 缺 Auth + 物流轨迹 |
+| mall-goods-order | AdminControllerTest | 47 | category/product/order CRUD + SKU/属性/coupon CRUD + dashboard + 店铺管理 + 用户管理 + 非 admin 拒绝 |
+| mall-goods-order | ShopControllerTest | 6 | 店铺详情（公开/JWT 关注状态）+ 关店 404 + 注册开店 + 关注/取关 + 我的关注 |
 | mall-goods-order | SellerControllerTest | 5 | 我的店铺/更新店铺/商品列表/创建商品/商家看板 |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
-| mcp-server | ToolControllerTest | 4 | JWT 手动提取 + 工具路由 + 未知工具 + 未授权 |
+| mcp-server | ToolControllerTest | 6 | JWT 手动提取 + 工具路由（search_products/get_product/get_orders/get_order_detail/get_cart/add_to_cart/create_order/pay_order）+ 未知工具 + 未授权 |
 | gateway | AuthGlobalFilterTest | 35 | 公开路径/内部路径/JWT 鉴权/seller 鉴权/非 API 路径/边界 + Mock WebFlux |
 | gateway | CorsConfigTest | 4 | CORS 过滤器 Bean 创建 + 预检/GET/无 Origin |
 
@@ -194,12 +194,12 @@ mvn package -DskipTests
 - **SkyWalking**：纯 javaagent 挂载，零代码依赖。Agent 下载和 IDEA VM Options 见 `skywalking/README.md`。
 - **管理员鉴权**：User 表 `role` 字段（user/seller/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin，对 `/api/seller/**` 路径校验 role=seller 或 admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
 - **商家角色**：用户可注册开店（`POST /api/shop/register`），成功后 user-service 通过内部端点 `PUT /api/user/internal/promote` 将角色提升为 seller（best-effort，失败不阻塞开店）。seller 可管理自己店铺的商品和订单。网关鉴权：`/api/seller/**` 需要 role=seller 或 admin。
-- **店铺系统**：`shop` 表（id, name, logo, description, sellerId UNIQUE, status）。`ShopService` 继承 `ServiceImpl<ShopMapper, Shop>`，提供 register/getBySellerId/updateShopInfo。`UserFeignClient` 注入使用 `@Autowired(required = false)`（测试环境 Feign 被排除，无 FeignClientFactory bean）。`Product` 表增加 `shop_id BIGINT DEFAULT NULL`（NULL=平台商品，非 NULL=店铺商品）。`ProductService.getProductPage` 新增第 6 个参数 `Long shopId`（非 null 时过滤店铺商品）。`ShopController`（`/api/shop`）公开端点：`GET /api/shop/{id}`（店铺详情+商品列表）。`SellerController`（`/api/seller`）商家后台：`GET /shop`/`PUT /shop`/`GET /products`/`POST /product`/`PUT /product/{id}`/`DELETE /product/{id}`/`GET /orders`/`PUT /order/{id}/ship`/`GET /dashboard`。Admin 管理端点：`GET /api/admin/shop/list` + `PUT /api/admin/shop/{id}/status` + `DELETE /api/admin/shop/{id}`。`ShopServiceTest` 5 个单元测试（MockitoExtension），`ShopControllerTest` 3 个端点测试 + `SellerControllerTest` 5 个端点测试（@SpringBootTest）。
-- **后台管理**：`AdminController`（`/api/admin`）提供分类/商品/订单 CRUD + SKU/属性管理（`/api/admin/product/{productId}/sku` 和 `/api/admin/product/{productId}/attribute`）。分类管理含树形结构查询 + 子分类保护（有子分类不可删）+ 商品数量检查。商品管理含分页查询/创建/更新/软删除（status=0）。订单管理含分页查询/发货（status 2→3）/完成（status 3→4）。
+- **店铺系统**：`shop` 表（id, name, logo, description, sellerId UNIQUE, status）。`ShopService` 继承 `ServiceImpl<ShopMapper, Shop>`，提供 register/getBySellerId/updateShopInfo。`UserFeignClient` 注入使用 `@Autowired(required = false)`（测试环境 Feign 被排除，无 FeignClientFactory bean）。`Product` 表增加 `shop_id BIGINT DEFAULT NULL`（NULL=平台商品，非 NULL=店铺商品）。`ProductService.getProductPage` 新增第 6 个参数 `Long shopId`（非 null 时过滤店铺商品）。`ShopController`（`/api/shop`）公开端点：`GET /api/shop/{id}`（店铺详情+商品列表）。`SellerController`（`/api/seller`）商家后台：`GET /shop`/`PUT /shop`/`GET /products`/`POST /product`/`PUT /product/{id}`/`DELETE /product/{id}`/`GET /orders`/`PUT /order/{id}/ship`/`GET /dashboard`。Admin 管理端点：`GET /api/admin/shop/list` + `PUT /api/admin/shop/{id}/status` + `DELETE /api/admin/shop/{id}`。`ShopServiceTest` 5 个单元测试（MockitoExtension），`ShopControllerTest` 6 个端点测试 + `SellerControllerTest` 5 个端点测试（@SpringBootTest）。`ShopFollowService`（`shop_follow` 表，toggle/isFollowing/countFollowers/listFollowing 方法，`POST /api/shop/{id}/follow` 关注/取关 + `GET /api/shop/following` 我的关注，JWT 手动提取无需 Gateway 改动）。`ShopController.detail` 返回 `followerCount` + `isFollowing`（JWT 可选，无 JWT 时 isFollowing=false）。`ShopFollowServiceTest` 5 个单元测试。
+- **后台管理**：`AdminController`（`/api/admin`）提供分类/商品/订单 CRUD + SKU/属性管理 + 优惠券管理 + 用户管理（`GET /api/admin/user/list` / `PUT /api/admin/user/{id}/status` / `PUT /api/admin/user/{id}/role`，通过 `UserFeignClient` 调用 user-service 内部端点）。分类管理含树形结构查询 + 子分类保护（有子分类不可删）+ 商品数量检查。商品管理含分页查询/创建/更新/软删除（status=0）。订单管理含分页查询/发货（status 2→3）/完成（status 3→4）。`UserDTO`（tianji-common）不含 password 字段，跨模块安全传输。
 - **数据看板**：`GET /api/admin/dashboard`（`AdminController.getDashboard` → `DashboardService.getDashboard()`）聚合 GMV/订单数/用户数 + 今日/本周/本月趋势 + Top 10 热销商品 + 订单状态分布 + 分类销售额。GMV 只统计 status 2/3/4（已付款/已发货/已完成）。用户数通过 OpenFeign 调用 user-service `/api/user/internal/count`，失败时降级为 0。`DashboardServiceTest` 5 个单元测试 Mock Mapper 和 Feign 客户端。
 - **首页推荐**：`GET /api/product/recommend`（`ProductController.recommend` → `RecommendService.recommend(userId, count)`），JWT 可选。热销榜（加权得分公式：`sales×0.5 + favorites×0.3 + reviews×0.2`）始终返回；猜你喜欢（基于用户购买品类偏好）仅 JWT 存在时返回；买了还买（订单共现矩阵关联规则）始终返回，无购买记录时用热销商品做种子。热销榜和关联矩阵用 `@Cacheable` 缓存（TTL 1小时），通过 `@Scheduled` 每小时 evict。关联规则存 `product_similarity` 表。`RecommendServiceTest` 5 个单元测试 + `ProductControllerTest` 2 个端点测试。
 - **秒杀**：复用 product 表 4 字段（seckill_price/seckill_stock/seckill_start_time/seckill_end_time），不建新表。`SeckillService.isSeckillActive(product)` 判定秒杀窗口（开始时间 ≤ now ≤ 结束时间 + 库存 > 0）。`OrderService.createOrder` 无 SKU 商品自动判秒杀窗口，秒杀价覆盖订单价，seckill_stock 原子扣减（`ProductMapper.deductSeckillStock` — `UPDATE WHERE seckill_stock >= qty`）。取消/超时取消恢复秒杀库存。秒杀与拼团互斥（seckill_price 非 null 时拒绝创建拼团活动）。管理端点：`POST /api/admin/product/{id}/seckill` + `DELETE /api/admin/product/{id}/seckill`。用户端点：`GET /api/product/seckill/list`（分页）。`SeckillServiceTest` 5 个单元测试。
-- **阶梯拼团**：`group_buy` 表（productId UNIQUE, tiers JSON, expire_hours）+ `group_buy_order` 表（group_id, target_tier, current_count, status）。阶梯 JSON 格式：`[{"count":2,"discount":0.9},{"count":5,"discount":0.8}]`。原子参团：`GroupBuyOrderMapper.incrementCount` — `UPDATE WHERE current_count < target_tier AND status = 'OPEN'`。超时检查：`GroupBuyTimeoutConsumer`（RocketMQ listener, topic=group-buy-topic），消费到期未满团订单标记 FAIL。管理端点：`POST /api/admin/group-buy` + `PUT /api/admin/group-buy/{id}`。用户端点：`GET /api/group-buy/list` + `GET /api/group-buy/{id}` + `POST /api/group-buy/start` + `POST /api/group-buy/join/{groupId}` + `GET /api/group-buy/my`。`GroupBuyServiceTest` 7 个单元测试 + `GroupBuyControllerTest` 6 个端点测试。
+- **阶梯拼团**：`group_buy` 表（productId UNIQUE, tiers JSON, expire_hours）+ `group_buy_order` 表（group_id, user_id, target_tier, current_count, status）+ `group_buy_participant` 表（group_buy_order_id, user_id, order_id UNIQUE）。阶梯 JSON 格式：`[{"count":2,"discount":0.9},{"count":5,"discount":0.8}]`。`startGroup()` 创建 Order（通过 `orderService.createOrder`，拼团折扣在锁内与优惠券叠加）+ GroupBuyOrder + GroupBuyParticipant + 发送超时延迟消息（`group-buy-topic:TIMEOUT_CHECK`）。`joinGroup()` 同样创建 Order + CAS 原子参团（`GroupBuyOrderMapper.incrementCount` — `UPDATE WHERE current_count < target_tier AND status = 'OPEN'`）+ 参团记录。超时检查：`GroupBuyTimeoutConsumer`（RocketMQ listener, topic=group-buy-topic），消费到期未满团订单标记 FAIL + 遍历参团记录调用 `orderService.cancelOrderByTimeout` 取消关联订单（恢复库存+优惠券）。管理端点：`POST /api/admin/group-buy` + `PUT /api/admin/group-buy/{id}`。用户端点：`GET /api/group-buy/list` + `GET /api/group-buy/{id}` + `POST /api/group-buy/start`（body: activityId + targetCount + OrderCreateRequest 字段）+ `POST /api/group-buy/join/{groupId}`（body: OrderCreateRequest）+ `GET /api/group-buy/my`。`GroupBuyServiceTest` 7 个单元测试 + `GroupBuyControllerTest` 6 个端点测试。
 - **订单状态**：1=待付款、2=已付款、3=已发货、4=已完成、5=已取消。退款状态独立在 `refund` 表（processing/success/fail）。
 - **订单收货**：用户侧 `PUT /api/order/{id}/receive`（`OrderService.confirmReceive`）——校验所有权 + status=3，设 status=4 + receiveTime。
 - **退款**：全单退款走支付宝 `AlipayTradeRefundRequest`。`RefundService.requestRefund()` 校验订单（status=2 + 所有权）+ 防重复，`PayFeignClient` 调用 pay-service 内部端点 `POST /api/pay/internal/refund` 执行实际退款。

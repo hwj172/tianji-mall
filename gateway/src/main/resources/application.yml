@@ -59,6 +59,26 @@ spring:
           uri: lb://mall-goods-order
           predicates:
             - Path=/api/review/**
+        - id: mall-shop
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/shop/**
+        - id: mall-seller
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/seller/**
+        - id: mall-region
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/region/**
+        - id: mall-notification
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/notification/**
+        - id: mall-group-buy
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/group-buy/**
         - id: mall-upload
           uri: lb://mall-goods-order
           predicates:
@@ -75,6 +95,10 @@ spring:
           uri: lb://ai-chat-service
           predicates:
             - Path=/api/chat/**
+        - id: ai-chat-vector
+          uri: lb://ai-chat-service
+          predicates:
+            - Path=/api/vector/**
 
 # JWT 密钥（生产环境必须通过环境变量或 application-local.yml 设置）
 jwt:
