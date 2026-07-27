@@ -23,6 +23,10 @@ spring:
         locator:
           enabled: false
       routes:
+        - id: mall-user-center
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/user/center
         - id: user-service
           uri: lb://user-service
           predicates:
