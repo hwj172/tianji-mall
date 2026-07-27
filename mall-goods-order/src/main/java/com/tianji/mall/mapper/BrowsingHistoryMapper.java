@@ -5,10 +5,14 @@ import com.tianji.mall.entity.BrowsingHistory;
 import org.apache.ibatis.annotations.Delete;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+import org.apache.ibatis.annotations.Select;
 
 @Mapper
 public interface BrowsingHistoryMapper extends BaseMapper<BrowsingHistory> {
 
     @Delete("DELETE FROM browsing_history WHERE user_id = #{userId}")
     int clearAll(@Param("userId") Long userId);
+
+    @Select("SELECT COUNT(*) FROM browsing_history WHERE user_id = #{userId}")
+    long selectCountByUserId(@Param("userId") Long userId);
 }

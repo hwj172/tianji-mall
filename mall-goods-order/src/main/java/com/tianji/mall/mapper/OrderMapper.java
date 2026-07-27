@@ -28,4 +28,7 @@ public interface OrderMapper extends BaseMapper<Order> {
 
     @Select("SELECT status, COUNT(*) as cnt FROM `order` GROUP BY status")
     List<Map<String, Object>> selectStatusDistribution();
+
+    @Select("SELECT status, COUNT(*) AS cnt FROM `order` WHERE user_id = #{userId} GROUP BY status")
+    List<Map<String, Object>> selectOrderStats(@Param("userId") Long userId);
 }

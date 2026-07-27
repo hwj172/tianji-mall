@@ -9,6 +9,9 @@ import java.util.Map;
 @FeignClient(name = "user-service")
 public interface UserFeignClient {
 
+    @GetMapping("/api/user/internal/{id}")
+    R<Map<String, Object>> getUserById(@PathVariable("id") Long id);
+
     @GetMapping("/api/user/internal/count")
     R<Long> countUsers();
 

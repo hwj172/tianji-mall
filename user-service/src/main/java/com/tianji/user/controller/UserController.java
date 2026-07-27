@@ -75,6 +75,18 @@ public class UserController {
         return R.ok(userService.countUsers());
     }
 
+    @GetMapping("/internal/{id}")
+    public R<Map<String, Object>> getUserById(@PathVariable("id") Long id) {
+        User user = userService.getUserById(id);
+        Map<String, Object> map = new HashMap<>();
+        map.put("id", user.getId());
+        map.put("username", user.getUsername());
+        map.put("avatar", user.getAvatar());
+        map.put("phone", user.getPhone());
+        map.put("role", user.getRole());
+        return R.ok(map);
+    }
+
     @PutMapping("/internal/promote")
     public R<Void> promoteToSeller(@RequestParam("userId") Long userId) {
         userService.promoteToSeller(userId);
