@@ -412,3 +412,13 @@ CREATE TABLE IF NOT EXISTS `banner` (
   `update_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Banner 轮播图表';
+
+-- 搜索日志表
+CREATE TABLE IF NOT EXISTS `search_log` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '日志 ID',
+  `keyword`     VARCHAR(128) NOT NULL COMMENT '搜索关键词',
+  `user_id`     BIGINT       DEFAULT NULL COMMENT '用户 ID（未登录为 NULL）',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '搜索时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='搜索日志表';
