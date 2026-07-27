@@ -3,8 +3,10 @@ package com.tianji.mall.controller;
 import com.tianji.common.result.R;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
+import com.tianji.mall.dto.RefundRequest;
 import com.tianji.mall.entity.LogisticsTrack;
 import com.tianji.mall.entity.Order;
+import com.tianji.mall.entity.Refund;
 import com.tianji.mall.service.LogisticsService;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.RefundService;
@@ -63,12 +65,13 @@ public class OrderController {
     }
 
     @PostMapping("/{id}/refund")
-    public R<Void> refund(@RequestHeader("Authorization") String authHeader,
-                          @PathVariable("id") Long id,
-                          @RequestBody Map<String, String> body) {
+    public R<Map<String, Object>> refund(@RequestHeader("Authorization") String authHeader,
+                                         @PathVariable("id") Long id,
+                                         @Valid @RequestBody RefundRequest req) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        refundService.requestRefund(userId, id, body.get("reason"));
-        return R.ok();
+        Refund refund = refundService.requestRefund(userId, id, req);
+        return R.ok(Map.of("id", refund.getId(), "amount", refund.getAmount(),
+                "status", refund.getStatus(), "refundType", refund.getRefundType()));
     }
 
     @GetMapping("/{id}/logistics")

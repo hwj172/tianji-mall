@@ -18,6 +18,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -145,12 +146,85 @@ class CouponServiceTest {
 
     @Test
     void shouldGetUserCoupons() {
+        Coupon coupon = buildCoupon(10L, "满100减20", "FIXED", 20, 100);
+        coupon.setStatus(1);
+        coupon.setEndTime(LocalDateTime.now().plusDays(7));
+        UserCoupon uc = new UserCoupon();
+        uc.setId(1L);
+        uc.setCouponId(10L);
+        uc.setStatus("UNUSED");
         when(userCouponMapper.selectList(any(LambdaQueryWrapper.class)))
-                .thenReturn(List.of(new UserCoupon()));
+                .thenReturn(List.of(uc));
+        when(couponMapper.selectById(10L)).thenReturn(coupon);
 
-        List<UserCoupon> result = couponService.getUserCoupons(100L);
+        List<Map<String, Object>> result = couponService.getUserCoupons(100L);
 
         assertThat(result).hasSize(1);
+    }
+
+    // ============ Coupon center ============
+
+    @Test
+    void shouldGetCouponCenterWithUnclaimedFlag() {
+        LocalDateTime now = LocalDateTime.now();
+        Coupon coupon = buildCoupon(1L, "满100减20", "FIXED", 20, 100);
+        coupon.setStartTime(now.minusDays(1));
+        coupon.setEndTime(now.plusDays(7));
+        coupon.setStatus(1);
+        when(couponMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(coupon));
+        when(userCouponMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        Map<String, Object> result = couponService.getCouponCenter(100L);
+
+        assertThat(result).containsKeys("coupons", "total", "unclaimedCount");
+        assertThat(result.get("total")).isEqualTo(1);
+        assertThat(result.get("unclaimedCount")).isEqualTo(1L);
+    }
+
+    @Test
+    void shouldGetAvailableCount() {
+        LocalDateTime now = LocalDateTime.now();
+        Coupon coupon = buildCoupon(1L, "满100减20", "FIXED", 20, 100);
+        coupon.setStartTime(now.minusDays(1));
+        coupon.setEndTime(now.plusDays(7));
+        coupon.setStatus(1);
+        when(couponMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(coupon));
+        when(userCouponMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        long count = couponService.getAvailableCount(100L);
+
+        assertThat(count).isEqualTo(1);
+    }
+
+    // ============ Scope check ============
+
+    @Test
+    void shouldPassWhenCouponHasNoScope() {
+        Coupon coupon = buildCoupon(1L, "通用券", "FIXED", 10, 50);
+
+        boolean applicable = couponService.isApplicable(coupon, 1L, 2L);
+
+        assertThat(applicable).isTrue();
+    }
+
+    @Test
+    void shouldRejectWhenCategoryNotMatch() {
+        Coupon coupon = buildCoupon(1L, "分类券", "FIXED", 10, 50);
+        coupon.setApplicableCategoryId(5L);
+
+        boolean applicable = couponService.isApplicable(coupon, 3L, null);
+
+        assertThat(applicable).isFalse();
+    }
+
+    @Test
+    void shouldRejectWhenProductNotMatch() {
+        Coupon coupon = buildCoupon(1L, "单品券", "FIXED", 10, 50);
+        coupon.setApplicableProductId(100L);
+
+        boolean applicable = couponService.isApplicable(coupon, null, 200L);
+
+        assertThat(applicable).isFalse();
     }
 
     // ============ Apply coupon ============

@@ -171,15 +171,21 @@ class OrderControllerTest {
 
     @Test
     void shouldRequestRefund() throws Exception {
-        when(refundService.requestRefund(eq(1L), eq(1L), eq("不想要了")))
-                .thenReturn(new com.tianji.mall.entity.Refund());
+        com.tianji.mall.entity.Refund refund = new com.tianji.mall.entity.Refund();
+        refund.setId(1L);
+        refund.setAmount(java.math.BigDecimal.valueOf(6999));
+        refund.setStatus("processing");
+        refund.setRefundType("REFUND_ONLY");
+        when(refundService.requestRefund(eq(1L), eq(1L), any(com.tianji.mall.dto.RefundRequest.class)))
+                .thenReturn(refund);
 
         mockMvc.perform(post("/api/order/1/refund")
                         .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"reason\":\"不想要了\"}"))
+                        .content("{\"reason\":\"不想要了\",\"refundType\":\"REFUND_ONLY\",\"items\":[{\"orderItemId\":1,\"productId\":1,\"quantity\":1}]}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.id").value(1));
     }
 
     // ==================== internal endpoints ====================

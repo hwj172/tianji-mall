@@ -23,6 +23,10 @@ public class Refund {
     @TableField("alipay_refund_no")
     private String alipayRefundNo;
     private String failReason;
+    private String refundType;
+    private String returnStatus;
+    private String trackingNumber;
+    private String trackingCompany;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
 }

@@ -17,9 +17,9 @@ public class UploadController {
     private final FileStorageService fileStorageService;
 
     /**
-     * 上传商品图片（支持单文件或多文件）。
-     * Admin 鉴权由 Gateway 的 /api/admin 前缀 + RequireAdmin 注解处理。
-     * 这里用 X-User-Role 请求头做二次确认。
+     * 上传图片（支持单文件或多文件）。
+     * JWT 鉴权（非公开路径），所有登录用户均可上传。
+     * 前端上传后获取 URL，用于商品图片、评价晒图等场景。
      */
     @PostMapping("/image")
     public R<List<String>> uploadImage(@RequestParam(value = "files", required = false) List<MultipartFile> files) {

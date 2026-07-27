@@ -42,8 +42,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     @Value("${search.use-fulltext:true}")
     private boolean useFulltext;
 
-    @Cacheable(value = "productPage",
-               key = "'c' + #categoryId + '_k' + #keyword + '_min' + #minPrice + '_max' + #maxPrice + '_sort' + #sortBy + '_shop' + #shopId + '_p' + #page + '_sz' + #size")
+    // NOTE: 不用 @Cacheable — Page 对象无法通过 GenericJackson2JsonRedisSerializer 正确反序列化
     public Page<Product> getProductPage(Long categoryId, String keyword,
                                         BigDecimal minPrice, BigDecimal maxPrice,
                                         String sortBy, Long shopId, int page, int size) {

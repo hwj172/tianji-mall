@@ -22,7 +22,9 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -112,16 +114,36 @@ class CouponControllerTest {
     @Test
     void shouldGetMyCoupons() throws Exception {
         when(jwtUtil.getUserId("token123")).thenReturn(100L);
-        UserCoupon uc = new UserCoupon();
-        uc.setId(1L);
-        uc.setCouponId(10L);
-        uc.setStatus("UNUSED");
+        Map<String, Object> uc = Map.of("userCouponId", 1L, "status", "UNUSED", "name", "满100减20");
         when(couponService.getUserCoupons(100L)).thenReturn(List.of(uc));
 
         mockMvc.perform(get("/api/coupon/my")
                         .header("Authorization", "Bearer token123"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].status").value("UNUSED"));
+    }
+
+    @Test
+    void shouldGetCouponCenter() throws Exception {
+        when(jwtUtil.getUserId("token123")).thenReturn(100L);
+        Map<String, Object> center = Map.of("coupons", List.of(), "total", 0, "unclaimedCount", 0L);
+        when(couponService.getCouponCenter(100L)).thenReturn(center);
+
+        mockMvc.perform(get("/api/coupon/center")
+                        .header("Authorization", "Bearer token123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unclaimedCount").value(0));
+    }
+
+    @Test
+    void shouldGetCouponCount() throws Exception {
+        when(jwtUtil.getUserId("token123")).thenReturn(100L);
+        when(couponService.getAvailableCount(100L)).thenReturn(5L);
+
+        mockMvc.perform(get("/api/coupon/count")
+                        .header("Authorization", "Bearer token123"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.unclaimed").value(5));
     }
 
     @Test

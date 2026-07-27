@@ -79,6 +79,14 @@ spring:
           uri: lb://mall-goods-order
           predicates:
             - Path=/api/notification/**
+        - id: mall-refund
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/refund/**
+        - id: mall-home
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/home, /api/home/**
         - id: mall-group-buy
           uri: lb://mall-goods-order
           predicates:

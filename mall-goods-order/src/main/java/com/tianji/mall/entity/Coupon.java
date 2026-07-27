@@ -23,6 +23,8 @@ public class Coupon {
     private Integer status;        // 1=启用 0=停用
     private LocalDateTime startTime;
     private LocalDateTime endTime;
+    private Long applicableCategoryId;
+    private Long applicableProductId;
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

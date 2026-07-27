@@ -88,8 +88,23 @@ CREATE TABLE IF NOT EXISTS refund (
     status          VARCHAR(20)      NOT NULL DEFAULT 'processing',
     alipay_refund_no VARCHAR(64),
     fail_reason     VARCHAR(500),
+    refund_type     VARCHAR(20)      NOT NULL DEFAULT 'REFUND_ONLY',
+    return_status   VARCHAR(20)      DEFAULT NULL,
+    tracking_number VARCHAR(50)      DEFAULT NULL,
+    tracking_company VARCHAR(50)     DEFAULT NULL,
     created_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP,
     updated_at      TIMESTAMP        DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS refund_item (
+    id              BIGINT AUTO_INCREMENT PRIMARY KEY,
+    refund_id       BIGINT NOT NULL,
+    order_item_id   BIGINT NOT NULL,
+    product_id      BIGINT NOT NULL,
+    sku_id          BIGINT DEFAULT NULL,
+    quantity        INT NOT NULL,
+    amount          DECIMAL(10,2) NOT NULL,
+    create_time     TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS review (
@@ -139,18 +154,20 @@ CREATE TABLE IF NOT EXISTS notification (
 );
 
 CREATE TABLE IF NOT EXISTS coupon (
-    id               BIGINT AUTO_INCREMENT PRIMARY KEY,
-    name             VARCHAR(128) NOT NULL,
-    discount_type    VARCHAR(20)  NOT NULL,
-    discount_value   DECIMAL(10,2) NOT NULL,
-    min_order_amount DECIMAL(10,2) DEFAULT 0.00,
-    total_quantity   INT NOT NULL,
-    used_quantity    INT DEFAULT 0,
-    status           TINYINT DEFAULT 1,
-    start_time       TIMESTAMP NOT NULL,
-    end_time         TIMESTAMP NOT NULL,
-    create_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    update_time      TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    id                    BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name                  VARCHAR(128) NOT NULL,
+    discount_type         VARCHAR(20)  NOT NULL,
+    discount_value        DECIMAL(10,2) NOT NULL,
+    min_order_amount      DECIMAL(10,2) DEFAULT 0.00,
+    total_quantity        INT NOT NULL,
+    used_quantity         INT DEFAULT 0,
+    status                TINYINT DEFAULT 1,
+    start_time            TIMESTAMP NOT NULL,
+    end_time              TIMESTAMP NOT NULL,
+    applicable_category_id BIGINT DEFAULT NULL,
+    applicable_product_id  BIGINT DEFAULT NULL,
+    create_time           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS user_coupon (

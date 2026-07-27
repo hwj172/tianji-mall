@@ -140,14 +140,32 @@ CREATE TABLE IF NOT EXISTS `refund` (
   `amount`          DECIMAL(10,2)  NOT NULL COMMENT '退款金额',
   `reason`          VARCHAR(500)   NOT NULL COMMENT '退款原因',
   `status`          VARCHAR(20)    NOT NULL DEFAULT 'processing' COMMENT '退款状态：processing/success/fail',
-  `alipay_refund_no` VARCHAR(64)   DEFAULT NULL COMMENT '支付宝退款单号',
-  `fail_reason`     VARCHAR(500)   DEFAULT NULL COMMENT '失败原因',
-  `created_at`      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `updated_at`      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `alipay_refund_no`   VARCHAR(64)   DEFAULT NULL COMMENT '支付宝退款单号',
+  `fail_reason`        VARCHAR(500)  DEFAULT NULL COMMENT '失败原因',
+  `refund_type`        VARCHAR(20)   NOT NULL DEFAULT 'REFUND_ONLY' COMMENT '退款类型：REFUND_ONLY-仅退款 RETURN_REFUND-退货退款',
+  `return_status`      VARCHAR(20)   DEFAULT NULL COMMENT '退货状态：SHIPPED-已寄回 RECEIVED-已收货',
+  `tracking_number`    VARCHAR(50)   DEFAULT NULL COMMENT '退货快递单号',
+  `tracking_company`   VARCHAR(50)   DEFAULT NULL COMMENT '退货快递公司',
+  `created_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `updated_at`         DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_order_id` (`order_id`),
   KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='退款表';
+
+-- 9. 退款商品明细表
+CREATE TABLE IF NOT EXISTS `refund_item` (
+  `id`              BIGINT         NOT NULL AUTO_INCREMENT COMMENT '明细ID',
+  `refund_id`       BIGINT         NOT NULL COMMENT '退款ID',
+  `order_item_id`   BIGINT         NOT NULL COMMENT '订单明细ID',
+  `product_id`      BIGINT         NOT NULL COMMENT '商品ID',
+  `sku_id`          BIGINT         DEFAULT NULL COMMENT 'SKU ID',
+  `quantity`        INT            NOT NULL COMMENT '退款数量',
+  `amount`          DECIMAL(10,2)  NOT NULL COMMENT '退款金额',
+  `create_time`     DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_refund_id` (`refund_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='退款商品明细表';
 
 -- 10. 用户评价表
 CREATE TABLE IF NOT EXISTS `review` (
@@ -177,10 +195,12 @@ CREATE TABLE IF NOT EXISTS `coupon` (
   `total_quantity`   INT            NOT NULL COMMENT '发放总量',
   `used_quantity`    INT            NOT NULL DEFAULT 0 COMMENT '已领取数量',
   `status`           TINYINT        NOT NULL DEFAULT 1 COMMENT '状态：1-启用 0-停用',
-  `start_time`       DATETIME       NOT NULL COMMENT '开始时间',
-  `end_time`         DATETIME       NOT NULL COMMENT '结束时间',
-  `create_time`      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  `update_time`      DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `start_time`              DATETIME       NOT NULL COMMENT '开始时间',
+  `end_time`                DATETIME       NOT NULL COMMENT '结束时间',
+  `applicable_category_id`  BIGINT         DEFAULT NULL COMMENT '适用分类ID（NULL=全部）',
+  `applicable_product_id`   BIGINT         DEFAULT NULL COMMENT '适用商品ID（NULL=全部）',
+  `create_time`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`             DATETIME       NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='优惠券表';
 

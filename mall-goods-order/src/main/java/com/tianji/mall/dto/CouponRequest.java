@@ -30,4 +30,8 @@ public class CouponRequest {
 
     @NotNull(message = "结束时间不能为空")
     private LocalDateTime endTime;
+
+    private Long applicableCategoryId; // NULL=全部
+
+    private Long applicableProductId; // NULL=全部
 }

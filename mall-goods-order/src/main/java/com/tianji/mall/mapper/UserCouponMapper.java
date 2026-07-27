@@ -18,6 +18,10 @@ public interface UserCouponMapper extends BaseMapper<UserCoupon> {
     @Update("UPDATE user_coupon SET status = 'UNUSED', used_time = NULL, used_order_id = NULL WHERE id = #{id} AND status = 'USED'")
     int restoreUnused(@Param("id") Long id);
 
+    /** 原子操作：标记优惠券为已过期 */
+    @Update("UPDATE user_coupon SET status = 'EXPIRED' WHERE id = #{id} AND status = 'UNUSED'")
+    int markExpired(@Param("id") Long id);
+
     @Select("SELECT COUNT(*) FROM user_coupon WHERE user_id = #{userId} AND status = 'UNUSED'")
     long selectCountByUserId(@Param("userId") Long userId);
 }

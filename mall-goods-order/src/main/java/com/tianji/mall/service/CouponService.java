@@ -11,13 +11,17 @@ import com.tianji.mall.mapper.CouponMapper;
 import com.tianji.mall.mapper.UserCouponMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -79,6 +83,49 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
                 .apply("used_quantity < total_quantity"));
     }
 
+    /** 领券中心：可用优惠券 + 可领数量 */
+    public Map<String, Object> getCouponCenter(Long userId) {
+        List<Coupon> available = listAvailable();
+        // 查询用户已领取的优惠券 ID
+        List<UserCoupon> userCoupons = userCouponMapper.selectList(
+                new LambdaQueryWrapper<UserCoupon>().eq(UserCoupon::getUserId, userId));
+        List<Long> claimedIds = userCoupons.stream().map(UserCoupon::getCouponId).toList();
+
+        List<Map<String, Object>> couponList = new ArrayList<>();
+        for (Coupon c : available) {
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("id", c.getId());
+            item.put("name", c.getName());
+            item.put("discountType", c.getDiscountType());
+            item.put("discountValue", c.getDiscountValue());
+            item.put("minOrderAmount", c.getMinOrderAmount());
+            item.put("endTime", c.getEndTime());
+            item.put("applicableCategoryId", c.getApplicableCategoryId());
+            item.put("applicableProductId", c.getApplicableProductId());
+            item.put("claimed", claimedIds.contains(c.getId()));
+            // 是否即将过期（48小时内）
+            item.put("expiringSoon", c.getEndTime() != null &&
+                    c.getEndTime().isBefore(LocalDateTime.now().plusHours(48)));
+            couponList.add(item);
+        }
+
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("coupons", couponList);
+        result.put("total", couponList.size());
+        result.put("unclaimedCount", couponList.stream().filter(m -> !(boolean) m.get("claimed")).count());
+        return result;
+    }
+
+    /** 可领优惠券数量（红点提示） */
+    public long getAvailableCount(Long userId) {
+        List<Coupon> available = listAvailable();
+        if (available.isEmpty()) return 0;
+        List<UserCoupon> userCoupons = userCouponMapper.selectList(
+                new LambdaQueryWrapper<UserCoupon>().eq(UserCoupon::getUserId, userId));
+        List<Long> claimedIds = userCoupons.stream().map(UserCoupon::getCouponId).toList();
+        return available.stream().filter(c -> !claimedIds.contains(c.getId())).count();
+    }
+
     @Transactional
     public void claimCoupon(Long userId, Long couponId) {
         Coupon coupon = getById(couponId);
@@ -112,11 +159,53 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
         log.info("用户 {} 领取优惠券 {} ({})", userId, couponId, coupon.getName());
     }
 
-    /** 我的优惠券 */
-    public List<UserCoupon> getUserCoupons(Long userId) {
-        return userCouponMapper.selectList(new LambdaQueryWrapper<UserCoupon>()
+    /** 我的优惠券（含优惠券详情） */
+    public List<Map<String, Object>> getUserCoupons(Long userId) {
+        List<UserCoupon> userCoupons = userCouponMapper.selectList(new LambdaQueryWrapper<UserCoupon>()
                 .eq(UserCoupon::getUserId, userId)
                 .orderByDesc(UserCoupon::getCreateTime));
+
+        List<Map<String, Object>> result = new ArrayList<>();
+        for (UserCoupon uc : userCoupons) {
+            Coupon coupon = getById(uc.getCouponId());
+            Map<String, Object> item = new LinkedHashMap<>();
+            item.put("userCouponId", uc.getId());
+            item.put("status", uc.getStatus());
+            item.put("usedTime", uc.getUsedTime());
+            item.put("usedOrderId", uc.getUsedOrderId());
+            if (coupon != null) {
+                item.put("couponId", coupon.getId());
+                item.put("name", coupon.getName());
+                item.put("discountType", coupon.getDiscountType());
+                item.put("discountValue", coupon.getDiscountValue());
+                item.put("minOrderAmount", coupon.getMinOrderAmount());
+                item.put("endTime", coupon.getEndTime());
+                item.put("applicableCategoryId", coupon.getApplicableCategoryId());
+                item.put("applicableProductId", coupon.getApplicableProductId());
+            }
+            result.add(item);
+        }
+        return result;
+    }
+
+    /** 自动标记过期优惠券（每小时执行） */
+    @Scheduled(cron = "0 7 * * * *")
+    public void markExpiredCoupons() {
+        LocalDateTime now = LocalDateTime.now();
+        // 查询所有过期且状态为 UNUSED 的记录
+        List<UserCoupon> expiredList = userCouponMapper.selectList(
+                new LambdaQueryWrapper<UserCoupon>().eq(UserCoupon::getStatus, "UNUSED"));
+        int count = 0;
+        for (UserCoupon uc : expiredList) {
+            Coupon coupon = getById(uc.getCouponId());
+            if (coupon != null && coupon.getEndTime() != null && coupon.getEndTime().isBefore(now)) {
+                userCouponMapper.markExpired(uc.getId());
+                count++;
+            }
+        }
+        if (count > 0) {
+            log.info("标记过期优惠券: {} 张", count);
+        }
     }
 
     // ============ Order integration ============
@@ -162,7 +251,7 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
             discount = orderAmount;
         }
 
-        // 原子标记已使用（不传 orderId 因为订单还没创建）
+        // 原子标记已使用
         userCouponMapper.markUsed(userCouponId, null);
         log.info("订单使用优惠券: userCouponId={}, discount={}", userCouponId, discount);
         return discount;
@@ -177,7 +266,7 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
         }
     }
 
-    /** 订单取消时恢复优惠券（Phase 2d 使用） */
+    /** 订单取消时恢复优惠券 */
     @Transactional
     public void restoreCoupon(Long orderId) {
         List<UserCoupon> list = userCouponMapper.selectList(
@@ -186,5 +275,18 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
             userCouponMapper.restoreUnused(uc.getId());
             log.info("订单 {} 取消，恢复优惠券: {}", orderId, uc.getId());
         }
+    }
+
+    /** 判断优惠券是否适用于指定分类/商品（NULL=全部适用） */
+    public boolean isApplicable(Coupon coupon, Long categoryId, Long productId) {
+        if (coupon.getApplicableCategoryId() != null
+                && !coupon.getApplicableCategoryId().equals(categoryId)) {
+            return false;
+        }
+        if (coupon.getApplicableProductId() != null
+                && !coupon.getApplicableProductId().equals(productId)) {
+            return false;
+        }
+        return true;
     }
 }

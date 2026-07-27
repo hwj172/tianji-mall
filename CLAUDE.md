@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：470 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 335 + Pay 6 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：484 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 349 + Pay 6 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -205,7 +205,9 @@ mvn package -DskipTests
 - **阶梯拼团**：`group_buy` 表（productId UNIQUE, tiers JSON, expire_hours）+ `group_buy_order` 表（group_id, user_id, target_tier, current_count, status）+ `group_buy_participant` 表（group_buy_order_id, user_id, order_id UNIQUE）。阶梯 JSON 格式：`[{"count":2,"discount":0.9},{"count":5,"discount":0.8}]`。`startGroup()` 创建 Order（通过 `orderService.createOrder`，拼团折扣在锁内与优惠券叠加）+ GroupBuyOrder + GroupBuyParticipant + 发送超时延迟消息（`group-buy-topic:TIMEOUT_CHECK`）。`joinGroup()` 同样创建 Order + CAS 原子参团（`GroupBuyOrderMapper.incrementCount` — `UPDATE WHERE current_count < target_tier AND status = 'OPEN'`）+ 参团记录。超时检查：`GroupBuyTimeoutConsumer`（RocketMQ listener, topic=group-buy-topic），消费到期未满团订单标记 FAIL + 遍历参团记录调用 `orderService.cancelOrderByTimeout` 取消关联订单（恢复库存+优惠券）。管理端点：`POST /api/admin/group-buy` + `PUT /api/admin/group-buy/{id}`。用户端点：`GET /api/group-buy/list` + `GET /api/group-buy/{id}` + `POST /api/group-buy/start`（body: activityId + targetCount + OrderCreateRequest 字段）+ `POST /api/group-buy/join/{groupId}`（body: OrderCreateRequest）+ `GET /api/group-buy/my`。`GroupBuyServiceTest` 7 个单元测试 + `GroupBuyControllerTest` 6 个端点测试。
 - **订单状态**：1=待付款、2=已付款、3=已发货、4=已完成、5=已取消。退款状态独立在 `refund` 表（processing/success/fail）。
 - **订单收货**：用户侧 `PUT /api/order/{id}/receive`（`OrderService.confirmReceive`）——校验所有权 + status=3，设 status=4 + receiveTime。
-- **退款**：全单退款走支付宝 `AlipayTradeRefundRequest`。`RefundService.requestRefund()` 校验订单（status=2 + 所有权）+ 防重复，`PayFeignClient` 调用 pay-service 内部端点 `POST /api/pay/internal/refund` 执行实际退款。
+- **按商品退款**：`POST /api/order/{id}/refund`（JWT 鉴权），body 为 `RefundRequest`（reason + refundType + items[]），每项指定 orderItemId/productId/skuId/quantity。`RefundService.requestRefund()` 校验订单（status 2-4 + 所有权）+ 防重复（`ORDER BY id` DESC 取最新一条处理中退款）+ 逐项验证（明细存在 + 数量合法）+ 计算金额 + 创建 `Refund` + `RefundItem` 记录。REFUND_ONLY 类型直接调用 pay-service 退款；RETURN_REFUND 类型等待买家退货。`refund` 表新增 `refund_type`/`return_status`/`tracking_number`/`tracking_company` 字段，`refund_item` 表记录退款商品明细。
+- **退货流程**：买家填写快递 `PUT /api/refund/{id}/ship`（JWT 鉴权，body: trackingNumber + trackingCompany），校验 refundType=RETURN_REFUND + status=processing，设 returnStatus=SHIPPED。卖家确认收货 `PUT /api/refund/{id}/receive`（无 JWT 检查，网关层 admin/seller 鉴权），校验 returnStatus=SHIPPED，设 returnStatus=RECEIVED 后执行退款。退款详情 `GET /api/refund/{id}` 返回 refund + items 列表。
+- **退款端点**：`RefundController`（`@RequestMapping("/api/refund")`），Gateway 新增路由 `Path=/api/refund/** → lb://mall-goods-order`。`RefundServiceTest` 12 个单元测试（6 个 requestRefund + 2 个 returnShip + 2 个 confirmReceive + getRefundDetail + getMyRefunds）。`getMyRefunds` 返回 `Page<Refund>`（用 `page()` 不用 `list()`——`ServiceImpl.list()` Mockito 匹配不可靠）。
 - **超时取消**：下单时 RocketMQ 延迟消息（delayLevel 16=30min，tag:TIMEOUT_CHECK），`OrderTimeoutConsumer` 消费检查订单状态，PENDING→CANCELLED + 恢复库存。best-effort（发送失败不阻塞主流程）。
 - **PayFeignClient**：mall-goods-order → pay-service Feign 调用（退款），测试中需 `@MockBean PayFeignClient`。
 - **商品描述富文本**：`product.description` 使用 `LONGTEXT`（支持图文混排）。前端可用 Quill/TinyMCE 等富文本编辑器，后端 JSON 中直接存 HTML 字符串。
@@ -217,6 +219,10 @@ mvn package -DskipTests
 - **用户中心**：`UserCenterController`（`/api/user/center`，JWT 鉴权）聚合 userInfo（Feign 调用 user-service `GET /api/user/internal/{id}`）+ orderStats（按 status 分组 count）+ couponCount/favoriteCount/followShopCount/cartCount/historyCount。Gateway 加专门路由 `Path=/api/user/center → lb://mall-goods-order`（在 `/api/user/**` 之前匹配）。各子查询 best-effort（异常降级为 0）。`UserCenterControllerTest` 2 个端点测试（@SpringBootTest）。
 - **待评价列表**：`GET /api/review/pending`（JWT 鉴权，分页）查询已完成订单(status=4)中未评价商品（LEFT JOIN review 排除已评价）。`ReviewMapper.selectPendingReviews` @Select + `ReviewService.getPendingReviews`。返回 `PendingReviewResponse`（orderId/productId/productName/productImage/price/skuId/skuSpecs/orderCreateTime）。`ReviewServiceTest` 新增 3 个测试。
 - **搜索热词**：`search_log` 表（keyword, userId, createTime）+ `SearchLog` entity + `SearchLogMapper`（BaseMapper + `selectHotKeywords` @Select 最近 7 天 Top 10）。`ProductService.getProductPage` 中 keyword 非空时记录日志（best-effort）。`GET /api/product/search/hot` 公开端点，网关白名单已放行（`/api/product/search/hot` 在 `/api/product` 前缀匹配放行前）。`ProductControllerTest` 新增 2 个端点测试。
+- **评价晒图**：`review` 表已有 `images` 字段（JSON 数组，存储图片 URL 列表），实体和 DTO 已支持。`UploadController`（JWT 鉴权，所有登录用户可用）负责上传图片到服务器本地 `uploads/` 目录。前端评价提交时附带 images 字段即可，无需后端额外改动。
+- **领券中心**：`GET /api/coupon/center`（JWT 鉴权）返回所有可用优惠券列表，每条含 `claimed`（是否已领取）和 `expiringSoon`（24 小时内过期）标记，响应汇总 `total` 和 `unclaimedCount`。`GET /api/coupon/count`（JWT 鉴权）返回未领数量徽章 `{"unclaimed": N}`。`GET /api/coupon/my` 返回 `List<Map<String, Object>>`（含优惠券详情）。`CouponService` 新增 `getCouponCenter(userId)`/`getAvailableCount(userId)`/`isApplicable(coupon, categoryId, productId)` 方法。
+- **优惠券适用范围**：`coupon` 表新增 `applicable_category_id` 和 `applicable_product_id`（NULL=全适用）。`CouponRequest` 同步新增对应字段，admin CRUD 通过 `BeanUtils.copyProperties` 自动复制无需改动。`CouponService.isApplicable()` 校验订单分类/商品是否在优惠券范围内。`CouponServiceTest` 新增 3 个适用范围测试 + 2 个领券中心测试。
+- **优惠券自动过期**：`CouponService.markExpiredCoupons()` 使用 `@Scheduled(cron = "0 7 * * * *")`（每小时第 7 分钟，避整点高峰），扫描 status='UNUSED' 且 endTime 已过的 `UserCoupon`，原子更新为 EXPIRED。`MallApplication` 已有 `@EnableScheduling`，无需额外配置。
 - **user-service**：新增 `GET /api/user/internal/{id}` 返回用户信息 Map（id/username/avatar/phone/role，不含 password）。`UserFeignClient` 新增 `getUserById(Long id)`。
 - **5 个 Mapper 计数方法**：`UserCouponMapper/FavoriteMapper/CartItemMapper/BrowsingHistoryMapper/ShopFollowMapper` 各加 `selectCountByUserId(Long userId)` @Select。`OrderMapper` 加 `selectOrderStats(Long userId)` 按 status 分组统计。
 - **Gateway 路由**：`/api/user/center` 路由到 mall-goods-order（在 `/api/user/**` 之前匹配，否则被 user-service 吞掉）。
