@@ -102,7 +102,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：463 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 328 + Pay 6 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：470 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 335 + Pay 6 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -146,7 +146,7 @@ mvn package -DskipTests
 | 模块 | 测试类 | Tests | 覆盖 |
 |------|--------|-------|------|
 | user-service | UserControllerTest | 12 | register/login/info/profile/avatar/password + @Valid + 缺 Auth + 内部端点 |
-| mall-goods-order | ProductControllerTest | 7 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 + 浏览足迹端点 |
+| mall-goods-order | ProductControllerTest | 12 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 + 浏览足迹端点 + 搜索热词 |
 | mall-goods-order | RegionControllerTest | 2 | 省市区树形数据 + 31 省结构验证 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
@@ -154,6 +154,7 @@ mvn package -DskipTests
 | mall-goods-order | AdminControllerTest | 47 | category/product/order CRUD + SKU/属性/coupon CRUD + dashboard + 店铺管理 + 用户管理 + 非 admin 拒绝 |
 | mall-goods-order | ShopControllerTest | 6 | 店铺详情（公开/JWT 关注状态）+ 关店 404 + 注册开店 + 关注/取关 + 我的关注 |
 | mall-goods-order | SellerControllerTest | 5 | 我的店铺/更新店铺/商品列表/创建商品/商家看板 |
+| mall-goods-order | UserCenterControllerTest | 2 | 用户中心聚合 + user-service 降级 |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
 | mcp-server | ToolControllerTest | 6 | JWT 手动提取 + 工具路由（search_products/get_product/get_orders/get_order_detail/get_cart/add_to_cart/create_order/pay_order）+ 未知工具 + 未授权 |
 | gateway | AuthGlobalFilterTest | 35 | 公开路径/内部路径/JWT 鉴权/seller 鉴权/非 API 路径/边界 + Mock WebFlux |
@@ -212,7 +213,13 @@ mvn package -DskipTests
 - **省市区级联**：`RegionController`（`GET /api/region/tree`，公开端点无需 JWT）从 `regions.json`（classpath 资源）加载行政区划树形数据（省→市→区三级，31 省，~137KB），`@PostConstruct` 时一次性加载到内存。供前端地址表单级联选择器使用，不改变 address 表结构（仍存文本）。网关白名单已放行 `/api/region` 前缀。`RegionControllerTest` 2 个端点测试。
 - **物流轨迹**：`logistics_track` 表（orderId, status, description, location, trackTime）。admin 发货时 `LogisticsService.generateTracks(orderId)` 自动生成 6 个模拟节点（PICKED_UP→IN_TRANSIT×2→OUT_FOR_DELIVERY×2→DELIVERED，时间从当前递增 28h）。用户端点 `GET /api/order/{id}/logistics`（JWT 鉴权 + 订单所有权校验 + status≥3）。`LogisticsServiceTest` 3 个单元测试。
 - **消息通知**：`notification` 表（userId, type, title, content, relatedOrderId, isRead）。`NotificationConsumer`（独立 consumerGroup `notification-consumer`，监听 order-topic）消费 SHIPPED/COMPLETED/CREATED 事件创建通知。用户端点：`GET /api/notification/list`（分页）、`GET /api/notification/unread-count`、`PUT /api/notification/{id}/read`、`PUT /api/notification/read-all`。`NotificationService.createNotification` best-effort（异常仅 log）。`NotificationServiceTest` 5 个单元测试 + `NotificationControllerTest` 4 个端点测试 + `NotificationConsumerTest` 3 个单元测试。所有 `@SpringBootTest` 类需 `@MockBean NotificationService`。
-- **@MockBean 补充**：涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService` + `@MockBean LogisticsService`；所有 `@SpringBootTest` 类需 `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService` + `@MockBean ShopService` + `@MockBean UserFeignClient`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）
+- **@MockBean 补充**：涉及 SKU 的 Service 单元测试需 `@Mock ProductSkuService`；AdminControllerTest 需 `@MockBean ProductSkuService` + `@MockBean ProductAttributeService` + `@MockBean DashboardService` + `@MockBean LogisticsService`；所有 `@SpringBootTest` 类需 `@MockBean RecommendService` + `@MockBean SeckillService` + `@MockBean GroupBuyService` + `@MockBean NotificationService` + `@MockBean ShopService` + `@MockBean UserFeignClient`（ProductController 仅需 SeckillService，GroupBuyController 还需 `@MockBean JwtUtil`）；UserCenterControllerTest 需额外 `@MockBean` 6 个 Mapper（OrderMapper/UserCouponMapper/FavoriteMapper/CartItemMapper/BrowsingHistoryMapper/ShopFollowMapper）
+- **用户中心**：`UserCenterController`（`/api/user/center`，JWT 鉴权）聚合 userInfo（Feign 调用 user-service `GET /api/user/internal/{id}`）+ orderStats（按 status 分组 count）+ couponCount/favoriteCount/followShopCount/cartCount/historyCount。Gateway 加专门路由 `Path=/api/user/center → lb://mall-goods-order`（在 `/api/user/**` 之前匹配）。各子查询 best-effort（异常降级为 0）。`UserCenterControllerTest` 2 个端点测试（@SpringBootTest）。
+- **待评价列表**：`GET /api/review/pending`（JWT 鉴权，分页）查询已完成订单(status=4)中未评价商品（LEFT JOIN review 排除已评价）。`ReviewMapper.selectPendingReviews` @Select + `ReviewService.getPendingReviews`。返回 `PendingReviewResponse`（orderId/productId/productName/productImage/price/skuId/skuSpecs/orderCreateTime）。`ReviewServiceTest` 新增 3 个测试。
+- **搜索热词**：`search_log` 表（keyword, userId, createTime）+ `SearchLog` entity + `SearchLogMapper`（BaseMapper + `selectHotKeywords` @Select 最近 7 天 Top 10）。`ProductService.getProductPage` 中 keyword 非空时记录日志（best-effort）。`GET /api/product/search/hot` 公开端点，网关白名单已放行（`/api/product/search/hot` 在 `/api/product` 前缀匹配放行前）。`ProductControllerTest` 新增 2 个端点测试。
+- **user-service**：新增 `GET /api/user/internal/{id}` 返回用户信息 Map（id/username/avatar/phone/role，不含 password）。`UserFeignClient` 新增 `getUserById(Long id)`。
+- **5 个 Mapper 计数方法**：`UserCouponMapper/FavoriteMapper/CartItemMapper/BrowsingHistoryMapper/ShopFollowMapper` 各加 `selectCountByUserId(Long userId)` @Select。`OrderMapper` 加 `selectOrderStats(Long userId)` 按 status 分组统计。
+- **Gateway 路由**：`/api/user/center` 路由到 mall-goods-order（在 `/api/user/**` 之前匹配，否则被 user-service 吞掉）。
 
 ## 行为准则
 
