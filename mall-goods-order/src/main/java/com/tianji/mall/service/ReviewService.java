@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizException;
+import com.tianji.mall.dto.PendingReviewResponse;
 import com.tianji.mall.dto.ReviewCreateRequest;
 import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.entity.Order;
@@ -17,7 +18,9 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -96,5 +99,25 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
         ReviewResponse resp = new ReviewResponse();
         BeanUtils.copyProperties(review, resp);
         return resp;
+    }
+
+    public List<PendingReviewResponse> getPendingReviews(Long userId, int page, int size) {
+        int offset = (page - 1) * size;
+        List<Map<String, Object>> rows = baseMapper.selectPendingReviews(userId, offset, size);
+        return rows.stream().map(row -> {
+            PendingReviewResponse resp = new PendingReviewResponse();
+            resp.setOrderId(((Number) row.get("order_id")).longValue());
+            resp.setProductId(((Number) row.get("product_id")).longValue());
+            resp.setProductName((String) row.get("product_name"));
+            resp.setProductImage((String) row.get("product_image"));
+            resp.setPrice(new BigDecimal(row.get("price").toString()));
+            Number skuId = (Number) row.get("sku_id");
+            if (skuId != null) {
+                resp.setSkuId(skuId.longValue());
+            }
+            resp.setSkuSpecs((String) row.get("sku_specs"));
+            resp.setOrderCreateTime(((java.sql.Timestamp) row.get("order_create_time")).toLocalDateTime());
+            return resp;
+        }).toList();
     }
 }

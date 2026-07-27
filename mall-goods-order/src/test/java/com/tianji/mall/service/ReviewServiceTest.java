@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
+import com.tianji.mall.dto.PendingReviewResponse;
 import com.tianji.mall.dto.ReviewCreateRequest;
 import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.entity.Order;
@@ -18,7 +19,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -199,6 +203,46 @@ class ReviewServiceTest {
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getUserId()).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldReturnPendingReviews() {
+        Map<String, Object> row = new java.util.HashMap<>();
+        row.put("order_id", 100L);
+        row.put("product_id", 1L);
+        row.put("product_name", "iPhone 16");
+        row.put("product_image", "img.jpg");
+        row.put("price", BigDecimal.valueOf(9999));
+        row.put("sku_id", null);
+        row.put("sku_specs", null);
+        row.put("order_create_time", java.sql.Timestamp.valueOf(LocalDateTime.of(2026, 7, 20, 10, 0, 0)));
+        List<Map<String, Object>> rows = List.of(row);
+        when(reviewMapper.selectPendingReviews(1L, 0, 20)).thenReturn(rows);
+
+        List<PendingReviewResponse> result = reviewService.getPendingReviews(1L, 1, 20);
+
+        assertThat(result).hasSize(1);
+        assertThat(result.get(0).getProductName()).isEqualTo("iPhone 16");
+        assertThat(result.get(0).getOrderId()).isEqualTo(100L);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenNoPendingReviews() {
+        when(reviewMapper.selectPendingReviews(1L, 0, 20)).thenReturn(List.of());
+
+        List<PendingReviewResponse> result = reviewService.getPendingReviews(1L, 1, 20);
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    void shouldExcludeAlreadyReviewedItems() {
+        when(reviewMapper.selectPendingReviews(1L, 0, 20)).thenReturn(List.of());
+
+        List<PendingReviewResponse> result = reviewService.getPendingReviews(1L, 1, 20);
+
+        assertThat(result).isEmpty();
+        verify(reviewMapper).selectPendingReviews(1L, 0, 20);
     }
 
     private Order buildOrder(Long id, Long userId, int status) {
