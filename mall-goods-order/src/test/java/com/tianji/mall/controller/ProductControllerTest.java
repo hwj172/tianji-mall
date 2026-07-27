@@ -227,6 +227,31 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.code").value(200));
     }
 
+    // ==================== GET /api/product/search/hot ====================
+
+    @Test
+    void shouldReturnHotKeywords() throws Exception {
+        when(productService.getHotKeywords()).thenReturn(List.of(
+                Map.of("keyword", "手机", "count", 100L),
+                Map.of("keyword", "耳机", "count", 50L)
+        ));
+
+        mockMvc.perform(get("/api/product/search/hot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value("手机"))
+                .andExpect(jsonPath("$.data[1]").value("耳机"));
+    }
+
+    @Test
+    void shouldReturnEmptyHotKeywords() throws Exception {
+        when(productService.getHotKeywords()).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/product/search/hot"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isArray())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
     // ==================== helpers ====================
 
     private Product buildProduct(Long id, String name, int price) {

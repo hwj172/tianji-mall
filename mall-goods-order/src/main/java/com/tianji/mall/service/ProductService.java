@@ -7,10 +7,12 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.entity.ProductSku;
+import com.tianji.mall.entity.SearchLog;
 import com.tianji.mall.entity.Shop;
 import com.tianji.mall.feign.AiChatFeignClient;
 import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.mapper.ReviewMapper;
+import com.tianji.mall.mapper.SearchLogMapper;
 import com.tianji.mall.mapper.ShopMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,6 +37,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     private final ProductAttributeService attributeService;
     private final ReviewMapper reviewMapper;
     private final ShopMapper shopMapper;
+    private final SearchLogMapper searchLogMapper;
 
     @Value("${search.use-fulltext:true}")
     private boolean useFulltext;
@@ -64,6 +67,14 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             } else {
                 wrapper.and(w -> w.like(Product::getName, keyword)
                         .or().like(Product::getDescription, keyword));
+            }
+            // 异步记录搜索日志（best-effort，不阻塞搜索）
+            try {
+                SearchLog logEntry = new SearchLog();
+                logEntry.setKeyword(keyword);
+                searchLogMapper.insert(logEntry);
+            } catch (Exception e) {
+                // ignore — 搜索日志记录失败不影响搜索功能
             }
         }
         // 排序
@@ -197,6 +208,10 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             log.warn("商品向量同步失败（不影响主流程）: productId={}", productId, e);
             return false;
         }
+    }
+
+    public List<Map<String, Object>> getHotKeywords() {
+        return searchLogMapper.selectHotKeywords();
     }
 
     // ==================== 后台管理方法 ====================

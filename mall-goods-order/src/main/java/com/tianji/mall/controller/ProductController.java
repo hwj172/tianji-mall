@@ -85,6 +85,17 @@ public class ProductController {
         return R.ok(recommendService.recommend(userId, count));
     }
 
+    // ===== 搜索热词 =====
+
+    @GetMapping("/search/hot")
+    public R<List<String>> hotKeywords() {
+        List<Map<String, Object>> rows = productService.getHotKeywords();
+        List<String> keywords = rows.stream()
+                .map(r -> (String) r.get("keyword"))
+                .toList();
+        return R.ok(keywords);
+    }
+
     // ===== 浏览足迹 =====
 
     @GetMapping("/history")
