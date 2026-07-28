@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.AddressRequest;
 import com.tianji.mall.entity.Address;
@@ -48,7 +49,7 @@ public class AddressService extends ServiceImpl<AddressMapper, Address> {
     public void updateAddress(Long userId, Long addressId, AddressRequest req) {
         Address address = getById(addressId);
         if (address == null || !address.getUserId().equals(userId)) {
-            throw new BizException("地址不存在");
+            throw new BizException(BizErrorCode.ADDRESS_NOT_FOUND);
         }
         if (req.getIsDefault() == 1) {
             clearDefault(userId);
@@ -68,7 +69,7 @@ public class AddressService extends ServiceImpl<AddressMapper, Address> {
     public void deleteAddress(Long userId, Long addressId) {
         Address address = getById(addressId);
         if (address == null || !address.getUserId().equals(userId)) {
-            throw new BizException("地址不存在");
+            throw new BizException(BizErrorCode.ADDRESS_NOT_FOUND);
         }
         removeById(addressId);
         // 如果删除的是默认地址，将另一个设为默认

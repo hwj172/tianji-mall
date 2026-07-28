@@ -6,6 +6,10 @@ spring:
     name: mcp-server
   profiles:
     active: local
+  config:
+    import:
+      - nacos:shared-config.yaml
+      - nacos:${spring.application.name}.yaml
   datasource:
     driver-class-name: com.mysql.cj.jdbc.Driver
     url: jdbc:mysql://192.168.150.11:3306/tianji_mall?useUnicode=true&characterEncoding=utf-8&serverTimezone=Asia/Shanghai
@@ -13,16 +17,11 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
   cloud:
     nacos:
-      discovery:
-        server-addr: 192.168.150.11:8848
       config:
-        server-addr: 192.168.150.11:8848
-        import-check:
-          enabled: false
+        file-extension: yaml
+        refresh-enabled: true
+        fail-fast: false
     sentinel:
-      transport:
-        dashboard: 192.168.150.11:8858
-      eager: true
       datasource:
         flow:
           nacos:

@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.entity.CartItem;
@@ -38,15 +39,15 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
         if (req.getSkuId() != null) {
             ProductSku sku = skuService.getById(req.getSkuId());
             if (sku == null || !sku.getProductId().equals(req.getProductId())) {
-                throw new BizException("SKU不存在");
+                throw new BizException(BizErrorCode.SKU_NOT_FOUND);
             }
             if (sku.getStock() < req.getQuantity()) {
-                throw new BizException("库存不足");
+                throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
             }
         } else {
             // 无 SKU：使用商品级库存（向后兼容）
             if (product.getStock() < req.getQuantity()) {
-                throw new BizException("库存不足");
+                throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
             }
         }
 
@@ -81,7 +82,7 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
     public void updateQuantity(Long userId, Long cartItemId, int quantity) {
         CartItem item = getById(cartItemId);
         if (item == null || !item.getUserId().equals(userId)) {
-            throw new BizException("购物车项不存在");
+            throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
         }
         item.setQuantity(quantity);
         updateById(item);
@@ -92,7 +93,7 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
     public void deleteItem(Long userId, Long cartItemId) {
         CartItem item = getById(cartItemId);
         if (item == null || !item.getUserId().equals(userId)) {
-            throw new BizException("购物车项不存在");
+            throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
         }
         removeById(cartItemId);
         log.info("购物车项删除: userId={}, cartItemId={}", userId, cartItemId);
@@ -102,7 +103,7 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
     public void checkItem(Long userId, Long cartItemId, Integer checked) {
         CartItem item = getById(cartItemId);
         if (item == null || !item.getUserId().equals(userId)) {
-            throw new BizException("购物车项不存在");
+            throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
         }
         item.setChecked(checked);
         updateById(item);

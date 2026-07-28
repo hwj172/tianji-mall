@@ -155,7 +155,7 @@ class CouponServiceTest {
         uc.setStatus("UNUSED");
         when(userCouponMapper.selectList(any(LambdaQueryWrapper.class)))
                 .thenReturn(List.of(uc));
-        when(couponMapper.selectById(10L)).thenReturn(coupon);
+        when(couponMapper.selectBatchIds(List.of(10L))).thenReturn(List.of(coupon));
 
         List<Map<String, Object>> result = couponService.getUserCoupons(100L);
 

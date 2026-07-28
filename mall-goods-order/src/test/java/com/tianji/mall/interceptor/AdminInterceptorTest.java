@@ -78,7 +78,7 @@ class AdminInterceptorTest {
         assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
                 .isInstanceOf(BizException.class)
                 .extracting("code")
-                .isEqualTo(403);
+                .isEqualTo(12001);
     }
 
     @Test
@@ -91,7 +91,7 @@ class AdminInterceptorTest {
         assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
                 .isInstanceOf(BizException.class)
                 .extracting("code")
-                .isEqualTo(403);
+                .isEqualTo(12001);
     }
 
     @Test
@@ -105,7 +105,7 @@ class AdminInterceptorTest {
         assertThatThrownBy(() -> interceptor.preHandle(request, response, handlerMethod))
                 .isInstanceOf(BizException.class)
                 .extracting("code")
-                .isEqualTo(403);
+                .isEqualTo(12001);
     }
 
     // ==================== 测试用 Controller ====================

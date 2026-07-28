@@ -80,7 +80,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.createOrder(100L, req))
                 .isInstanceOf(BizException.class)
-                .hasMessage("收货地址不存在");
+                .hasMessage("地址不存在");
     }
 
     @Test
@@ -94,7 +94,7 @@ class OrderServiceTest {
 
         assertThatThrownBy(() -> orderService.createOrder(100L, req))
                 .isInstanceOf(BizException.class)
-                .hasMessage("收货地址不存在");
+                .hasMessage("地址不存在");
     }
 
     @Test
@@ -248,7 +248,12 @@ class OrderServiceTest {
     @Test
     void shouldGetOrderList() {
         List<Order> orders = List.of(buildOrder(1L, 100L, 1), buildOrder(2L, 100L, 2));
-        when(orderMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(orders);
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> pageResult =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 50);
+        pageResult.setRecords(orders);
+        pageResult.setTotal(2);
+        when(orderMapper.selectPage(any(com.baomidou.mybatisplus.extension.plugins.pagination.Page.class),
+                any(LambdaQueryWrapper.class))).thenReturn(pageResult);
 
         List<Order> result = orderService.getOrderList(100L);
 

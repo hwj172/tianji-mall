@@ -2,6 +2,7 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
@@ -50,20 +51,20 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         // 1. 校验地址
         Address address = addressService.getById(req.getAddressId());
         if (address == null || !address.getUserId().equals(userId)) {
-            throw new BizException("收货地址不存在");
+            throw new BizException(BizErrorCode.ADDRESS_NOT_FOUND);
         }
 
         // 2. 查询选中的购物车项
         List<CartItem> cartItems = cartService.listByIds(req.getCartItemIds());
         if (cartItems.isEmpty()) {
-            throw new BizException("购物车项不存在");
+            throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
         }
         for (CartItem item : cartItems) {
             if (!item.getUserId().equals(userId)) {
-                throw new BizException("购物车项不属于当前用户");
+                throw new BizException(BizErrorCode.CART_ITEM_NOT_OWNER);
             }
             if (item.getChecked() != 1) {
-                throw new BizException("请先选中商品");
+                throw new BizException(BizErrorCode.CART_ITEM_NOT_CHECKED);
             }
         }
 
@@ -90,7 +91,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
 
         try {
             if (!multiLock.tryLock(3, 10, TimeUnit.SECONDS)) {
-                throw new BizException("系统繁忙，请稍后重试");
+                throw new BizException(BizErrorCode.SYSTEM_BUSY);
             }
 
             // 4. 锁内重新读取库存（拿到锁后库存可能已变化）
@@ -103,7 +104,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             for (CartItem cartItem : cartItems) {
                 Product product = productMap.get(cartItem.getProductId());
                 if (product == null || product.getStatus() == 0) {
-                    throw new BizException("商品「" + (product != null ? product.getName() : "未知") + "」已下架");
+                    throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND, product != null ? product.getName() : "未知");
                 }
 
                 BigDecimal itemPrice;
@@ -113,10 +114,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                     // SKU 商品：用 SKU 价格和库存
                     ProductSku sku = skuService.getById(cartItem.getSkuId());
                     if (sku == null || !sku.getProductId().equals(cartItem.getProductId())) {
-                        throw new BizException("商品「" + product.getName() + "」的规格已失效");
+                        throw new BizException(BizErrorCode.SKU_NOT_FOUND, product.getName());
                     }
                     if (sku.getStock() < cartItem.getQuantity()) {
-                        throw new BizException("商品「" + product.getName() + "」库存不足");
+                        throw new BizException(BizErrorCode.STOCK_INSUFFICIENT, product.getName());
                     }
                     itemPrice = sku.getPrice() != null ? sku.getPrice() : product.getPrice();
                     skuSpecs = sku.getSpecs();
@@ -124,12 +125,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                     // 无 SKU：判秒杀窗口
                     if (seckillService.isSeckillActive(product)) {
                         if (product.getSeckillStock() < cartItem.getQuantity()) {
-                            throw new BizException("秒杀商品「" + product.getName() + "」库存不足");
+                            throw new BizException(BizErrorCode.SECKILL_STOCK_INSUFFICIENT, product.getName());
                         }
                         itemPrice = product.getSeckillPrice();
                     } else {
                         if (product.getStock() < cartItem.getQuantity()) {
-                            throw new BizException("商品「" + product.getName() + "」库存不足");
+                            throw new BizException(BizErrorCode.STOCK_INSUFFICIENT, product.getName());
                         }
                         itemPrice = product.getPrice();
                     }
@@ -191,7 +192,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                     if (product != null && seckillService.isSeckillActive(product)) {
                         int affected = productMapper.deductSeckillStock(item.getProductId(), item.getQuantity());
                         if (affected == 0) {
-                            throw new BizException("秒杀商品「" + product.getName() + "」库存不足");
+                            throw new BizException(BizErrorCode.SECKILL_STOCK_INSUFFICIENT, product.getName());
                         }
                     } else {
                         productService.deductStock(item.getProductId(), item.getQuantity());
@@ -221,22 +222,27 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
 
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
-            throw new BizException("系统繁忙，请稍后重试");
+            throw new BizException(BizErrorCode.SYSTEM_BUSY);
         } finally {
             multiLock.unlock();
         }
     }
 
     public List<Order> getOrderList(Long userId) {
-        return list(new LambdaQueryWrapper<Order>()
-                .eq(Order::getUserId, userId)
-                .orderByDesc(Order::getCreateTime));
+        return getOrderPage(userId, 1, 50).getRecords();
+    }
+
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> getOrderPage(Long userId, int page, int size) {
+        return page(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size),
+                new LambdaQueryWrapper<Order>()
+                        .eq(Order::getUserId, userId)
+                        .orderByDesc(Order::getCreateTime));
     }
 
     public OrderDetailResponse getOrderDetail(Long userId, Long orderId) {
         Order order = getById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
 
         List<OrderItem> orderItems = orderItemMapper.selectList(
@@ -256,10 +262,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     public void cancelOrder(Long userId, Long orderId) {
         Order order = getById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getStatus() != 1) {
-            throw new BizException("仅待付款订单可取消");
+            throw new BizException(BizErrorCode.ORDER_CANNOT_CANCEL);
         }
 
         order.setStatus(5); // 已取消
@@ -296,13 +302,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     public void payOrder(Long orderId, Long userId) {
         Order order = getById(orderId);
         if (order == null) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
         if (!order.getUserId().equals(userId)) {
-            throw new BizException("订单不属于当前用户");
+            throw new BizException(BizErrorCode.ORDER_NOT_OWNER);
         }
         if (order.getStatus() != 1) {
-            throw new BizException("订单状态不允许支付");
+            throw new BizException(BizErrorCode.ORDER_STATUS_INVALID);
         }
         order.setStatus(2); // 已付款
         order.setPayType(1); // 支付宝
@@ -318,10 +324,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     public void shipOrder(Long orderId, String logisticsCompany, String trackingNumber) {
         Order order = getById(orderId);
         if (order == null) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getStatus() != 2) {
-            throw new BizException("仅已付款订单可发货");
+            throw new BizException(BizErrorCode.ORDER_NOT_PAID);
         }
         order.setStatus(3); // 已发货
         order.setLogisticsCompany(logisticsCompany);
@@ -369,10 +375,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     public void completeOrder(Long orderId) {
         Order order = getById(orderId);
         if (order == null) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getStatus() != 3) {
-            throw new BizException("仅已发货订单可完成");
+            throw new BizException(BizErrorCode.ORDER_NOT_COMPLETED);
         }
         order.setStatus(4); // 已完成
         order.setReceiveTime(LocalDateTime.now());
@@ -426,10 +432,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     public void confirmReceive(Long userId, Long orderId) {
         Order order = getById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getStatus() != 3) {
-            throw new BizException("仅已发货订单可确认收货");
+            throw new BizException(BizErrorCode.ORDER_NOT_RECEIVABLE);
         }
         order.setStatus(4); // 已完成
         order.setReceiveTime(LocalDateTime.now());

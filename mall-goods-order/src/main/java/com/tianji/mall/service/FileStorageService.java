@@ -1,5 +1,6 @@
 package com.tianji.mall.service;
 
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -10,11 +11,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.Set;
 import java.util.UUID;
 
 @Slf4j
 @Service
 public class FileStorageService {
+
+    private static final Set<String> ALLOWED_EXTENSIONS = Set.of(".jpg", ".jpeg", ".png", ".gif", ".webp", ".bmp");
+    private static final long MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB
 
     private final Path uploadDir;
 
@@ -23,7 +28,7 @@ public class FileStorageService {
         try {
             Files.createDirectories(this.uploadDir);
         } catch (IOException e) {
-            throw new BizException("无法创建上传目录: " + this.uploadDir);
+            throw new BizException(BizErrorCode.UPLOAD_DIR_FAILED, this.uploadDir.toString());
         }
     }
 
@@ -35,14 +40,22 @@ public class FileStorageService {
      */
     public String saveFile(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new BizException("文件不能为空");
+            throw new BizException(BizErrorCode.FILE_EMPTY);
         }
 
-        // 生成唯一文件名
+        // 校验文件大小
+        if (file.getSize() > MAX_FILE_SIZE) {
+            throw new BizException(BizErrorCode.FILE_TOO_LARGE);
+        }
+
+        // 生成唯一文件名 + 校验类型
         String originalName = file.getOriginalFilename();
         String extension = "";
         if (originalName != null && originalName.contains(".")) {
-            extension = originalName.substring(originalName.lastIndexOf("."));
+            extension = originalName.substring(originalName.lastIndexOf(".")).toLowerCase();
+        }
+        if (!ALLOWED_EXTENSIONS.contains(extension)) {
+            throw new BizException(BizErrorCode.FILE_TYPE_UNSUPPORTED);
         }
         String filename = UUID.randomUUID().toString().replace("-", "") + extension;
 
@@ -53,7 +66,7 @@ public class FileStorageService {
             return "/uploads/" + filename;
         } catch (IOException e) {
             log.error("文件保存失败: {}", originalName, e);
-            throw new BizException("文件保存失败");
+            throw new BizException(BizErrorCode.FILE_SAVE_FAILED);
         }
     }
 }

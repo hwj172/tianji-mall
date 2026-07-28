@@ -13,6 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.*;
@@ -51,6 +52,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
     /**
      * 处理用户对话消息，返回 AI 回复
      */
+    @Transactional
     public ChatResponse chat(Long userId, String sessionId, String message) {
         if (sessionId == null || sessionId.isEmpty()) {
             sessionId = UUID.randomUUID().toString().replace("-", "");

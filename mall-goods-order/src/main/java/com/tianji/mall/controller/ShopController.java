@@ -1,6 +1,7 @@
 package com.tianji.mall.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.ShopRegisterRequest;
@@ -32,7 +33,7 @@ public class ShopController {
                                           @RequestHeader(value = "Authorization", required = false) String authHeader) {
         Shop shop = shopService.getById(id);
         if (shop == null || shop.getStatus() == 0) {
-            return R.fail(500, "店铺不存在或已关闭");
+            return R.fail(BizErrorCode.SHOP_NOT_FOUND);
         }
         Page<Product> products = productService.getProductPage(
                 null, null, null, null, null, id, page, size);

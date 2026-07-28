@@ -6,19 +6,17 @@ spring:
     name: gateway
   profiles:
     active: local
+  config:
+    import:
+      - nacos:shared-config.yaml
+      - nacos:${spring.application.name}.yaml
   cloud:
     nacos:
-      discovery:
-        server-addr: 192.168.150.11:8848
       config:
-        server-addr: 192.168.150.11:8848
-        import-check:
-          enabled: false
+        file-extension: yaml
+        refresh-enabled: true
+        fail-fast: false
     sentinel:
-      transport:
-        dashboard: 192.168.150.11:8858
-        port: 8724
-      eager: true
       datasource:
         flow:
           nacos:

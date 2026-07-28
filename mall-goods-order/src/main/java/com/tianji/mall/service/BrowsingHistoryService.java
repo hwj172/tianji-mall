@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.mall.entity.BrowsingHistory;
 import com.tianji.mall.mapper.BrowsingHistoryMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -17,6 +18,7 @@ public class BrowsingHistoryService extends ServiceImpl<BrowsingHistoryMapper, B
     /**
      * 记录浏览足迹。同一用户同一商品，更新时间戳（UPSERT 逻辑）。
      */
+    @Transactional
     public void recordView(Long userId, Long productId) {
         // 先删旧记录再插入，实现 UPSERT
         LambdaQueryWrapper<BrowsingHistory> wrapper = new LambdaQueryWrapper<BrowsingHistory>()

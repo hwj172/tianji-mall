@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CouponRequest;
 import com.tianji.mall.entity.Coupon;
@@ -22,6 +23,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -48,7 +50,7 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
     public void update(Long id, CouponRequest req) {
         Coupon coupon = getById(id);
         if (coupon == null) {
-            throw new BizException("优惠券不存在");
+            throw new BizException(BizErrorCode.COUPON_BASE_NOT_FOUND);
         }
         BeanUtils.copyProperties(req, coupon);
         updateById(coupon);
@@ -58,7 +60,7 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
     public void disable(Long id) {
         Coupon coupon = getById(id);
         if (coupon == null) {
-            throw new BizException("优惠券不存在");
+            throw new BizException(BizErrorCode.COUPON_BASE_NOT_FOUND);
         }
         coupon.setStatus(0);
         updateById(coupon);
@@ -130,11 +132,11 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
     public void claimCoupon(Long userId, Long couponId) {
         Coupon coupon = getById(couponId);
         if (coupon == null || coupon.getStatus() != 1) {
-            throw new BizException("优惠券不存在或已停用");
+            throw new BizException(BizErrorCode.COUPON_NOT_FOUND);
         }
         LocalDateTime now = LocalDateTime.now();
         if (now.isBefore(coupon.getStartTime()) || now.isAfter(coupon.getEndTime())) {
-            throw new BizException("不在优惠券有效期内");
+            throw new BizException(BizErrorCode.COUPON_NOT_IN_PERIOD);
         }
 
         // 检查重复领取
@@ -142,13 +144,13 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
                 .eq(UserCoupon::getUserId, userId)
                 .eq(UserCoupon::getCouponId, couponId));
         if (existing != null) {
-            throw new BizException("您已领取过该优惠券");
+            throw new BizException(BizErrorCode.COUPON_ALREADY_CLAIMED);
         }
 
         // 原子扣减库存
         int rows = baseMapper.incrementUsedQuantity(couponId);
         if (rows == 0) {
-            throw new BizException("优惠券已领完");
+            throw new BizException(BizErrorCode.COUPON_EXHAUSTED);
         }
 
         UserCoupon uc = new UserCoupon();
@@ -165,9 +167,14 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
                 .eq(UserCoupon::getUserId, userId)
                 .orderByDesc(UserCoupon::getCreateTime));
 
+        // 批量查询优惠券，避免 N+1
+        List<Long> couponIds = userCoupons.stream().map(UserCoupon::getCouponId).distinct().toList();
+        Map<Long, Coupon> couponMap = couponIds.isEmpty() ? Map.of()
+                : listByIds(couponIds).stream().collect(Collectors.toMap(Coupon::getId, c -> c));
+
         List<Map<String, Object>> result = new ArrayList<>();
         for (UserCoupon uc : userCoupons) {
-            Coupon coupon = getById(uc.getCouponId());
+            Coupon coupon = couponMap.get(uc.getCouponId());
             Map<String, Object> item = new LinkedHashMap<>();
             item.put("userCouponId", uc.getId());
             item.put("status", uc.getStatus());
@@ -189,15 +196,22 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
     }
 
     /** 自动标记过期优惠券（每小时执行） */
+    @Transactional
     @Scheduled(cron = "0 7 * * * *")
     public void markExpiredCoupons() {
         LocalDateTime now = LocalDateTime.now();
         // 查询所有过期且状态为 UNUSED 的记录
         List<UserCoupon> expiredList = userCouponMapper.selectList(
                 new LambdaQueryWrapper<UserCoupon>().eq(UserCoupon::getStatus, "UNUSED"));
+        if (expiredList.isEmpty()) return;
+
+        // 批量查询优惠券结束时间，避免 N+1
+        List<Long> couponIds = expiredList.stream().map(UserCoupon::getCouponId).distinct().toList();
+        Map<Long, Coupon> couponMap = listByIds(couponIds).stream().collect(Collectors.toMap(Coupon::getId, c -> c));
+
         int count = 0;
         for (UserCoupon uc : expiredList) {
-            Coupon coupon = getById(uc.getCouponId());
+            Coupon coupon = couponMap.get(uc.getCouponId());
             if (coupon != null && coupon.getEndTime() != null && coupon.getEndTime().isBefore(now)) {
                 userCouponMapper.markExpired(uc.getId());
                 count++;
@@ -218,24 +232,24 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
     public BigDecimal applyCoupon(Long userId, Long userCouponId, BigDecimal orderAmount) {
         UserCoupon uc = userCouponMapper.selectById(userCouponId);
         if (uc == null || !uc.getUserId().equals(userId)) {
-            throw new BizException("优惠券不存在");
+            throw new BizException(BizErrorCode.COUPON_BASE_NOT_FOUND);
         }
         if (!"UNUSED".equals(uc.getStatus())) {
-            throw new BizException("优惠券已使用或已过期");
+            throw new BizException(BizErrorCode.COUPON_USED_OR_EXPIRED);
         }
 
         Coupon coupon = getById(uc.getCouponId());
         if (coupon == null || coupon.getStatus() != 1) {
-            throw new BizException("优惠券不存在或已停用");
+            throw new BizException(BizErrorCode.COUPON_NOT_FOUND);
         }
         LocalDateTime now = LocalDateTime.now();
         if (now.isAfter(coupon.getEndTime())) {
-            throw new BizException("优惠券已过期");
+            throw new BizException(BizErrorCode.COUPON_EXPIRED);
         }
 
         // 检查最低消费
         if (orderAmount.compareTo(coupon.getMinOrderAmount()) < 0) {
-            throw new BizException("未达到最低消费金额");
+            throw new BizException(BizErrorCode.COUPON_MIN_AMOUNT);
         }
 
         // 计算折扣

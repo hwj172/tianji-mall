@@ -2,8 +2,10 @@ package com.tianji.mall.controller;
 
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
+import com.tianji.mall.dto.FavoriteToggleRequest;
 import com.tianji.mall.entity.Favorite;
 import com.tianji.mall.service.FavoriteService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,10 +22,9 @@ public class FavoriteController {
 
     @PostMapping("/toggle")
     public R<Map<String, Object>> toggle(@RequestHeader("Authorization") String authHeader,
-                                          @RequestBody Map<String, Long> body) {
+                                          @RequestBody @Valid FavoriteToggleRequest body) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        Long productId = body.get("productId");
-        return R.ok(favoriteService.toggle(userId, productId));
+        return R.ok(favoriteService.toggle(userId, body.getProductId()));
     }
 
     @GetMapping("/list")

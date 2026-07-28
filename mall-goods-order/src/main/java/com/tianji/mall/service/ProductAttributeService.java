@@ -2,6 +2,7 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.mapper.ProductAttributeMapper;
@@ -38,7 +39,7 @@ public class ProductAttributeService extends ServiceImpl<ProductAttributeMapper,
     public void update(Long productId, Long attrId, String name, String value, Integer sort) {
         ProductAttribute attr = getById(attrId);
         if (attr == null || !attr.getProductId().equals(productId)) {
-            throw new BizException("属性不存在");
+            throw new BizException(BizErrorCode.ATTRIBUTE_NOT_FOUND);
         }
         if (name != null) attr.setName(name);
         if (value != null) attr.setValue(value);
@@ -50,7 +51,7 @@ public class ProductAttributeService extends ServiceImpl<ProductAttributeMapper,
     public void delete(Long productId, Long attrId) {
         ProductAttribute attr = getById(attrId);
         if (attr == null || !attr.getProductId().equals(productId)) {
-            throw new BizException("属性不存在");
+            throw new BizException(BizErrorCode.ATTRIBUTE_NOT_FOUND);
         }
         removeById(attrId);
     }

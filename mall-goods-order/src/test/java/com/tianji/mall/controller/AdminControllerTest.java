@@ -334,7 +334,7 @@ class AdminControllerTest {
         mockMvc.perform(put("/api/admin/order/1/ship")
                         .header("X-User-Role", "admin")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"logisticsCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
+                        .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -347,7 +347,7 @@ class AdminControllerTest {
         mockMvc.perform(put("/api/admin/order/999/ship")
                         .header("X-User-Role", "admin")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"logisticsCompany\":\"顺丰\",\"trackingNumber\":\"SF123\"}"))
+                        .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(500))
                 .andExpect(jsonPath("$.message").value("订单不存在"));
@@ -642,7 +642,7 @@ class AdminControllerTest {
         mockMvc.perform(get("/api/admin/category")
                         .header("X-User-Role", "user"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(403))
+                .andExpect(jsonPath("$.code").value(12001))
                 .andExpect(jsonPath("$.message").value("需要管理员权限"));
     }
 
@@ -650,7 +650,7 @@ class AdminControllerTest {
     void shouldRejectMissingRoleHeader() throws Exception {
         mockMvc.perform(get("/api/admin/category"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(403))
+                .andExpect(jsonPath("$.code").value(12001))
                 .andExpect(jsonPath("$.message").value("需要管理员权限"));
     }
 
@@ -661,7 +661,7 @@ class AdminControllerTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\":\"新名称\"}"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(403));
+                .andExpect(jsonPath("$.code").value(12001));
     }
 
     // ==================== 用户管理 ====================

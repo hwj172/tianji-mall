@@ -2,6 +2,7 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.entity.Category;
@@ -29,11 +30,11 @@ public class CategoryService extends ServiceImpl<CategoryMapper, Category> {
                 .orderByAsc(Category::getSort));
 
         Map<Long, List<Category>> childrenMap = all.stream()
-                .filter(c -> c.getParentId() != 0)
+                .filter(c -> !Long.valueOf(0).equals(c.getParentId()))
                 .collect(Collectors.groupingBy(Category::getParentId));
 
         return all.stream()
-                .filter(c -> c.getParentId() == 0)
+                .filter(c -> Long.valueOf(0).equals(c.getParentId()))
                 .map(c -> new CategoryTreeResponse(
                         c.getId(), c.getName(), c.getParentId(), c.getSort(),
                         childrenMap.getOrDefault(c.getId(), List.of())))
@@ -52,7 +53,7 @@ public class CategoryService extends ServiceImpl<CategoryMapper, Category> {
     public Category updateCategory(Long id, String name, Integer sort) {
         Category category = getById(id);
         if (category == null) {
-            throw new BizException("分类不存在");
+            throw new BizException(BizErrorCode.CATEGORY_NOT_FOUND);
         }
         category.setName(name);
         category.setSort(sort != null ? sort : 0);
@@ -63,17 +64,17 @@ public class CategoryService extends ServiceImpl<CategoryMapper, Category> {
     public void deleteCategory(Long id) {
         Category category = getById(id);
         if (category == null) {
-            throw new BizException("分类不存在");
+            throw new BizException(BizErrorCode.CATEGORY_NOT_FOUND);
         }
         // 检查是否有一级分类下有子分类
         long childCount = count(new LambdaQueryWrapper<Category>().eq(Category::getParentId, id));
         if (childCount > 0) {
-            throw new BizException("该分类下有子分类，无法删除");
+            throw new BizException(BizErrorCode.CATEGORY_HAS_CHILDREN);
         }
         // 检查是否有商品使用该分类
         long productCount = productService.countByCategoryId(id);
         if (productCount > 0) {
-            throw new BizException("该分类下有商品，无法删除");
+            throw new BizException(BizErrorCode.CATEGORY_HAS_PRODUCTS);
         }
         removeById(id);
     }

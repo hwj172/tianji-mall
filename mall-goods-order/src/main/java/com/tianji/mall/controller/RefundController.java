@@ -3,8 +3,10 @@ package com.tianji.mall.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
+import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.entity.Refund;
 import com.tianji.mall.service.RefundService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -34,10 +36,9 @@ public class RefundController {
     @PutMapping("/{id}/ship")
     public R<Void> returnShip(@RequestHeader("Authorization") String authHeader,
                                @PathVariable("id") Long id,
-                               @RequestBody Map<String, String> body) {
+                               @RequestBody @Valid ShipRequest body) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        refundService.returnShip(userId, id,
-                body.get("trackingNumber"), body.get("trackingCompany"));
+        refundService.returnShip(userId, id, body.getTrackingNumber(), body.getTrackingCompany());
         return R.ok();
     }
 

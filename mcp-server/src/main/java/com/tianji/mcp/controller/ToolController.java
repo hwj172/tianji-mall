@@ -4,6 +4,7 @@ import com.tianji.mcp.dto.ToolRequest;
 import com.tianji.mcp.dto.ToolResponse;
 import com.tianji.mcp.tools.CartTools;
 import com.tianji.mcp.tools.OrderTools;
+import jakarta.validation.Valid;
 import com.tianji.mcp.tools.ProductTools;
 import com.tianji.common.util.JwtUtil;
 import jakarta.servlet.http.HttpServletRequest;
@@ -29,7 +30,7 @@ public class ToolController {
     }
 
     @PostMapping("/execute")
-    public ToolResponse execute(@RequestBody ToolRequest req, HttpServletRequest request) {
+    public ToolResponse execute(@RequestBody @Valid ToolRequest req, HttpServletRequest request) {
         Long realUserId = extractUserId(request);
         if (realUserId == null) {
             return ToolResponse.fail("未授权");

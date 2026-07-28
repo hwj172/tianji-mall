@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.PendingReviewResponse;
 import com.tianji.mall.dto.ReviewCreateRequest;
@@ -39,12 +40,12 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
         // 验证订单存在且属于当前用户
         Order order = orderMapper.selectById(req.getOrderId());
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
 
         // 验证订单已完成
         if (order.getStatus() != 4) {
-            throw new BizException("仅可评价已完成的订单");
+            throw new BizException(BizErrorCode.REVIEW_ORDER_NOT_COMPLETED);
         }
 
         // 验证订单包含该商品
@@ -53,7 +54,7 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
                         .eq(OrderItem::getOrderId, req.getOrderId())
                         .eq(OrderItem::getProductId, req.getProductId()));
         if (items.isEmpty()) {
-            throw new BizException("该订单不包含此商品");
+            throw new BizException(BizErrorCode.REVIEW_PRODUCT_NOT_IN_ORDER);
         }
 
         // 验证未重复评价
@@ -62,7 +63,7 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
                 .eq(Review::getOrderId, req.getOrderId())
                 .eq(Review::getProductId, req.getProductId()));
         if (existing != null) {
-            throw new BizException("您已评价过该商品");
+            throw new BizException(BizErrorCode.REVIEW_ALREADY_EXISTS);
         }
 
         Review review = new Review();

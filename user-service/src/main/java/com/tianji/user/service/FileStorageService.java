@@ -1,5 +1,6 @@
 package com.tianji.user.service;
 
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -23,7 +24,7 @@ public class FileStorageService {
         try {
             Files.createDirectories(this.uploadDir);
         } catch (IOException e) {
-            throw new BizException("无法创建上传目录: " + this.uploadDir);
+            throw new BizException(BizErrorCode.UPLOAD_DIR_FAILED, this.uploadDir.toString());
         }
     }
 
@@ -32,7 +33,7 @@ public class FileStorageService {
      */
     public String saveFile(MultipartFile file) {
         if (file.isEmpty()) {
-            throw new BizException("文件不能为空");
+            throw new BizException(BizErrorCode.FILE_EMPTY);
         }
 
         String originalName = file.getOriginalFilename();
@@ -49,7 +50,7 @@ public class FileStorageService {
             return "/uploads/" + filename;
         } catch (IOException e) {
             log.error("文件保存失败: {}", originalName, e);
-            throw new BizException("文件保存失败");
+            throw new BizException(BizErrorCode.FILE_SAVE_FAILED);
         }
     }
 }

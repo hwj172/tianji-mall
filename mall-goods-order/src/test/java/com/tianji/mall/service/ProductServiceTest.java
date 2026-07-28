@@ -200,7 +200,7 @@ class ProductServiceTest {
 
         assertThatThrownBy(() -> productService.updateProduct(999L, "Name", null, null, null, null, null, null))
                 .isInstanceOf(BizException.class)
-                .hasMessage("商品不存在");
+                .hasMessage("商品不存在或已下架");
     }
 
     // ==================== admin: deleteProduct ====================
@@ -222,7 +222,7 @@ class ProductServiceTest {
 
         assertThatThrownBy(() -> productService.deleteProduct(999L))
                 .isInstanceOf(BizException.class)
-                .hasMessage("商品不存在");
+                .hasMessage("商品不存在或已下架");
     }
 
     // ==================== syncAllVectors ====================

@@ -3,6 +3,7 @@ package com.tianji.mall.controller;
 import com.tianji.common.result.R;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.dto.CartCheckRequest;
+import com.tianji.mall.dto.CartInternalRequest;
 import com.tianji.mall.dto.CartUpdateRequest;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.service.CartService;
@@ -12,7 +13,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/api/cart")
@@ -69,19 +69,11 @@ public class CartController {
     }
 
     @PostMapping("/internal/add")
-    public R<Void> addInternal(@RequestBody Map<String, Object> body) {
-        Long userId = toLong(body.get("userId"));
-        Long productId = toLong(body.get("productId"));
-        int quantity = body.get("quantity") instanceof Integer ? (int) body.get("quantity") : 1;
+    public R<Void> addInternal(@RequestBody @Valid CartInternalRequest body) {
         CartAddRequest req = new CartAddRequest();
-        req.setProductId(productId);
-        req.setQuantity(quantity);
-        cartService.addItem(userId, req);
+        req.setProductId(body.getProductId());
+        req.setQuantity(body.getQuantity());
+        cartService.addItem(body.getUserId(), req);
         return R.ok();
-    }
-
-    private Long toLong(Object value) {
-        if (value instanceof Integer) return ((Integer) value).longValue();
-        return (Long) value;
     }
 }

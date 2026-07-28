@@ -6,6 +6,7 @@ import com.tianji.mall.entity.LogisticsTrack;
 import com.tianji.mall.mapper.LogisticsTrackMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -22,6 +23,7 @@ public class LogisticsService extends ServiceImpl<LogisticsTrackMapper, Logistic
     /**
      * 发货时生成模拟物流轨迹（6个节点，时间均匀分布在未来28小时内）。
      */
+    @Transactional
     public void generateTracks(Long orderId) {
         LocalDateTime now = LocalDateTime.now();
         String originCity = randomCity();

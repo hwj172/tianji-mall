@@ -8,6 +8,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
 
@@ -100,7 +101,9 @@ public class RecommendService {
                                     .eq(Product::getStatus, 1)
                                     .notIn(!excluded.isEmpty(), Product::getId, excluded));
                     for (Product p : categoryProducts.stream()
-                            .sorted((a, b) -> b.getSales().compareTo(a.getSales()))
+                            .sorted(java.util.Comparator.comparing(
+                                    Product::getSales,
+                                    java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                             .limit(count - result.size()).toList()) {
                         result.add(new RecommendResponse.RecommendItem(
                                 p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), ""));
@@ -114,8 +117,6 @@ public class RecommendService {
     // ==================== 买了还买 ====================
 
     public List<RecommendResponse.RecommendItem> getBuyAfterBuy(Long userId, int count) {
-        computeSimilarity();
-
         List<Long> seedIds;
         if (userId != null) {
             seedIds = getPurchasedProductIds(userId);
@@ -154,15 +155,14 @@ public class RecommendService {
         // 每小时清理缓存，下次请求时重新计算
     }
 
-    @CacheEvict(value = "recommend", key = "'similarity'")
     @Scheduled(cron = "0 5 * * * *")
-    public void evictSimilarityCache() {
-        // 每小时 5 分钟后清理缓存，下次请求时重新计算
+    public void refreshSimilarity() {
+        computeSimilarity();
     }
 
     // ==================== 关联规则计算 ====================
 
-    @Cacheable(value = "recommend", key = "'similarity'")
+    @Transactional
     public int computeSimilarity() {
         log.info("计算关联规则矩阵...");
         similarityMapper.truncate();

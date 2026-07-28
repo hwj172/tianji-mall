@@ -1,5 +1,6 @@
 package com.tianji.mall.controller;
 
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
@@ -36,9 +37,11 @@ public class OrderController {
     }
 
     @GetMapping("/list")
-    public R<List<Order>> list(@RequestHeader("Authorization") String authHeader) {
+    public R<List<Order>> list(@RequestHeader("Authorization") String authHeader,
+                                @RequestParam(value = "page", defaultValue = "1") int page,
+                                @RequestParam(value = "size", defaultValue = "20") int size) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(orderService.getOrderList(userId));
+        return R.ok(orderService.getOrderPage(userId, page, size).getRecords());
     }
 
     @GetMapping("/{id}")
@@ -80,10 +83,10 @@ public class OrderController {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Order order = orderService.getById(id);
         if (order == null || !order.getUserId().equals(userId)) {
-            return R.fail(500, "订单不存在");
+            return R.fail(BizErrorCode.ORDER_NOT_FOUND);
         }
         if (order.getStatus() < 3) {
-            return R.fail(500, "订单尚未发货");
+            return R.fail(BizErrorCode.ORDER_NOT_SHIPPED);
         }
         return R.ok(logisticsService.getTracks(id));
     }

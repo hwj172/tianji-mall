@@ -1,5 +1,6 @@
 package com.tianji.common.result;
 
+import com.tianji.common.exception.BizErrorCode;
 import lombok.AccessLevel;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -27,6 +28,10 @@ public class R<T> {
 
     public static <T> R<T> ok(T data) {
         return new R<>(200, "success", data);
+    }
+
+    public static <T> R<T> fail(BizErrorCode errorCode) {
+        return new R<>(errorCode.getCode(), errorCode.getMessage(), null);
     }
 
     public static <T> R<T> fail(int code, String message) {

@@ -2,6 +2,7 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.mapper.ProductSkuMapper;
@@ -52,7 +53,7 @@ public class ProductSkuService extends ServiceImpl<ProductSkuMapper, ProductSku>
     public void update(Long productId, Long skuId, String specs, String skuCode, BigDecimal price, Integer stock) {
         ProductSku sku = getById(skuId);
         if (sku == null || !sku.getProductId().equals(productId)) {
-            throw new BizException("SKU不存在");
+            throw new BizException(BizErrorCode.SKU_NOT_FOUND);
         }
         if (specs != null) sku.setSpecs(specs);
         if (skuCode != null) sku.setSkuCode(skuCode);
@@ -66,10 +67,10 @@ public class ProductSkuService extends ServiceImpl<ProductSkuMapper, ProductSku>
     public void delete(Long productId, Long skuId) {
         ProductSku sku = getById(skuId);
         if (sku == null || !sku.getProductId().equals(productId)) {
-            throw new BizException("SKU不存在");
+            throw new BizException(BizErrorCode.SKU_NOT_FOUND);
         }
         if (sku.getStock() > 0) {
-            throw new BizException("库存不为0，无法删除SKU");
+            throw new BizException(BizErrorCode.SKU_HAS_STOCK_CANNOT_DELETE);
         }
         removeById(skuId);
     }
@@ -79,7 +80,7 @@ public class ProductSkuService extends ServiceImpl<ProductSkuMapper, ProductSku>
     public void deductStock(Long productId, Long skuId, int qty) {
         int rows = productSkuMapper.deductStock(skuId, qty);
         if (rows == 0) {
-            throw new BizException("SKU库存不足");
+            throw new BizException(BizErrorCode.SKU_STOCK_INSUFFICIENT);
         }
     }
 

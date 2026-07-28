@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.RefundRequest;
 import com.tianji.mall.entity.Order;
@@ -51,11 +52,11 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     public Refund requestRefund(Long userId, Long orderId, RefundRequest req) {
         Order order = orderMapper.selectById(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
-            throw new BizException("订单不存在");
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
         // 仅已付款、已发货、已完成订单可申请退款
         if (order.getStatus() < 2 || order.getStatus() > 4) {
-            throw new BizException("当前订单状态不可退款");
+            throw new BizException(BizErrorCode.REFUND_ORDER_STATUS_INVALID);
         }
 
         // 检查是否已有进行中的退款
@@ -63,7 +64,7 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
                 .eq(Refund::getOrderId, orderId)
                 .ne(Refund::getStatus, "fail"));
         if (count > 0) {
-            throw new BizException("退款申请已提交");
+            throw new BizException(BizErrorCode.REFUND_DUPLICATE);
         }
 
         // 获取订单所有明细
@@ -78,11 +79,11 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
             OrderItem orderItem = allItems.stream()
                     .filter(i -> i.getId().equals(itemReq.getOrderItemId()))
                     .findFirst()
-                    .orElseThrow(() -> new BizException("订单明细不存在: " + itemReq.getOrderItemId()));
+                    .orElseThrow(() -> new BizException(BizErrorCode.REFUND_ITEM_NOT_FOUND, itemReq.getOrderItemId().toString()));
 
             int qty = itemReq.getQuantity() != null ? itemReq.getQuantity() : orderItem.getQuantity();
             if (qty <= 0 || qty > orderItem.getQuantity()) {
-                throw new BizException("退款数量不合法: " + orderItem.getProductName());
+                throw new BizException(BizErrorCode.REFUND_QUANTITY_INVALID, orderItem.getProductName());
             }
 
             BigDecimal itemAmount = orderItem.getPrice().multiply(BigDecimal.valueOf(qty));
@@ -98,7 +99,7 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
         }
 
         if (totalRefund.compareTo(BigDecimal.ZERO) <= 0) {
-            throw new BizException("退款金额必须大于0");
+            throw new BizException(BizErrorCode.REFUND_AMOUNT_INVALID);
         }
 
         String refundType = req.getRefundType() != null ? req.getRefundType() : "REFUND_ONLY";
@@ -137,13 +138,13 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     public void returnShip(Long userId, Long refundId, String trackingNumber, String trackingCompany) {
         Refund refund = getById(refundId);
         if (refund == null || !refund.getUserId().equals(userId)) {
-            throw new BizException("退款记录不存在");
+            throw new BizException(BizErrorCode.REFUND_NOT_FOUND);
         }
         if (!"RETURN_REFUND".equals(refund.getRefundType())) {
-            throw new BizException("仅退货退款类型可填写快递单号");
+            throw new BizException(BizErrorCode.REFUND_NOT_RETURN_TYPE);
         }
         if (!"processing".equals(refund.getStatus())) {
-            throw new BizException("退款申请状态不允许此操作");
+            throw new BizException(BizErrorCode.REFUND_PROCESSING_INVALID);
         }
         refund.setTrackingNumber(trackingNumber);
         refund.setTrackingCompany(trackingCompany);
@@ -159,13 +160,13 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     public void confirmReceive(Long refundId) {
         Refund refund = getById(refundId);
         if (refund == null) {
-            throw new BizException("退款记录不存在");
+            throw new BizException(BizErrorCode.REFUND_NOT_FOUND);
         }
         if (!"RETURN_REFUND".equals(refund.getRefundType())) {
-            throw new BizException("仅退货退款类型可确认收货");
+            throw new BizException(BizErrorCode.REFUND_NOT_RETURN_RECEIVE);
         }
         if (!"SHIPPED".equals(refund.getReturnStatus())) {
-            throw new BizException("买家尚未寄回商品");
+            throw new BizException(BizErrorCode.REFUND_NOT_SHIPPED_BACK);
         }
         refund.setReturnStatus("RECEIVED");
         updateById(refund);
@@ -179,7 +180,7 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     public Map<String, Object> getRefundDetail(Long refundId) {
         Refund refund = getById(refundId);
         if (refund == null) {
-            throw new BizException("退款记录不存在");
+            throw new BizException(BizErrorCode.REFUND_NOT_FOUND);
         }
         List<RefundItem> items = refundItemMapper.selectByRefundId(refundId);
         Map<String, Object> result = new LinkedHashMap<>();

@@ -160,7 +160,7 @@ class OrderServiceIntegrationTest {
 
         assertThatThrownBy(() -> orderService.createOrder(1L, req))
                 .isInstanceOf(BizException.class)
-                .hasMessage("收货地址不存在");
+                .hasMessage("地址不存在");
     }
 
     // ==================== cancelOrder ====================

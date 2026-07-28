@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
@@ -20,6 +21,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
@@ -73,7 +75,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
                 logEntry.setKeyword(keyword);
                 searchLogMapper.insert(logEntry);
             } catch (Exception e) {
-                // ignore — 搜索日志记录失败不影响搜索功能
+                log.warn("搜索日志记录失败: keyword={}", keyword, e);
             }
         }
         // 排序
@@ -93,7 +95,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     public Product getProductById(Long id) {
         Product product = getById(id);
         if (product == null || product.getStatus() == 0) {
-            throw new BizException("商品不存在或已下架");
+            throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         return product;
     }
@@ -151,7 +153,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     public void deductStock(Long productId, int quantity) {
         int rows = baseMapper.deductStock(productId, quantity);
         if (rows == 0) {
-            throw new BizException("库存不足");
+            throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
         }
     }
 
@@ -227,6 +229,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return page(new Page<>(page, size), wrapper);
     }
 
+    @Transactional
     public Product createProduct(String name, String description, BigDecimal price,
                                   Integer stock, Long categoryId, String images) {
         Product product = new Product();
@@ -242,11 +245,13 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return product;
     }
 
+    @Transactional
+    @CacheEvict(value = "product", key = "#id")
     public void updateProduct(Long id, String name, String description, BigDecimal price,
                                Integer stock, Long categoryId, Integer status, String images) {
         Product product = getById(id);
         if (product == null) {
-            throw new BizException("商品不存在");
+            throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         if (name != null) product.setName(name);
         if (description != null) product.setDescription(description);
@@ -259,10 +264,11 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         syncVector(product.getId(), product.getName(), product.getDescription());
     }
 
+    @CacheEvict(value = "product", key = "#id")
     public void deleteProduct(Long id) {
         Product product = getById(id);
         if (product == null) {
-            throw new BizException("商品不存在");
+            throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         product.setStatus(0);
         updateById(product);

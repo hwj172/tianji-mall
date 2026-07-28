@@ -2,8 +2,10 @@ package com.tianji.mall.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
+import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.dto.ShopUpdateRequest;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
@@ -63,7 +65,7 @@ public class SellerController {
 
     @PostMapping("/product")
     public R<Void> createProduct(@RequestHeader("Authorization") String authHeader,
-                                  @RequestBody Product product) {
+                                  @RequestBody @Valid Product product) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
         product.setShopId(shop.getId());
@@ -74,12 +76,12 @@ public class SellerController {
     @PutMapping("/product/{id}")
     public R<Void> updateProduct(@RequestHeader("Authorization") String authHeader,
                                   @PathVariable("id") Long id,
-                                  @RequestBody Product product) {
+                                  @RequestBody @Valid Product product) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
         Product existing = productService.getById(id);
         if (existing == null || !existing.getShopId().equals(shop.getId())) {
-            return R.fail(500, "商品不存在");
+            return R.fail(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         product.setId(id);
         product.setShopId(shop.getId());
@@ -94,7 +96,7 @@ public class SellerController {
         Shop shop = shopService.getBySellerId(userId);
         Product existing = productService.getById(id);
         if (existing == null || !existing.getShopId().equals(shop.getId())) {
-            return R.fail(500, "商品不存在");
+            return R.fail(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         existing.setStatus(0); // 软删除
         productService.updateById(existing);
@@ -115,18 +117,16 @@ public class SellerController {
     @PutMapping("/order/{id}/ship")
     public R<Void> shipOrder(@RequestHeader("Authorization") String authHeader,
                               @PathVariable("id") Long id,
-                              @RequestBody(required = false) Map<String, String> body) {
+                              @RequestBody @Valid ShipRequest body) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
         // 校验订单包含本店商品
         Page<Order> myOrders = orderService.getOrdersByShop(shop.getId(), 1, 1000);
         boolean ownsOrder = myOrders.getRecords().stream().anyMatch(o -> o.getId().equals(id));
         if (!ownsOrder) {
-            return R.fail(500, "订单不属于本店");
+            return R.fail(BizErrorCode.SHOP_NOT_OWNER);
         }
-        String company = body != null ? body.getOrDefault("logisticsCompany", "") : "";
-        String tracking = body != null ? body.getOrDefault("trackingNumber", "") : "";
-        orderService.shipOrder(id, company, tracking);
+        orderService.shipOrder(id, body.getTrackingCompany(), body.getTrackingNumber());
         return R.ok();
     }
 

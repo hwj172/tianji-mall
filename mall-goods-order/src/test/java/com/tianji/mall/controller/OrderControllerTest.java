@@ -115,9 +115,15 @@ class OrderControllerTest {
     @Test
     void shouldGetOrderList() throws Exception {
         Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
-        when(orderService.getOrderList(1L)).thenReturn(List.of(order));
+        com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> orderPage =
+                new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 20);
+        orderPage.setRecords(List.of(order));
+        orderPage.setTotal(1);
+        when(orderService.getOrderPage(1L, 1, 20)).thenReturn(orderPage);
 
         mockMvc.perform(get("/api/order/list")
+                        .param("page", "1")
+                        .param("size", "20")
                         .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))

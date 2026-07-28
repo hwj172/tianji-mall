@@ -1,5 +1,6 @@
 package com.tianji.mall.interceptor;
 
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.annotation.RequireAdmin;
 import jakarta.servlet.http.HttpServletRequest;
@@ -41,7 +42,7 @@ public class AdminInterceptor implements HandlerInterceptor {
         if (!"admin".equals(role)) {
             log.warn("非管理员请求 admin 接口: {} {}, role={}",
                     request.getMethod(), request.getRequestURI(), role);
-            throw new BizException(403, "需要管理员权限");
+            throw new BizException(BizErrorCode.ADMIN_REQUIRED);
         }
 
         return true;

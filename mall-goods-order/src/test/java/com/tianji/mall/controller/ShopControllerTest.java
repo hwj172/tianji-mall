@@ -130,7 +130,7 @@ class ShopControllerTest {
 
         mockMvc.perform(get("/api/shop/1"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
+                .andExpect(jsonPath("$.code").value(50001))
                 .andExpect(jsonPath("$.message").value("店铺不存在或已关闭"));
     }
 

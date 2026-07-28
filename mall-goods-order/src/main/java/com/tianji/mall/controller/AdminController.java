@@ -1,12 +1,18 @@
 package com.tianji.mall.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.dto.DashboardResponse;
 import com.tianji.mall.dto.GroupBuyActivityRequest;
 import com.tianji.mall.dto.SeckillSetRequest;
+import com.tianji.mall.dto.AdminAttributeRequest;
+import com.tianji.mall.dto.AdminCategoryRequest;
+import com.tianji.mall.dto.AdminProductRequest;
+import com.tianji.mall.dto.BannerRequest;
+import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.dto.SkuRequest;
 import com.tianji.mall.entity.Banner;
 import com.tianji.mall.entity.Coupon;
@@ -58,7 +64,7 @@ public class AdminController {
                                      @RequestParam("status") Integer status) {
         com.tianji.mall.entity.Shop shop = shopService.getById(id);
         if (shop == null) {
-            return R.fail(500, "店铺不存在");
+            return R.fail(BizErrorCode.SHOP_NOT_FOUND);
         }
         shop.setStatus(status);
         shopService.updateById(shop);
@@ -69,7 +75,7 @@ public class AdminController {
     public R<Void> deleteShop(@PathVariable("id") Long id) {
         com.tianji.mall.entity.Shop shop = shopService.getById(id);
         if (shop == null) {
-            return R.fail(500, "店铺不存在");
+            return R.fail(BizErrorCode.SHOP_NOT_FOUND);
         }
         shopService.removeById(id);
         return R.ok();
@@ -83,18 +89,17 @@ public class AdminController {
     }
 
     @PostMapping("/category")
-    public R<Void> createCategory(@RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
-        Long parentId = body.get("parentId") != null ? ((Number) body.get("parentId")).longValue() : 0L;
-        Integer sort = body.get("sort") != null ? ((Number) body.get("sort")).intValue() : 0;
-        categoryService.createCategory(name, parentId, sort);
+    public R<Void> createCategory(@RequestBody @Valid AdminCategoryRequest body) {
+        categoryService.createCategory(body.getName(),
+                body.getParentId() != null ? body.getParentId() : 0L,
+                body.getSort() != null ? body.getSort() : 0);
         return R.ok();
     }
 
     @PutMapping("/category/{id}")
-    public R<Void> updateCategory(@PathVariable("id") Long id, @RequestBody Map<String, Object> body) {
-        categoryService.updateCategory(id, (String) body.get("name"),
-                body.get("sort") != null ? ((Number) body.get("sort")).intValue() : 0);
+    public R<Void> updateCategory(@PathVariable("id") Long id, @RequestBody @Valid AdminCategoryRequest body) {
+        categoryService.updateCategory(id, body.getName(),
+                body.getSort() != null ? body.getSort() : 0);
         return R.ok();
     }
 
@@ -115,27 +120,27 @@ public class AdminController {
     }
 
     @PostMapping("/product")
-    public R<Void> createProduct(@RequestBody Map<String, Object> body) {
+    public R<Void> createProduct(@RequestBody @Valid AdminProductRequest body) {
         productService.createProduct(
-                (String) body.get("name"),
-                (String) body.get("description"),
-                body.get("price") != null ? new BigDecimal(body.get("price").toString()) : null,
-                body.get("stock") != null ? ((Number) body.get("stock")).intValue() : null,
-                body.get("categoryId") != null ? ((Number) body.get("categoryId")).longValue() : null,
-                (String) body.get("images"));
+                body.getName(),
+                body.getDescription(),
+                body.getPrice(),
+                body.getStock(),
+                body.getCategoryId(),
+                body.getImages());
         return R.ok();
     }
 
     @PutMapping("/product/{id}")
-    public R<Void> updateProduct(@PathVariable("id") Long id, @RequestBody Map<String, Object> body) {
+    public R<Void> updateProduct(@PathVariable("id") Long id, @RequestBody @Valid AdminProductRequest body) {
         productService.updateProduct(id,
-                (String) body.get("name"),
-                (String) body.get("description"),
-                body.get("price") != null ? new BigDecimal(body.get("price").toString()) : null,
-                body.get("stock") != null ? ((Number) body.get("stock")).intValue() : null,
-                body.get("categoryId") != null ? ((Number) body.get("categoryId")).longValue() : null,
-                body.get("status") != null ? ((Number) body.get("status")).intValue() : null,
-                (String) body.get("images"));
+                body.getName(),
+                body.getDescription(),
+                body.getPrice(),
+                body.getStock(),
+                body.getCategoryId(),
+                body.getStatus(),
+                body.getImages());
         return R.ok();
     }
 
@@ -157,8 +162,8 @@ public class AdminController {
 
     @PutMapping("/order/{id}/ship")
     public R<Void> shipOrder(@PathVariable("id") Long id,
-                              @RequestBody Map<String, String> body) {
-        orderService.shipOrder(id, body.get("logisticsCompany"), body.get("trackingNumber"));
+                              @RequestBody @Valid ShipRequest body) {
+        orderService.shipOrder(id, body.getTrackingCompany(), body.getTrackingNumber());
         logisticsService.generateTracks(id);
         return R.ok();
     }
@@ -231,21 +236,17 @@ public class AdminController {
 
     @PostMapping("/product/{productId}/attribute")
     public R<ProductAttribute> createAttribute(@PathVariable("productId") Long productId,
-                                                @RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
-        String value = (String) body.get("value");
-        int sort = body.get("sort") != null ? ((Number) body.get("sort")).intValue() : 0;
-        return R.ok(attributeService.create(productId, name, value, sort));
+                                                @RequestBody @Valid AdminAttributeRequest body) {
+        return R.ok(attributeService.create(productId,
+                body.getName(), body.getValue(),
+                body.getSort() != null ? body.getSort() : 0));
     }
 
     @PutMapping("/product/{productId}/attribute/{id}")
     public R<Void> updateAttribute(@PathVariable("productId") Long productId,
                                     @PathVariable("id") Long id,
-                                    @RequestBody Map<String, Object> body) {
-        String name = (String) body.get("name");
-        String value = (String) body.get("value");
-        Integer sort = body.get("sort") != null ? ((Number) body.get("sort")).intValue() : null;
-        attributeService.update(productId, id, name, value, sort);
+                                    @RequestBody @Valid AdminAttributeRequest body) {
+        attributeService.update(productId, id, body.getName(), body.getValue(), body.getSort());
         return R.ok();
     }
 
@@ -323,28 +324,28 @@ public class AdminController {
     }
 
     @PostMapping("/banner")
-    public R<Void> createBanner(@RequestBody Map<String, Object> body) {
+    public R<Void> createBanner(@RequestBody @Valid BannerRequest body) {
         Banner banner = new Banner();
-        banner.setTitle((String) body.get("title"));
-        banner.setImageUrl((String) body.get("imageUrl"));
-        banner.setLinkUrl((String) body.get("linkUrl"));
-        banner.setSort(body.get("sort") != null ? ((Number) body.get("sort")).intValue() : 0);
+        banner.setTitle(body.getTitle());
+        banner.setImageUrl(body.getImageUrl());
+        banner.setLinkUrl(body.getLinkUrl());
+        banner.setSort(body.getSort() != null ? body.getSort() : 0);
         banner.setStatus(1);
         bannerService.save(banner);
         return R.ok();
     }
 
     @PutMapping("/banner/{id}")
-    public R<Void> updateBanner(@PathVariable("id") Long id, @RequestBody Map<String, Object> body) {
+    public R<Void> updateBanner(@PathVariable("id") Long id, @RequestBody @Valid BannerRequest body) {
         Banner banner = bannerService.getById(id);
         if (banner == null) {
             return R.fail(500, "Banner 不存在");
         }
-        if (body.containsKey("title")) banner.setTitle((String) body.get("title"));
-        if (body.containsKey("imageUrl")) banner.setImageUrl((String) body.get("imageUrl"));
-        if (body.containsKey("linkUrl")) banner.setLinkUrl((String) body.get("linkUrl"));
-        if (body.containsKey("sort")) banner.setSort(((Number) body.get("sort")).intValue());
-        if (body.containsKey("status")) banner.setStatus(((Number) body.get("status")).intValue());
+        if (body.getTitle() != null) banner.setTitle(body.getTitle());
+        if (body.getImageUrl() != null) banner.setImageUrl(body.getImageUrl());
+        if (body.getLinkUrl() != null) banner.setLinkUrl(body.getLinkUrl());
+        if (body.getSort() != null) banner.setSort(body.getSort());
+        if (body.getStatus() != null) banner.setStatus(body.getStatus());
         bannerService.updateById(banner);
         return R.ok();
     }

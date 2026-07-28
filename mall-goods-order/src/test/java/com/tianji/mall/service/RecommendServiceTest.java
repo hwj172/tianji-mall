@@ -136,7 +136,6 @@ class RecommendServiceTest {
     @Test
     void shouldReturnEmptyWhenNoProducts() {
         when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
-        when(orderMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
 
         RecommendResponse resp = recommendService.recommend(null, 5);
 

@@ -2,6 +2,7 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.mapper.ProductMapper;
@@ -39,8 +40,8 @@ public class SeckillService {
     public void setSeckill(Long productId, BigDecimal price, int stock,
                            LocalDateTime startTime, LocalDateTime endTime) {
         Product product = productMapper.selectById(productId);
-        if (product == null) throw new BizException("商品不存在");
-        if (stock > product.getStock()) throw new BizException("秒杀库存不能超过商品库存");
+        if (product == null) throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
+        if (stock > product.getStock()) throw new BizException(BizErrorCode.SECKILL_STOCK_EXCEEDS);
 
         product.setSeckillPrice(price);
         product.setSeckillStock(stock);

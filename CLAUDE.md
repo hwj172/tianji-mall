@@ -117,7 +117,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：484 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 349 + Pay 6 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：529 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 385 + Pay 15 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -151,6 +151,19 @@ mvn package -DskipTests
 **schema.sql 要点：**
 - 全部使用 `CREATE TABLE IF NOT EXISTS`（`DB_CLOSE_DELAY=-1` 跨 Context 复用）
 - H2 保留字（`user`、`order`）用反引号括起来，MyBatis-Plus 实体对应 `@TableName("\`xxx\`")`
+
+### 核心链路 Service 集成测试
+
+| 测试类 | Tests | 覆盖 |
+|--------|-------|------|
+| OrderServiceIntegrationTest | 6 | 下单（普通+SKU）、取消（库存恢复）、库存不足/地址无效异常 |
+| ProductServiceIntegrationTest | 7 | 分页/关键词/描述搜索/分类/价格筛选/价格排序 |
+| CartServiceIntegrationTest | 4 | 添加/合并/去重/更新数量 |
+| AddressServiceIntegrationTest | 5 | CRUD + 默认地址 |
+| UserServiceIntegrationTest | 6 | 注册/登录/信息/头像 |
+| RefundServiceIntegrationTest | 9 | 仅退款/退货退款/退货快递/确认收货/详情/我的退款/状态无效/重复退款/未找到 |
+| CouponServiceIntegrationTest | 12 | 领券/重复领取/未找到/已领完/已过期/领券中心/我的优惠券/固定折扣/百分比折扣/最低消费/恢复/空结果 |
+| ReviewServiceIntegrationTest | 8 | 创建评价/订单未完成/商品不在订单/重复评价/订单未找到/商品评价列表/我的评价/空结果 |
 
 ### @WebMvcTest 不可用
 
@@ -204,7 +217,7 @@ mvn package -DskipTests
 - **异常处理**：mcp-server tools 区分 `FeignException`（下游服务故障）与 `Exception`（未知异常）；`GlobalExceptionHandler` 对外不暴露内部类名
 - **内部 Feign 调用**：需校验 userId 所有权（如 `payOrder`），Feign 接口返回 `R<OrderDTO>` 类型化对象而非 `Map`
 - **RestTemplate**：必须设置 connectTimeout + readTimeout，避免请求永久挂起
-- **Nacos Config 导入检查**：Spring Cloud 2023.x 强制要求 `spring.config.import`，不使用 Nacos 配置中心的服务需在 application.yml 设置 `spring.cloud.nacos.config.import-check.enabled: false`
+- **Nacos Config 配置中心化**：所有 6 个服务通过 `spring.config.import: nacos:shared-config.yaml + nacos:${spring.application.name}.yaml` 从 Nacos 加载配置。共享配置 `shared-config.yaml` 包含各服务一致的属性（Nacos 地址、Sentinel Dashboard），Gateway 专属配置 `gateway.yaml` 包含 Sentinel transport port。敏感信息（DB 密码、API key、jwt.secret）保留在 `application-local.yml`。`spring.cloud.nacos.config.fail-fast: false` 确保 Nacos 不可用时服务继续启动。测试中 Nacos 自动配置被排除（`@SpringBootTest` + `application-test.yml`）。各服务提供 `@ConfigurationProperties` + `@RefreshScope` 类用于未来的动态配置刷新。
 - **Feign 注解参数名**：Spring 6 要求 `@PathVariable`、`@RequestParam` 显式写 value（如 `@PathVariable("id")`），不能省略
 - **Druid 数据源**：所有使用 MySQL 的服务必须引入 `druid-spring-boot-3-starter`（application.yml 中 `spring.datasource.type` 指向 Druid）
 - **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
@@ -272,6 +285,11 @@ mvn package -DskipTests
 - 将任务转化为可验证的目标
 - 多步骤任务先列出简要计划
 
+### 5. Memory Sync Before Compact
+
+- /compact前，必须将当前任务状态（进度/决策/阻塞项）同步到记忆库 `memory/current-task.md`，确保 recovered session 能无缝继续
+- /compact先执行 engramory sync skills → 再执行 compact
+
 ## 项目 Skills
 
 Skills 位于 `.claude/skills/` 目录，每个 skill 有独立的 `SKILL.md`。执行相关任务时，使用 `Skill` 工具加载对应的 skill 并严格遵循其流程。绝不要用 Read 工具读取 SKILL.md 文件。
@@ -280,7 +298,7 @@ Skills 位于 `.claude/skills/` 目录，每个 skill 有独立的 `SKILL.md`。
 <!-- superpowers-zh:begin (do not edit between these markers) -->
 # Superpowers-ZH 中文增强版
 
-本项目已安装 superpowers-zh 技能框架（20 个 skills）。
+本项目已安装 superpowers-zh 技能框架（22 个 skills）。
 
 ## 核心规则
 
@@ -301,8 +319,10 @@ Skills 位于 `.claude/skills/` 目录，每个 skill 有独立的 `SKILL.md` �
 - **dispatching-parallel-agents**: 当面对 2 个以上可以独立进行、无共享状态或顺序依赖的任务时使用
 - **executing-plans**: 当你有一份书面实现计划需要在单独的会话中执行，并设有审查检查点时使用
 - **finishing-a-development-branch**: 当实现完成、所有测试通过、需要决定如何集成工作时使用——通过提供合并、PR 或清理等结构化选项来引导开发工作的收尾
+- **git-commit**: 辅助生成规范的 git commit message 和 commit 工作流
 - **mcp-builder**: MCP 服务器构建方法论 — 系统化构建生产级 MCP 工具，让 AI 助手连接外部能力
 - **receiving-code-review**: 收到代码审查反馈后、实施建议之前使用，尤其当反馈不明确或技术上有疑问时——需要技术严谨性和验证，而非敷衍附和或盲目执行
+- **react-component**: React 组件开发方法论 — 组件设计、状态管理、性能优化的系统化实践
 - **requesting-code-review**: 完成任务、实现重要功能或合并前使用，用于验证工作成果是否符合要求
 - **subagent-driven-development**: 当在当前会话中执行包含独立任务的实现计划时使用
 - **systematic-debugging**: 遇到任何 bug、测试失败或异常行为时使用，在提出修复方案之前执行

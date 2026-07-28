@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.GroupBuyActivityRequest;
 import com.tianji.mall.dto.GroupBuyDetailResponse;
@@ -49,12 +50,12 @@ public class GroupBuyService {
 
     public GroupBuy createActivity(GroupBuyActivityRequest req) {
         Product product = productMapper.selectById(req.getProductId());
-        if (product == null) throw new BizException("商品不存在");
+        if (product == null) throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         if (groupBuyMapper.selectByProductId(req.getProductId()) != null) {
-            throw new BizException("该商品已有进行中的拼团活动");
+            throw new BizException(BizErrorCode.GROUP_BUY_DUPLICATE);
         }
         if (product.getSeckillPrice() != null) {
-            throw new BizException("该商品正在参与秒杀，不能设置拼团");
+            throw new BizException(BizErrorCode.GROUP_BUY_SECKILL_CONFLICT);
         }
 
         try {
@@ -68,20 +69,20 @@ public class GroupBuyService {
             groupBuyMapper.insert(gb);
             return gb;
         } catch (JsonProcessingException e) {
-            throw new BizException("拼团阶梯配置格式异常");
+            throw new BizException(BizErrorCode.GROUP_BUY_TIER_ERROR);
         }
     }
 
     public void updateActivity(Long activityId, GroupBuyActivityRequest req) {
         GroupBuy gb = groupBuyMapper.selectById(activityId);
-        if (gb == null) throw new BizException("拼团活动不存在");
+        if (gb == null) throw new BizException(BizErrorCode.GROUP_BUY_NOT_FOUND);
         if (req.getExpireHours() != null && req.getExpireHours() <= 0) {
-            throw new BizException("过期小时数必须大于0");
+            throw new BizException(BizErrorCode.GROUP_BUY_INVALID_HOURS);
         }
         try {
             gb.setTiers(objectMapper.writeValueAsString(req.getTiers()));
         } catch (JsonProcessingException e) {
-            throw new BizException("拼团阶梯配置格式异常");
+            throw new BizException(BizErrorCode.GROUP_BUY_TIER_ERROR);
         }
         gb.setStartTime(req.getStartTime());
         gb.setEndTime(req.getEndTime());
@@ -97,7 +98,7 @@ public class GroupBuyService {
 
     public GroupBuyDetailResponse getDetail(Long activityId) {
         GroupBuy activity = groupBuyMapper.selectById(activityId);
-        if (activity == null) throw new BizException("拼团活动不存在");
+        if (activity == null) throw new BizException(BizErrorCode.GROUP_BUY_NOT_FOUND);
 
         List<GroupBuyOrder> openGroups = groupBuyOrderMapper.selectOpenByProductId(activity.getProductId());
         List<GroupBuyTier> tiers = parseTiers(activity.getTiers());
@@ -110,7 +111,7 @@ public class GroupBuyService {
                                           OrderCreateRequest orderReq) {
         GroupBuy activity = groupBuyMapper.selectById(activityId);
         if (activity == null || activity.getStatus() != 1) {
-            throw new BizException("拼团活动不存在或已结束");
+            throw new BizException(BizErrorCode.GROUP_BUY_NOT_FOUND);
         }
 
         GroupBuyTier tier = findTier(activity, targetCount);
@@ -146,12 +147,12 @@ public class GroupBuyService {
     public Map<String, Object> joinGroup(String groupId, Long userId, OrderCreateRequest orderReq) {
         GroupBuyOrder gbo = groupBuyOrderMapper.selectByGroupIdForUpdate(groupId);
         if (gbo == null || !"OPEN".equals(gbo.getStatus())) {
-            throw new BizException("团不存在或已结束");
+            throw new BizException(BizErrorCode.GROUP_BUY_CLOSED);
         }
         if (gbo.getExpireTime().isBefore(LocalDateTime.now())) {
             gbo.setStatus("FAIL");
             groupBuyOrderMapper.updateById(gbo);
-            throw new BizException("团已过期");
+            throw new BizException(BizErrorCode.GROUP_BUY_EXPIRED);
         }
 
         GroupBuy activity = groupBuyMapper.selectByProductId(gbo.getProductId());
@@ -166,7 +167,7 @@ public class GroupBuyService {
         // 原子参团（CAS: current_count < target_tier AND status = 'OPEN'）
         int affected = groupBuyOrderMapper.incrementCount(gbo.getId());
         if (affected == 0) {
-            throw new BizException("团已满员");
+            throw new BizException(BizErrorCode.GROUP_BUY_FULL);
         }
 
         // 记录参团
@@ -189,20 +190,20 @@ public class GroupBuyService {
         try {
             return objectMapper.readValue(tiersJson, new TypeReference<List<GroupBuyTier>>() {});
         } catch (Exception e) {
-            throw new BizException("拼团阶梯配置异常");
+            throw new BizException(BizErrorCode.GROUP_BUY_TIER_ERROR);
         }
     }
 
     private GroupBuyTier findTier(GroupBuy activity, int targetCount) {
         return parseTiers(activity.getTiers()).stream()
-                .filter(t -> t.getCount().equals(targetCount))
+                .filter(t -> java.util.Objects.equals(t.getCount(), targetCount))
                 .findFirst()
                 .orElseThrow(() -> new BizException("不支持的拼团人数"));
     }
 
     private BigDecimal calculateDiscount(GroupBuy activity, GroupBuyTier tier) {
         Product product = productMapper.selectById(activity.getProductId());
-        if (product == null) throw new BizException("商品不存在");
+        if (product == null) throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         // discount 是折扣系数（0.9 = 9折），折扣金额 = 原价 × (1 - discount)
         return product.getPrice().multiply(BigDecimal.ONE.subtract(tier.getDiscount()));
     }
