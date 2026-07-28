@@ -44,10 +44,19 @@
             <groupId>com.alibaba.cloud</groupId>
             <artifactId>spring-cloud-alibaba-sentinel-gateway</artifactId>
         </dependency>
+        <!-- sentinel-transport-simple-http：Gateway 适配器不含传输层，需显式引入才能向 Dashboard 注册心跳 -->
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-transport-simple-http</artifactId>
+        </dependency>
         <!-- sentinel-datasource-extension 被 SCA 声明为 optional，Gateway 需要显式引入 -->
         <dependency>
             <groupId>com.alibaba.csp</groupId>
             <artifactId>sentinel-datasource-extension</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>com.alibaba.csp</groupId>
+            <artifactId>sentinel-datasource-nacos</artifactId>
         </dependency>
 
         <!-- Lombok -->

@@ -156,6 +156,11 @@
                 <artifactId>sentinel-datasource-extension</artifactId>
                 <version>1.8.6</version>
             </dependency>
+            <dependency>
+                <groupId>com.alibaba.csp</groupId>
+                <artifactId>sentinel-datasource-nacos</artifactId>
+                <version>1.8.6</version>
+            </dependency>
 
             <!-- H2 (test only) -->
             <dependency>

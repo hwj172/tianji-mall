@@ -17,7 +17,23 @@ spring:
     sentinel:
       transport:
         dashboard: 192.168.150.11:8858
+        port: 8724
       eager: true
+      datasource:
+        flow:
+          nacos:
+            server-addr: 192.168.150.11:8848
+            data-id: ${spring.application.name}-flow-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: flow
+        degrade:
+          nacos:
+            server-addr: 192.168.150.11:8848
+            data-id: ${spring.application.name}-degrade-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: degrade
     gateway:
       discovery:
         locator:
