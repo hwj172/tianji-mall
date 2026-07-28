@@ -8,14 +8,23 @@ services:
   nacos:
     image: nacos/nacos-server:v2.3.1
     container_name: nacos
+    depends_on:
+      - mysql
     environment:
       - MODE=standalone
       - PREFER_HOST_MODE=hostname
+      - SPRING_DATASOURCE_PLATFORM=mysql
+      - MYSQL_SERVICE_HOST=mysql
+      - MYSQL_SERVICE_DB_NAME=nacos_config
+      - MYSQL_SERVICE_USER=root
+      - MYSQL_SERVICE_PASSWORD=root
+      - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
     ports:
       - "8848:8848"
       - "9848:9848"
     volumes:
       - nacos-data:/home/nacos/data
+      - ./nacos-db.properties:/home/nacos/conf/application.properties
 
   # ==================== MySQL 业务数据库 ====================
   mysql:

@@ -24,6 +24,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 | **Windows 物理机** | IDEA 开发环境（6 个微服务）、natapp 内网穿透（→ localhost:8080）、前端项目 |
 | **Linux VM**（192.168.150.11） | Docker 中间件：Nacos、MySQL、Redis、RocketMQ、Milvus、SkyWalking、Sentinel |
 
+**Nacos 自身持久化：** `docker-compose.yml` 通过环境变量（`SPRING_DATASOURCE_PLATFORM=mysql` + `MYSQL_SERVICE_*`）+ 挂载 `nacos-db.properties`（覆盖 `db.url.0/db.user.0/db.password.0/db.num`）配置 Nacos 使用 MySQL 存储。Nacos 容器启动前需在 MySQL 中手动创建 `nacos_config` 库并执行 `mysql-schema.sql`（从 Nacos 镜像 `/home/nacos/conf/mysql-schema.sql` 提取）。配置和命名空间数据持久化到 `nacos_config` 库的 12 张表中，重启 Nacos 容器不会丢失。
+
 ## 监控组件
 
 | 组件 | 端口 | 控制台 | 凭证 |

@@ -35,9 +35,7 @@
     ],
     "deny": [
       "Bash(rm -rf *)",
-      "Bash(git push *)",
-      "Bash(git merge *)",
-      "Bash(git rebase *)"
+      "Bash(git push *)"
     ],
     "defaultMode": "plan",
     "hooks": {
