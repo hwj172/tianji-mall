@@ -47,13 +47,26 @@ IDEA VM Options（每个服务 Run Configuration）：
 
 依赖：gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配），其他 5 个服务使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。版本由父 POM dependencyManagement 管理（2023.0.1.0）。
 
+**Gateway 额外依赖：** `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配器）不含传输层（`sentinel-transport-simple-http`），Gateway 需显式引入此依赖 + `sentinel-datasource-extension`（SCA 声明为 optional）+ `sentinel-datasource-nacos`。此外 Gateway 还需 `SentinelInitConfig`（`gateway/.../config/SentinelInitConfig.java`）——WebFlux 适配器不会自动调用 `InitExecutor.doInit()` 初始化传输模块，需在 `@PostConstruct` 中手动设置 `csp.sentinel.dashboard.server` / `csp.sentinel.api.port` 系统属性并调用 `InitExecutor.doInit()`。
+
 application.yml 配置：
 ```yaml
 spring.cloud.sentinel.transport.dashboard: 192.168.150.11:8858
+spring.cloud.sentinel.transport.port: 8724    # Gateway 需显式指定（其他服务自动分配 8719+）
 spring.cloud.sentinel.eager: true
 ```
 
-规则全部通过 Sentinel Dashboard 动态配置，不在代码中预设。Dashboard: http://192.168.150.11:8858（sentinel / sentinel）。
+**Nacos 持久化：** 所有 6 个服务的 application.yml 配置了 `sentinel.datasource.flow.nacos` + `sentinel.datasource.degrade.nacos`，规则持久化到 Nacos（`SENTINEL_GROUP`，dataId=`${spring.application.name}-flow-rules` / `-degrade-rules`），Dashboard 重启后自动从 Nacos 加载，不再丢失。规则通过 Nacos Open API（`POST /nacos/v1/cs/configs`）推送，不在代码中预设。Dashboard: http://192.168.150.11:8858（sentinel / sentinel）。
+
+**当前规则（23 条流控+降级，覆盖 6 个服务）：**
+| 服务 | 流控资源 | 降级资源 |
+|------|---------|---------|
+| gateway | GET:/api/home、POST:/api/user/login、POST:/api/user/register、GET:/api/coupon/center | GET:/api/home、POST:/api/user/login |
+| user-service | GET:/api/user/info、POST:/api/user/register | GET:/api/user/info、POST:/api/user/login |
+| mall-goods-order | createOrder、GET:/api/product/page、GET:/api/home、GET:/api/product/search/hot | createOrder、GET:/api/product/page |
+| pay-service | POST:/api/pay/create | POST:/api/pay/create |
+| mcp-server | POST:/api/tool/dispatch | mallFeignClient |
+| ai-chat-service | POST:/api/chat | POST:/api/chat |
 
 ## 模块架构
 
@@ -193,7 +206,7 @@ mvn package -DskipTests
 - **Feign 注解参数名**：Spring 6 要求 `@PathVariable`、`@RequestParam` 显式写 value（如 `@PathVariable("id")`），不能省略
 - **Druid 数据源**：所有使用 MySQL 的服务必须引入 `druid-spring-boot-3-starter`（application.yml 中 `spring.datasource.type` 指向 Druid）
 - **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
-- **Sentinel**：Gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配），业务模块使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。版本由父 POM dependencyManagement 指定（2023.0.1.0）。测试中 `spring.cloud.sentinel.enabled: false`。规则全部通过 Dashboard 动态配置，不在代码中预设。
+- **Sentinel**：Gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配）+ 显式引入 `sentinel-transport-simple-http`（WebFlux 适配器不含传输层），业务模块使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。Gateway 需 `SentinelInitConfig`（手动 `InitExecutor.doInit()`）和显式 `transport.port: 8724`。版本由父 POM dependencyManagement 指定（2023.0.1.0）。测试中 `spring.cloud.sentinel.enabled: false`。规则通过 Nacos 持久化（`SENTINEL_GROUP`，dataId=`${spring.application.name}-flow-rules`/`-degrade-rules`），Dashboard 重启后自动加载。
 - **SkyWalking**：纯 javaagent 挂载，零代码依赖。Agent 下载和 IDEA VM Options 见 `skywalking/README.md`。
 - **管理员鉴权**：User 表 `role` 字段（user/seller/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin，对 `/api/seller/**` 路径校验 role=seller 或 admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
 - **商家角色**：用户可注册开店（`POST /api/shop/register`），成功后 user-service 通过内部端点 `PUT /api/user/internal/promote` 将角色提升为 seller（best-effort，失败不阻塞开店）。seller 可管理自己店铺的商品和订单。网关鉴权：`/api/seller/**` 需要 role=seller 或 admin。
