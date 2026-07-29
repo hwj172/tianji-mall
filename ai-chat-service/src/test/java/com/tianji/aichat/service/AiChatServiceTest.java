@@ -18,11 +18,14 @@ import java.lang.reflect.Method;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -195,6 +198,274 @@ class AiChatServiceTest {
         // base prompt 规则文案中提到 [RAG检索结果]，但不应有实际数据段落
         assertThat(prompt).doesNotContain("[RAG检索结果 — 以下为真实商品数据]");
         assertThat(prompt).doesNotContain("请优先基于以上真实商品数据回复用户");
+    }
+
+    // ==================== buildRequestBody ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldBuildRequestBodyWithCorrectStructure() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("buildRequestBody", List.class);
+        method.setAccessible(true);
+
+        List<Map<String, Object>> messages = List.of(Map.of("role", "user", "content", "你好"));
+        Map<String, Object> body = (Map<String, Object>) method.invoke(aiChatService, messages);
+
+        assertThat(body.get("model")).isEqualTo("deepseek-chat");
+        assertThat(body.get("max_tokens")).isEqualTo(2048);
+        assertThat(body.get("messages")).isEqualTo(messages);
+        assertThat(body.get("tools")).isNotNull();
+        assertThat(body.get("tool_choice")).isEqualTo("auto");
+    }
+
+    // ==================== executeTool ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldExecuteToolSuccessfully() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("executeTool",
+                String.class, Map.class, Long.class);
+        method.setAccessible(true);
+
+        Map<String, Object> toolResult = Map.of("success", true, "data", Map.of("id", 1, "name", "商品"));
+        when(mcpFeignClient.executeTool(any())).thenReturn(toolResult);
+
+        String result = (String) method.invoke(aiChatService, "search_products",
+                Map.of("keyword", "手机"), 1L);
+
+        assertThat(result).contains("id");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldExecuteToolReturnErrorWhenNotSuccess() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("executeTool",
+                String.class, Map.class, Long.class);
+        method.setAccessible(true);
+
+        Map<String, Object> toolResult = Map.of("success", false, "error", "商品不存在");
+        when(mcpFeignClient.executeTool(any())).thenReturn(toolResult);
+
+        String result = (String) method.invoke(aiChatService, "get_product",
+                Map.of("productId", 999L), 1L);
+
+        assertThat(result).contains("工具执行失败");
+        assertThat(result).contains("商品不存在");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldExecuteToolCatchFeignException() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("executeTool",
+                String.class, Map.class, Long.class);
+        method.setAccessible(true);
+
+        when(mcpFeignClient.executeTool(any()))
+                .thenThrow(new RuntimeException("下游服务不可用"));
+
+        String result = (String) method.invoke(aiChatService, "search_products",
+                Map.of("keyword", "手机"), 1L);
+
+        assertThat(result).contains("工具调用异常");
+    }
+
+    // ==================== searchProductsByRag ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldHandleRagFailureGracefully() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("searchProductsByRag", String.class);
+        method.setAccessible(true);
+
+        when(vectorSearchService.searchSimilar(anyString(), eq(5)))
+                .thenThrow(new RuntimeException("Milvus 连接失败"));
+
+        List<ProductDTO> result = (List<ProductDTO>) method.invoke(aiChatService, "推荐手机");
+
+        assertThat(result).isEmpty();
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnEmptyWhenNoVectorResults() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("searchProductsByRag", String.class);
+        method.setAccessible(true);
+
+        when(vectorSearchService.searchSimilar(anyString(), eq(5))).thenReturn(List.of());
+
+        List<ProductDTO> result = (List<ProductDTO>) method.invoke(aiChatService, "推荐手机");
+
+        assertThat(result).isEmpty();
+    }
+
+    // ==================== getToolDefinitions ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldDefineAllEightTools() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("getToolDefinitions");
+        method.setAccessible(true);
+
+        List<Map<String, Object>> tools = (List<Map<String, Object>>) method.invoke(aiChatService);
+
+        assertThat(tools).hasSize(8);
+        // 验证各工具名称
+        List<String> toolNames = tools.stream()
+                .map(t -> (Map<String, Object>) t.get("function"))
+                .map(f -> (String) f.get("name"))
+                .toList();
+        assertThat(toolNames).containsExactlyInAnyOrder(
+                "search_products", "get_product", "get_orders", "get_order_detail",
+                "get_cart", "add_to_cart", "create_order", "pay_order"
+        );
+    }
+
+    // ==================== sendToDeepSeek ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnNullWhenDeepSeekApiFails() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("sendToDeepSeek", Map.class);
+        method.setAccessible(true);
+
+        when(restTemplate.postForEntity(anyString(), any(), any(), (Class<?>) any()))
+                .thenThrow(new RuntimeException("连接超时"));
+
+        Map<String, Object> result = (Map<String, Object>) method.invoke(aiChatService,
+                Map.of("model", "test"));
+
+        assertThat(result).isNull();
+    }
+
+    // ==================== callDeepSeekWithTools ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnFallbackWhenResponseIsNull() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
+                List.class, Long.class);
+        method.setAccessible(true);
+
+        when(restTemplate.postForEntity(anyString(), any(), any(), (Class<?>) any()))
+                .thenReturn(null);
+
+        String result = (String) method.invoke(aiChatService,
+                List.of(Map.of("role", "user", "content", "你好")), 1L);
+
+        assertThat(result).isEqualTo("抱歉，AI 服务暂时不可用，请稍后再试。");
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void shouldReturnFallbackWhenChoicesEmpty() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
+                List.class, Long.class);
+        method.setAccessible(true);
+
+        org.springframework.http.ResponseEntity responseEntity =
+                org.springframework.http.ResponseEntity.ok(Map.of("choices", List.of()));
+        when(restTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(responseEntity);
+
+        String result = (String) method.invoke(aiChatService,
+                List.of(Map.of("role", "user", "content", "你好")), 1L);
+
+        assertThat(result).isEqualTo("抱歉，我暂时无法回复，请稍后再试。");
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void shouldReturnFallbackWhenMessageIsNull() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
+                List.class, Long.class);
+        method.setAccessible(true);
+
+        // choices[0].message = null
+        Map<String, Object> choice = new LinkedHashMap<>();
+        choice.put("message", null);
+        org.springframework.http.ResponseEntity responseEntity =
+                org.springframework.http.ResponseEntity.ok(Map.of("choices", List.of(choice)));
+        when(restTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(responseEntity);
+
+        String result = (String) method.invoke(aiChatService,
+                List.of(Map.of("role", "user", "content", "你好")), 1L);
+
+        assertThat(result).isEqualTo("抱歉，我暂时无法回复，请稍后再试。");
+    }
+
+    @Test
+    @SuppressWarnings({"unchecked", "rawtypes"})
+    void shouldReturnFallbackWhenContentIsNull() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
+                List.class, Long.class);
+        method.setAccessible(true);
+
+        // choices[0].message.content = null, no tool_calls
+        Map<String, Object> messageMap = new LinkedHashMap<>();
+        messageMap.put("role", "assistant");
+        messageMap.put("content", null);
+        Map<String, Object> choice = new LinkedHashMap<>();
+        choice.put("message", messageMap);
+        org.springframework.http.ResponseEntity responseEntity =
+                org.springframework.http.ResponseEntity.ok(Map.of("choices", List.of(choice)));
+        when(restTemplate.postForEntity(anyString(), any(), eq(Map.class)))
+                .thenReturn(responseEntity);
+
+        String result = (String) method.invoke(aiChatService,
+                List.of(Map.of("role", "user", "content", "你好")), 1L);
+
+        assertThat(result).isEqualTo("抱歉，我暂时无法回复，请稍后再试。");
+    }
+
+    // ==================== searchProductsByRag success path ====================
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnProductsWhenRagSucceeds() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("searchProductsByRag", String.class);
+        method.setAccessible(true);
+
+        when(vectorSearchService.searchSimilar(anyString(), eq(5))).thenReturn(List.of(1L, 2L));
+
+        Map<String, Object> product1 = new LinkedHashMap<>();
+        product1.put("id", 1);
+        product1.put("name", "华为Mate 60");
+        product1.put("description", "旗舰手机");
+        product1.put("price", 6999);
+        product1.put("stock", 100);
+        product1.put("images", "img1.jpg");
+
+        Map<String, Object> product2 = new LinkedHashMap<>();
+        product2.put("id", 2);
+        product2.put("name", "iPhone 15");
+        product2.put("description", "苹果手机");
+        product2.put("price", 7999);
+        product2.put("stock", 50);
+        product2.put("images", "img2.jpg");
+
+        when(productFeignClient.getProductBatch(any()))
+                .thenReturn(Map.of("data", List.of(product1, product2)));
+
+        List<ProductDTO> result = (List<ProductDTO>) method.invoke(aiChatService, "推荐手机");
+
+        assertThat(result).hasSize(2);
+        assertThat(result.get(0).getName()).isEqualTo("华为Mate 60");
+        assertThat(result.get(1).getName()).isEqualTo("iPhone 15");
+    }
+
+    @Test
+    @SuppressWarnings("unchecked")
+    void shouldReturnEmptyWhenFeignReturnsNullData() throws Exception {
+        Method method = AiChatService.class.getDeclaredMethod("searchProductsByRag", String.class);
+        method.setAccessible(true);
+
+        when(vectorSearchService.searchSimilar(anyString(), eq(5))).thenReturn(List.of(1L));
+        when(productFeignClient.getProductBatch(any())).thenReturn(Map.of()); // no "data" key
+
+        List<ProductDTO> result = (List<ProductDTO>) method.invoke(aiChatService, "推荐手机");
+
+        assertThat(result).isEmpty();
     }
 
     // ==================== helpers ====================

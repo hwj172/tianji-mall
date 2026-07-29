@@ -132,6 +132,11 @@
             <artifactId>spring-boot-starter-test</artifactId>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <!-- 统一 gRPC 版本：RocketMQ 传递引入 1.50.0，milvus-sdk-java 2.3.4 需要 1.59.1
