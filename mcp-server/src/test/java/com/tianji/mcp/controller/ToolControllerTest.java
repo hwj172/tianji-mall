@@ -124,4 +124,62 @@ class ToolControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
     }
+
+    // ==================== additional tool routes ====================
+
+    @Test
+    void shouldRouteToGetProduct() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        ToolResponse mockResp = ToolResponse.ok(Map.of("id", 1, "name", "测试商品"));
+        when(productTools.getProductDetail(1L)).thenReturn(mockResp);
+
+        mockMvc.perform(post("/api/tool/execute")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tool\":\"get_product\",\"parameters\":{\"productId\":1}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void shouldRouteToGetOrders() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        ToolResponse mockResp = ToolResponse.ok(Map.of("records", new Object[0]));
+        when(orderTools.getOrders(1L)).thenReturn(mockResp);
+
+        mockMvc.perform(post("/api/tool/execute")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tool\":\"get_orders\",\"parameters\":{}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void shouldRouteToGetOrderDetail() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        ToolResponse mockResp = ToolResponse.ok(Map.of("id", 100, "orderNo", "TEST001"));
+        when(orderTools.getOrderDetail(100L)).thenReturn(mockResp);
+
+        mockMvc.perform(post("/api/tool/execute")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tool\":\"get_order_detail\",\"parameters\":{\"orderId\":100}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
+
+    @Test
+    void shouldRouteToAddToCart() throws Exception {
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        ToolResponse mockResp = ToolResponse.ok(Map.of("id", 1));
+        when(cartTools.addToCart(eq(1L), anyMap())).thenReturn(mockResp);
+
+        mockMvc.perform(post("/api/tool/execute")
+                        .header("Authorization", "Bearer test-token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"tool\":\"add_to_cart\",\"parameters\":{\"productId\":100,\"quantity\":2}}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+    }
 }

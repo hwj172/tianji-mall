@@ -39,8 +39,6 @@ spring:
             rule-type: degrade
 
 mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
@@ -54,6 +52,10 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 knife4j:
-  enable: true
+  enable: ${KNIFE4J_ENABLED:true}
   setting:
     language: zh_cn
+
+# 内部服务调用 token（需与 gateway 一致，用于发送 X-Internal-Token 请求头）
+internal:
+  token: ${INTERNAL_TOKEN:}

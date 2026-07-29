@@ -1,11 +1,12 @@
 package com.tianji.mcp.feign;
 
+import com.tianji.mcp.feign.fallback.MallFeignClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@FeignClient(name = "mall-goods-order")
+@FeignClient(name = "mall-goods-order", fallbackFactory = MallFeignClientFallback.class)
 public interface MallFeignClient {
 
     @GetMapping("/api/product/list")
