@@ -40,6 +40,12 @@
             <artifactId>spring-web</artifactId>
         </dependency>
 
+        <!-- Feign Core（FeignRetryer / FeignErrorDecoder） -->
+        <dependency>
+            <groupId>io.github.openfeign</groupId>
+            <artifactId>feign-core</artifactId>
+        </dependency>
+
         <!-- Servlet API（GlobalExceptionHandler 需要 HttpServletRequest） -->
         <dependency>
             <groupId>jakarta.servlet</groupId>
