@@ -20,7 +20,8 @@ import java.util.List;
 @RocketMQMessageListener(
         topic = "order-topic",
         consumerGroup = "order-event-consumer",
-        selectorExpression = "*")
+        selectorExpression = "*",
+        maxReconsumeTimes = 3)
 public class OrderEventConsumer implements RocketMQListener<OrderEvent> {
 
     private final OrderItemMapper orderItemMapper;
@@ -40,11 +41,7 @@ public class OrderEventConsumer implements RocketMQListener<OrderEvent> {
             case "CANCELLED" -> {
                 log.info("订单已取消: orderId={}, orderNo={}, userId={}, amount={}",
                         event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
-                try {
-                    couponService.restoreCoupon(event.getOrderId());
-                } catch (Exception e) {
-                    log.error("恢复优惠券失败: orderId={}", event.getOrderId(), e);
-                }
+                couponService.restoreCoupon(event.getOrderId());
             }
             default -> log.warn("未知事件类型: {}", event.getEventType());
         }
@@ -52,16 +49,12 @@ public class OrderEventConsumer implements RocketMQListener<OrderEvent> {
 
     private void handlePaid(OrderEvent event) {
         log.info("订单已支付 - 更新商品销量: orderId={}", event.getOrderId());
-        try {
-            List<OrderItem> items = orderItemMapper.selectList(
-                    new LambdaQueryWrapper<OrderItem>()
-                            .eq(OrderItem::getOrderId, event.getOrderId()));
-            for (OrderItem item : items) {
-                productService.incrementSales(item.getProductId(), item.getQuantity());
-            }
-            log.info("商品销量更新完成: orderId={}, items={}", event.getOrderId(), items.size());
-        } catch (Exception e) {
-            log.error("更新商品销量失败: orderId={}", event.getOrderId(), e);
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>()
+                        .eq(OrderItem::getOrderId, event.getOrderId()));
+        for (OrderItem item : items) {
+            productService.incrementSales(item.getProductId(), item.getQuantity());
         }
+        log.info("商品销量更新完成: orderId={}, items={}", event.getOrderId(), items.size());
     }
 }

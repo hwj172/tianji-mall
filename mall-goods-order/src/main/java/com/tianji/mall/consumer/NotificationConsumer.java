@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 @RocketMQMessageListener(
         topic = "order-topic",
         consumerGroup = "notification-consumer",
-        selectorExpression = "*")
+        selectorExpression = "*",
+        maxReconsumeTimes = 3)
 public class NotificationConsumer implements RocketMQListener<OrderEvent> {
 
     private final NotificationService notificationService;

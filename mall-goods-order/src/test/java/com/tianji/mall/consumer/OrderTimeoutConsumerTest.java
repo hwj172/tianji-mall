@@ -8,6 +8,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -47,10 +48,12 @@ class OrderTimeoutConsumerTest {
     }
 
     @Test
-    void shouldSkipNonExistentOrder() {
+    void shouldThrowOnNonExistentOrder() {
         when(orderService.getById(999L)).thenReturn(null);
 
-        consumer.onMessage("999");
+        assertThatThrownBy(() -> consumer.onMessage("999"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessage("订单不存在: 999");
 
         verify(orderService, never()).cancelOrderByTimeout(anyLong());
     }

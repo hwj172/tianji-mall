@@ -17,7 +17,8 @@ import java.util.List;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-@RocketMQMessageListener(topic = "group-buy-topic", consumerGroup = "group-buy-timeout-consumer")
+@RocketMQMessageListener(topic = "group-buy-topic", consumerGroup = "group-buy-timeout-consumer",
+        maxReconsumeTimes = 3)
 public class GroupBuyTimeoutConsumer implements RocketMQListener<String> {
 
     private final GroupBuyOrderMapper groupBuyOrderMapper;
@@ -37,12 +38,8 @@ public class GroupBuyTimeoutConsumer implements RocketMQListener<String> {
             // 取消关联的所有参团订单
             List<GroupBuyParticipant> participants = participantMapper.selectByGroupBuyOrderId(id);
             for (GroupBuyParticipant p : participants) {
-                try {
-                    orderService.cancelOrderByTimeout(p.getOrderId());
-                    log.info("拼团超时取消订单: orderId={}, gboId={}", p.getOrderId(), id);
-                } catch (Exception e) {
-                    log.error("拼团超时取消订单失败: orderId={}, gboId={}", p.getOrderId(), id, e);
-                }
+                orderService.cancelOrderByTimeout(p.getOrderId());
+                log.info("拼团超时取消订单: orderId={}, gboId={}", p.getOrderId(), id);
             }
         }
     }

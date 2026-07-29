@@ -17,6 +17,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -88,11 +89,13 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void shouldCatchExceptionDuringSalesUpdate() {
+    void shouldPropagateExceptionDuringSalesUpdate() {
         OrderEvent event = new OrderEvent(1L, 100L, "ORD001", BigDecimal.valueOf(1000), "PAID", LocalDateTime.now());
         when(orderItemMapper.selectList(any())).thenThrow(new RuntimeException("DB down"));
 
-        assertThatCode(() -> consumer.onMessage(event)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> consumer.onMessage(event))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("DB down");
     }
 
     @Test
@@ -105,11 +108,13 @@ class OrderEventConsumerTest {
     }
 
     @Test
-    void shouldCatchExceptionDuringCouponRestore() {
+    void shouldPropagateExceptionDuringCouponRestore() {
         OrderEvent event = new OrderEvent(1L, 100L, "ORD001", BigDecimal.valueOf(1000), "CANCELLED", LocalDateTime.now());
         doThrow(new RuntimeException("DB down")).when(couponService).restoreCoupon(1L);
 
-        assertThatCode(() -> consumer.onMessage(event)).doesNotThrowAnyException();
+        assertThatThrownBy(() -> consumer.onMessage(event))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("DB down");
     }
 
     @Test

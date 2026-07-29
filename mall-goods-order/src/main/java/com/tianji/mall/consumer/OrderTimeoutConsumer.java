@@ -14,7 +14,8 @@ import org.springframework.stereotype.Component;
 @RocketMQMessageListener(
         topic = "order-topic",
         consumerGroup = "order-timeout-consumer",
-        selectorExpression = "TIMEOUT_CHECK")
+        selectorExpression = "TIMEOUT_CHECK",
+        maxReconsumeTimes = 3)
 public class OrderTimeoutConsumer implements RocketMQListener<String> {
 
     private final OrderService orderService;
@@ -25,8 +26,7 @@ public class OrderTimeoutConsumer implements RocketMQListener<String> {
         log.info("超时检查: orderId={}", orderId);
         Order order = orderService.getById(orderId);
         if (order == null) {
-            log.warn("订单不存在: {}", orderId);
-            return;
+            throw new IllegalStateException("订单不存在: " + orderId);
         }
         if (order.getStatus() == 1) { // 仍为 PENDING
             orderService.cancelOrderByTimeout(orderId);
