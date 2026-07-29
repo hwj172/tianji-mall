@@ -37,10 +37,31 @@ spring:
             group-id: SENTINEL_GROUP
             data-type: json
             rule-type: degrade
+      openfeign:
+        client:
+          config:
+            default:
+              connectTimeout: 3000
+              readTimeout: 10000
+        compression:
+          request:
+            enabled: true
+          response:
+            enabled: true
+        sentinel:
+          enabled: true
   data:
     redis:
       host: 192.168.150.11
       port: 6379
+      password: ${REDIS_PASSWORD:}
+      lettuce:
+        pool:
+          max-active: 8
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2000ms
+          time-between-eviction-runs: 30s
   cache:
     type: redis
     redis:

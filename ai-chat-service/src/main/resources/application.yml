@@ -37,6 +37,19 @@ spring:
             group-id: SENTINEL_GROUP
             data-type: json
             rule-type: degrade
+      openfeign:
+        client:
+          config:
+            default:
+              connectTimeout: 3000
+              readTimeout: 10000
+        compression:
+          request:
+            enabled: true
+          response:
+            enabled: true
+        sentinel:
+          enabled: true
 
 mybatis-plus:
   global-config:
