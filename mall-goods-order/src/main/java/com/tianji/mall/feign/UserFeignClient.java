@@ -1,12 +1,13 @@
 package com.tianji.mall.feign;
 
 import com.tianji.common.result.R;
+import com.tianji.mall.feign.fallback.UserFeignClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
 
-@FeignClient(name = "user-service")
+@FeignClient(name = "user-service", fallbackFactory = UserFeignClientFallback.class)
 public interface UserFeignClient {
 
     @GetMapping("/api/user/internal/{id}")
