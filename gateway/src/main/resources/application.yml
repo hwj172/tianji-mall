@@ -33,6 +33,19 @@ spring:
             data-type: json
             rule-type: degrade
     gateway:
+      httpclient:
+        connect-timeout: 3000
+        response-timeout: 30000
+        pool:
+          type: elastic
+          max-idle-time: 60s
+          max-life-time: 300s
+      default-filters:
+        - name: Retry
+          args:
+            retries: 1
+            statuses: BAD_GATEWAY, SERVICE_UNAVAILABLE, GATEWAY_TIMEOUT
+            methods: GET
       discovery:
         locator:
           enabled: false
@@ -132,4 +145,4 @@ jwt:
 
 # 内部服务调用 token（mcp-server -> mall-goods-order）
 internal:
-  token: ${INTERNAL_TOKEN:tianji-internal-token-2024}
+  token: ${INTERNAL_TOKEN:}
