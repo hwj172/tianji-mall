@@ -78,6 +78,19 @@ class PayControllerTest {
                 .andExpect(content().string("fail"));
     }
 
+    @Test
+    void shouldReturnSuccessWhenNotifyThrowsBizException() throws Exception {
+        // BizException → 返回 "success"（不可重试，终止支付宝重试）
+        doThrow(new com.tianji.common.exception.BizException(
+                        com.tianji.common.exception.BizErrorCode.SIGN_VERIFY_FAILED))
+                .when(payService).handleNotify(anyMap());
+
+        mockMvc.perform(post("/api/pay/notify")
+                        .param("trade_status", "TRADE_SUCCESS"))
+                .andExpect(status().isOk())
+                .andExpect(content().string("success"));
+    }
+
     // ==================== GET /api/pay/query/{orderId} ====================
 
     @Test
@@ -104,6 +117,7 @@ class PayControllerTest {
     @Test
     void shouldRefundOrderInternal() throws Exception {
         mockMvc.perform(post("/api/pay/internal/refund")
+                        .header("X-Internal-Token", "test-internal-token")
                         .param("orderId", "10")
                         .param("userId", "1")
                         .param("amount", "99.90")

@@ -36,3 +36,6 @@ alipay:
   app-id: test-app-id
   private-key: test-private-key
   alipay-public-key: test-alipay-public-key
+
+internal:
+  token: test-internal-token

@@ -2,8 +2,11 @@ package com.tianji.pay.service;
 
 import com.alipay.api.AlipayApiException;
 import com.alipay.api.AlipayClient;
+import com.alipay.api.internal.util.AlipaySignature;
 import com.alipay.api.request.AlipayTradePagePayRequest;
+import com.alipay.api.request.AlipayTradeRefundRequest;
 import com.alipay.api.response.AlipayTradePagePayResponse;
+import com.alipay.api.response.AlipayTradeRefundResponse;
 import com.baomidou.mybatisplus.core.conditions.Wrapper;
 import com.tianji.common.exception.BizException;
 import com.tianji.common.result.R;
@@ -15,15 +18,26 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
+import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doReturn;
+import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -176,7 +190,154 @@ class PayServiceTest {
                 .hasMessage("支付记录不存在");
     }
 
+    // ==================== handleNotify ====================
+
+    @Test
+    void shouldHandleNotifySuccessfully() {
+        try (MockedStatic<AlipaySignature> mockedSignature = mockStatic(AlipaySignature.class)) {
+            mockedSignature.when(() -> AlipaySignature.rsaCheckV1(anyMap(), anyString(), anyString(), anyString()))
+                    .thenReturn(true);
+
+            Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1);
+            when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+            when(paymentMapper.markPaid("PAY202407160001", "20240716220010001")).thenReturn(1);
+
+            Map<String, String> params = new HashMap<>();
+            params.put("out_trade_no", "PAY202407160001");
+            params.put("trade_no", "20240716220010001");
+            params.put("trade_status", "TRADE_SUCCESS");
+
+            payService.handleNotify(params);
+
+            verify(orderFeignClient).payOrder(10L, 1L);
+        }
+    }
+
+    @Test
+    void shouldThrowWhenPaymentNotFoundInHandleNotify() {
+        try (MockedStatic<AlipaySignature> mockedSignature = mockStatic(AlipaySignature.class)) {
+            mockedSignature.when(() -> AlipaySignature.rsaCheckV1(anyMap(), anyString(), anyString(), anyString()))
+                    .thenReturn(true);
+
+            when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(null);
+
+            Map<String, String> params = new HashMap<>();
+            params.put("out_trade_no", "PAY_NOT_EXISTS");
+            params.put("trade_no", "20240716220010001");
+            params.put("trade_status", "TRADE_SUCCESS");
+
+            assertThatThrownBy(() -> payService.handleNotify(params))
+                    .isInstanceOf(BizException.class)
+                    .hasMessage("支付记录不存在");
+        }
+    }
+
+    @Test
+    void shouldReturnWhenTradeStatusNotSuccessInHandleNotify() {
+        try (MockedStatic<AlipaySignature> mockedSignature = mockStatic(AlipaySignature.class)) {
+            mockedSignature.when(() -> AlipaySignature.rsaCheckV1(anyMap(), anyString(), anyString(), anyString()))
+                    .thenReturn(true);
+
+            Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1);
+            when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+
+            // trade_status 非成功状态，doMarkPaid 返回 null
+            Map<String, String> params = new HashMap<>();
+            params.put("out_trade_no", "PAY202407160001");
+            params.put("trade_no", "20240716220010001");
+            params.put("trade_status", "WAIT_BUYER_PAY");
+
+            payService.handleNotify(params);
+
+            // 未标记支付成功，不应通知订单服务
+            verify(orderFeignClient, never()).payOrder(anyLong(), anyLong());
+        }
+    }
+
+    @Test
+    void shouldReturnWhenDuplicateMarkPaid() {
+        try (MockedStatic<AlipaySignature> mockedSignature = mockStatic(AlipaySignature.class)) {
+            mockedSignature.when(() -> AlipaySignature.rsaCheckV1(anyMap(), anyString(), anyString(), anyString()))
+                    .thenReturn(true);
+
+            Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1);
+            when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+            // markPaid 返回 0 表示重复处理（幂等）
+            when(paymentMapper.markPaid("PAY202407160001", "20240716220010001")).thenReturn(0);
+
+            Map<String, String> params = new HashMap<>();
+            params.put("out_trade_no", "PAY202407160001");
+            params.put("trade_no", "20240716220010001");
+            params.put("trade_status", "TRADE_SUCCESS");
+
+            payService.handleNotify(params);
+
+            verify(orderFeignClient, never()).payOrder(anyLong(), anyLong());
+        }
+    }
+
+    // ==================== refund ====================
+
+    @Test
+    void shouldRefundSuccessfully() throws AlipayApiException {
+        Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 2); // status=2 已付款
+        when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+
+        AlipayTradeRefundResponse refundResponse = new AlipayTradeRefundResponse();
+        refundResponse.setCode("10000");
+        refundResponse.setMsg("Success");
+        doReturn(refundResponse).when(alipayClient).execute(any(AlipayTradeRefundRequest.class));
+
+        payService.refund(10L, 1L, BigDecimal.valueOf(100), "不想要了");
+
+        verify(alipayClient).execute(any(AlipayTradeRefundRequest.class));
+    }
+
+    @Test
+    void shouldThrowWhenRefundPaymentNotFound() {
+        when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(null);
+
+        assertThatThrownBy(() -> payService.refund(10L, 1L, BigDecimal.valueOf(100), "退款"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("支付记录不存在");
+    }
+
+    @Test
+    void shouldThrowWhenRefundPaymentNotPaid() {
+        Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1); // status=1 未付款
+        when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+
+        assertThatThrownBy(() -> payService.refund(10L, 1L, BigDecimal.valueOf(100), "退款"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("订单未支付，无法退款");
+    }
+
+    @Test
+    void shouldThrowWhenAlipayRefundFails() throws AlipayApiException {
+        Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 2);
+        when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+
+        // 模拟支付宝 API 调用异常（退款失败）
+        doThrow(new AlipayApiException("商家余额不足")).when(alipayClient)
+                .execute(any(AlipayTradeRefundRequest.class));
+
+        assertThatThrownBy(() -> payService.refund(10L, 1L, BigDecimal.valueOf(100), "退款"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("退款失败");
+    }
+
     // ==================== helpers ====================
+
+    private Payment buildPayment(Long id, String paymentNo, Long orderId, Long userId, int status) {
+        Payment payment = new Payment();
+        payment.setId(id);
+        payment.setPaymentNo(paymentNo);
+        payment.setOrderId(orderId);
+        payment.setUserId(userId);
+        payment.setAmount(BigDecimal.valueOf(100));
+        payment.setStatus(status);
+        return payment;
+    }
 
     private OrderDTO buildOrderDTO(Long userId, Long orderId, BigDecimal amount, int status) {
         OrderDTO dto = new OrderDTO();

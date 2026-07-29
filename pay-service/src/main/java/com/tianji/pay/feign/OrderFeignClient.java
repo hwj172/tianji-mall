@@ -2,13 +2,14 @@ package com.tianji.pay.feign;
 
 import com.tianji.common.result.R;
 import com.tianji.pay.dto.OrderDTO;
+import com.tianji.pay.feign.fallback.OrderFeignClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 
-@FeignClient(name = "mall-goods-order")
+@FeignClient(name = "mall-goods-order", fallbackFactory = OrderFeignClientFallback.class)
 public interface OrderFeignClient {
 
     @GetMapping("/api/order/internal/{id}")
