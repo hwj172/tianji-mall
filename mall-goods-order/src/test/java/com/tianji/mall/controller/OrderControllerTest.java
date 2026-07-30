@@ -201,7 +201,8 @@ class OrderControllerTest {
         Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
         when(orderService.getById(1L)).thenReturn(order);
 
-        mockMvc.perform(get("/api/order/internal/1"))
+        mockMvc.perform(get("/api/order/internal/1")
+                        .header("X-Internal-Token", "test-internal-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.orderNo").value("202407160001"));
     }
@@ -211,7 +212,8 @@ class OrderControllerTest {
         Order order = buildOrder(1L, "202407160001", BigDecimal.valueOf(6999));
         when(orderService.getOrderList(1L)).thenReturn(List.of(order));
 
-        mockMvc.perform(get("/api/order/internal/list/1"))
+        mockMvc.perform(get("/api/order/internal/list/1")
+                        .header("X-Internal-Token", "test-internal-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].orderNo").value("202407160001"));
     }
@@ -220,7 +222,9 @@ class OrderControllerTest {
     void shouldPayOrderInternal() throws Exception {
         doNothing().when(orderService).payOrder(1L, 1L);
 
-        mockMvc.perform(put("/api/order/internal/1/pay").param("userId", "1"))
+        mockMvc.perform(put("/api/order/internal/1/pay")
+                        .header("X-Internal-Token", "test-internal-token")
+                        .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }
@@ -231,6 +235,7 @@ class OrderControllerTest {
         when(orderService.createOrder(eq(1L), any(OrderCreateRequest.class))).thenReturn(order);
 
         mockMvc.perform(post("/api/order/internal/create/1")
+                        .header("X-Internal-Token", "test-internal-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"addressId\":10,\"cartItemIds\":[1,2]}"))
                 .andExpect(status().isOk())
@@ -242,7 +247,9 @@ class OrderControllerTest {
     void shouldPayOrderInternalByPost() throws Exception {
         doNothing().when(orderService).payOrder(1L, 1L);
 
-        mockMvc.perform(post("/api/order/internal/pay/1").param("userId", "1"))
+        mockMvc.perform(post("/api/order/internal/pay/1")
+                        .header("X-Internal-Token", "test-internal-token")
+                        .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

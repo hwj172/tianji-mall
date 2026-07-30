@@ -5,3 +5,7 @@
 
 jwt:
   secret: 你的JWT密钥至少256位（需与其他服务一致）
+
+# 内部服务调用 token（mcp-server/pay-service → mall-goods-order/user-service）
+internal:
+  token: 你的内部服务token（需与其他服务一致）

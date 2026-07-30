@@ -599,4 +599,48 @@ class AuthGlobalFilterTest {
             verify(response).setStatusCode(HttpStatus.FORBIDDEN);
         }
     }
+
+    @Nested
+    @DisplayName("/api/pay/internal — 内部 token 鉴权")
+    class PayInternalPaths {
+
+        @Test
+        @DisplayName("/api/pay/internal/refund 携带正确 token 放行")
+        void shouldPassPayInternalWithValidToken() {
+            HttpHeaders headers = new HttpHeaders();
+            headers.add("X-Internal-Token", INTERNAL_TOKEN);
+            ServerWebExchange exchange = createExchange("/api/pay/internal/refund", headers);
+
+            filter.filter(exchange, chain);
+
+            verify(chain).filter(exchange);
+            verify(response, never()).setStatusCode(any());
+        }
+
+        @Test
+        @DisplayName("/api/pay/internal/refund 无 token 返回 401")
+        void shouldRejectPayInternalWithoutToken() {
+            ServerWebExchange exchange = createExchange("/api/pay/internal/refund");
+
+            filter.filter(exchange, chain);
+
+            verify(response).setStatusCode(HttpStatus.UNAUTHORIZED);
+            verify(chain, never()).filter(any());
+        }
+    }
+
+    @Test
+    @DisplayName("internal.token 未配置时应拒绝所有内部请求（fail-closed）")
+    void shouldRejectInternalRequestsWhenTokenNotConfigured() {
+        ReflectionTestUtils.setField(filter, "internalToken", "");
+
+        ServerWebExchange exchange = createExchange("/api/order/internal");
+        filter.filter(exchange, chain);
+
+        verify(response).setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+        verify(chain, never()).filter(any());
+
+        // 恢复
+        ReflectionTestUtils.setField(filter, "internalToken", INTERNAL_TOKEN);
+    }
 }

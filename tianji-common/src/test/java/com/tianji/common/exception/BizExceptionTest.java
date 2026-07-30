@@ -30,4 +30,20 @@ class BizExceptionTest {
         assertThat(ex.getCode()).isEqualTo(1001);
         assertThat(ex.getMessage()).isEqualTo("库存不足");
     }
+
+    @Test
+    void shouldCreateFromErrorCode() {
+        BizException ex = new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
+
+        assertThat(ex.getCode()).isEqualTo(20001);
+        assertThat(ex.getMessage()).isEqualTo("商品不存在或已下架");
+    }
+
+    @Test
+    void shouldCreateFromErrorCodeWithDetail() {
+        BizException ex = new BizException(BizErrorCode.ORDER_NOT_FOUND, "orderId=999");
+
+        assertThat(ex.getCode()).isEqualTo(30001);
+        assertThat(ex.getMessage()).isEqualTo("订单不存在：orderId=999");
+    }
 }

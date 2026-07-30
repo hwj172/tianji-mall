@@ -51,7 +51,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/order/internal",
             "/api/cart/internal",
             "/api/product/internal",
-            "/api/user/internal"
+            "/api/user/internal",
+            "/api/pay/internal"
     );
 
     @Value("${jwt.secret}")
@@ -67,6 +68,12 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         // 内部服务路径：检查 X-Internal-Token（必须先于公开路径检查——
         // /api/product/internal 是公开前缀 /api/product 的子路径，更具体的规则先匹配）
         if (isInternalPath(path)) {
+            // 未配置 internal.token 时拒绝所有内部请求（fail-closed）
+            if (internalToken == null || internalToken.isEmpty()) {
+                log.error("internal.token 未配置，拒绝内部请求: {}", path);
+                exchange.getResponse().setStatusCode(HttpStatus.INTERNAL_SERVER_ERROR);
+                return exchange.getResponse().setComplete();
+            }
             String token = exchange.getRequest().getHeaders().getFirst("X-Internal-Token");
             if (internalToken.equals(token)) {
                 return chain.filter(exchange);

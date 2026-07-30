@@ -162,7 +162,9 @@ class CartControllerTest {
         CartItem item = buildCartItem(1L, 100L, 2);
         when(cartService.getCartList(1L)).thenReturn(List.of(item));
 
-        mockMvc.perform(get("/api/cart/internal/list").param("userId", "1"))
+        mockMvc.perform(get("/api/cart/internal/list")
+                        .header("X-Internal-Token", "test-internal-token")
+                        .param("userId", "1"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].productId").value(100));
     }
@@ -172,6 +174,7 @@ class CartControllerTest {
         doNothing().when(cartService).addItem(eq(1L), any(CartAddRequest.class));
 
         mockMvc.perform(post("/api/cart/internal/add")
+                        .header("X-Internal-Token", "test-internal-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"userId\":1,\"productId\":100,\"quantity\":2}"))
                 .andExpect(status().isOk())

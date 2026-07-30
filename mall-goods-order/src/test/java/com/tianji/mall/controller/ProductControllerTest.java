@@ -140,7 +140,8 @@ class ProductControllerTest {
         when(productService.syncAllVectors())
                 .thenReturn(Map.of("total", 12, "success", 12, "failed", 0));
 
-        mockMvc.perform(post("/api/product/internal/sync-vectors"))
+        mockMvc.perform(post("/api/product/internal/sync-vectors")
+                .header("X-Internal-Token", "test-internal-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.total").value(12))

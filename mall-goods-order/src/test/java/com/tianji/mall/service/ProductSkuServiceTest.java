@@ -13,6 +13,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -129,6 +130,84 @@ class ProductSkuServiceTest {
         skuService.restoreStock(1L, 1L, 2);
 
         verify(productSkuMapper).restoreStock(1L, 2);
+    }
+
+    // ==================== 边界分支 ====================
+
+    @Test
+    void shouldThrowWhenUpdateSkuProductIdMismatch() {
+        ProductSku sku = buildSku(1L, 2L, "颜色:红", BigDecimal.valueOf(199), 10);
+        when(productSkuMapper.selectById(1L)).thenReturn(sku);
+
+        assertThatThrownBy(() -> skuService.update(1L, 1L, "x", null, null, 0))
+                .isInstanceOf(BizException.class)
+                .hasMessage("SKU不存在");
+    }
+
+    @Test
+    void shouldThrowWhenDeleteNonExistentSku() {
+        when(productSkuMapper.selectById(999L)).thenReturn(null);
+
+        assertThatThrownBy(() -> skuService.delete(1L, 999L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("SKU不存在");
+    }
+
+    @Test
+    void shouldWarnWhenRestoreStockFails() {
+        when(productSkuMapper.restoreStock(1L, 2)).thenReturn(0);
+
+        // 不应抛异常，仅 warn
+        skuService.restoreStock(1L, 1L, 2);
+    }
+
+    // ==================== buildSpecSelectorData ====================
+
+    @Test
+    void shouldReturnNullForEmptySkus() {
+        assertThat(skuService.buildSpecSelectorData(null)).isNull();
+        assertThat(skuService.buildSpecSelectorData(List.of())).isNull();
+    }
+
+    @Test
+    void shouldBuildSpecSelectorDataForSingleSpec() {
+        ProductSku sku1 = buildSku(1L, 1L, "颜色:红", BigDecimal.valueOf(199), 10);
+        ProductSku sku2 = buildSku(2L, 1L, "颜色:蓝", BigDecimal.valueOf(199), 5);
+
+        Map<String, Object> result = skuService.buildSpecSelectorData(List.of(sku1, sku2));
+
+        assertThat(result).isNotNull();
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> specTree = (List<Map<String, Object>>) result.get("specTree");
+        assertThat(specTree).hasSize(1);
+        assertThat(specTree.get(0).get("name")).isEqualTo("颜色");
+    }
+
+    @Test
+    void shouldBuildSpecSelectorDataForMultiSpec() {
+        ProductSku sku1 = buildSku(1L, 1L, "颜色:红;尺寸:XL", BigDecimal.valueOf(199), 10);
+        ProductSku sku2 = buildSku(2L, 1L, "颜色:蓝;尺寸:L", BigDecimal.valueOf(199), 5);
+
+        Map<String, Object> result = skuService.buildSpecSelectorData(List.of(sku1, sku2));
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> specTree = (List<Map<String, Object>>) result.get("specTree");
+        assertThat(specTree).hasSize(2);
+        @SuppressWarnings("unchecked")
+        Map<String, Map<String, Object>> skuMatrix = (Map<String, Map<String, Object>>) result.get("skuMatrix");
+        assertThat(skuMatrix).hasSize(2);
+    }
+
+    @Test
+    void shouldHandleSkuWithNullSpecs() {
+        ProductSku sku1 = buildSku(1L, 1L, null, BigDecimal.valueOf(199), 10);
+        ProductSku sku2 = buildSku(2L, 1L, "颜色:红", BigDecimal.valueOf(199), 5);
+
+        Map<String, Object> result = skuService.buildSpecSelectorData(List.of(sku1, sku2));
+
+        @SuppressWarnings("unchecked")
+        List<Map<String, Object>> specTree = (List<Map<String, Object>>) result.get("specTree");
+        assertThat(specTree).hasSize(1); // 只有颜色
     }
 
     // ==================== helpers ====================

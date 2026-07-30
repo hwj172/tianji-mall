@@ -199,6 +199,7 @@ class UserControllerTest {
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/user/internal/list")
+                        .header("X-Internal-Token", "test-internal-token")
                         .param("page", "1")
                         .param("size", "20"))
                 .andExpect(status().isOk())
@@ -209,6 +210,7 @@ class UserControllerTest {
     @Test
     void shouldUpdateUserStatusInternal() throws Exception {
         mockMvc.perform(put("/api/user/internal/1/status")
+                        .header("X-Internal-Token", "test-internal-token")
                         .param("status", "0"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));

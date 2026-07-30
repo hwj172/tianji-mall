@@ -15,6 +15,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.util.List;
+
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -70,6 +72,9 @@ class SellerControllerTest {
 
     @MockBean
     private BrowsingHistoryService browsingHistoryService;
+
+    @MockBean
+    private GroupBuyService groupBuyService;
 
     private Shop buildShop() {
         Shop shop = new Shop();
@@ -144,5 +149,109 @@ class SellerControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.productCount").value(5));
+    }
+
+    // ==================== 商品更新/删除 ====================
+
+    @Test
+    void shouldUpdateProduct() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        Product existing = new Product();
+        existing.setId(10L);
+        existing.setShopId(1L);
+        existing.setName("旧商品");
+        when(productService.getById(10L)).thenReturn(existing);
+        when(productService.updateById(any(Product.class))).thenReturn(true);
+
+        mockMvc.perform(put("/api/seller/product/10")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"新商品名\",\"price\":199,\"stock\":50}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldFailUpdateProductNotOwned() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        Product existing = new Product();
+        existing.setId(10L);
+        existing.setShopId(999L); // 不属于本店
+        when(productService.getById(10L)).thenReturn(existing);
+
+        mockMvc.perform(put("/api/seller/product/10")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"新商品名\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(20001));
+    }
+
+    @Test
+    void shouldDeleteProduct() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        Product existing = new Product();
+        existing.setId(10L);
+        existing.setShopId(1L);
+        when(productService.getById(10L)).thenReturn(existing);
+        when(productService.updateById(any(Product.class))).thenReturn(true);
+
+        mockMvc.perform(delete("/api/seller/product/10")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    // ==================== 订单管理 ====================
+
+    @Test
+    void shouldGetOrders() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        Page<com.tianji.mall.entity.Order> orderPage = new Page<>(1, 20);
+        when(orderService.getOrdersByShop(1L, 1, 20)).thenReturn(orderPage);
+
+        mockMvc.perform(get("/api/seller/orders")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldShipOrder() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        com.tianji.mall.entity.Order order = new com.tianji.mall.entity.Order();
+        order.setId(100L);
+        Page<com.tianji.mall.entity.Order> orderPage = new Page<>(1, 1000);
+        orderPage.setRecords(List.of(order));
+        when(orderService.getOrdersByShop(1L, 1, 1000)).thenReturn(orderPage);
+
+        mockMvc.perform(put("/api/seller/order/100/ship")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldFailShipOrderNotOwned() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        // 空订单列表 — 不含 id=100
+        Page<com.tianji.mall.entity.Order> orderPage = new Page<>(1, 1000);
+        orderPage.setRecords(List.of());
+        when(orderService.getOrdersByShop(1L, 1, 1000)).thenReturn(orderPage);
+
+        mockMvc.perform(put("/api/seller/order/999/ship")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(50002));
     }
 }

@@ -2,8 +2,18 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.mall.dto.RecommendResponse;
-import com.tianji.mall.entity.*;
-import com.tianji.mall.mapper.*;
+import com.tianji.mall.entity.Favorite;
+import com.tianji.mall.entity.Order;
+import com.tianji.mall.entity.OrderItem;
+import com.tianji.mall.entity.Product;
+import com.tianji.mall.entity.ProductSimilarity;
+import com.tianji.mall.entity.Review;
+import com.tianji.mall.mapper.FavoriteMapper;
+import com.tianji.mall.mapper.OrderItemMapper;
+import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
+import com.tianji.mall.mapper.ProductSimilarityMapper;
+import com.tianji.mall.mapper.ReviewMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
@@ -14,7 +24,13 @@ import org.springframework.stereotype.Service;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Slf4j
