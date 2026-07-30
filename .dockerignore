@@ -1,0 +1,22 @@
+# Maven target — 只保留打包好的 jar，排除 sources/javadoc/original
+**/target/original-*.jar
+**/target/*-sources.jar
+**/target/*-javadoc.jar
+**/target/classes/
+**/target/generated-sources/
+**/target/test-classes/
+**/target/maven-status/
+**/target/maven-archiver/
+
+# 源码和测试（Docker 不需要）
+**/src/
+
+# Git
+.git/
+
+# IDE
+**/*.iml
+.idea/
+
+# 日志
+**/logs/
