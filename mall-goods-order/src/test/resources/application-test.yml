@@ -26,6 +26,7 @@ spring:
       - org.springframework.cloud.openfeign.FeignAutoConfiguration
       - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
       - com.alibaba.cloud.nacos.endpoint.NacosConfigEndpointAutoConfiguration
+      - com.alibaba.cloud.nacos.endpoint.NacosDiscoveryEndpointAutoConfiguration
       - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
   cache:
     type: none
@@ -39,3 +40,6 @@ jwt:
 
 search:
   use-fulltext: false
+
+internal:
+  token: test-internal-token
