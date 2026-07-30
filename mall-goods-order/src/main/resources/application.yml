@@ -17,7 +17,16 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
   cloud:
     nacos:
+      discovery:
+        server-addr: 192.168.150.11:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
       config:
+        server-addr: 192.168.150.11:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
         file-extension: yaml
         refresh-enabled: true
         fail-fast: false
@@ -26,6 +35,8 @@ spring:
         flow:
           nacos:
             server-addr: 192.168.150.11:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
             data-id: ${spring.application.name}-flow-rules
             group-id: SENTINEL_GROUP
             data-type: json
@@ -33,6 +44,8 @@ spring:
         degrade:
           nacos:
             server-addr: 192.168.150.11:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
             data-id: ${spring.application.name}-degrade-rules
             group-id: SENTINEL_GROUP
             data-type: json
@@ -54,7 +67,7 @@ spring:
     redis:
       host: 192.168.150.11
       port: 6379
-      password: ${REDIS_PASSWORD:}
+      password: ${REDIS_PASSWORD:redis123}
       lettuce:
         pool:
           max-active: 8

@@ -17,7 +17,16 @@ spring:
     type: com.alibaba.druid.pool.DruidDataSource
   cloud:
     nacos:
+      discovery:
+        server-addr: 192.168.150.11:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
       config:
+        server-addr: 192.168.150.11:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
         file-extension: yaml
         refresh-enabled: true
         fail-fast: false
@@ -26,6 +35,8 @@ spring:
         flow:
           nacos:
             server-addr: 192.168.150.11:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
             data-id: ${spring.application.name}-flow-rules
             group-id: SENTINEL_GROUP
             data-type: json
@@ -33,6 +44,8 @@ spring:
         degrade:
           nacos:
             server-addr: 192.168.150.11:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
             data-id: ${spring.application.name}-degrade-rules
             group-id: SENTINEL_GROUP
             data-type: json
@@ -43,8 +56,6 @@ spring:
       max-request-size: 20MB
 
 mybatis-plus:
-  configuration:
-    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
   global-config:
     db-config:
       id-type: auto
@@ -61,6 +72,10 @@ springdoc:
   api-docs:
     path: /v3/api-docs
 knife4j:
-  enable: true
+  enable: ${KNIFE4J_ENABLED:true}
   setting:
     language: zh_cn
+
+# 内部服务调用 token（需与 gateway 一致，用于验证 X-Internal-Token 请求头）
+internal:
+  token: ${INTERNAL_TOKEN:}

@@ -12,7 +12,16 @@ spring:
       - nacos:${spring.application.name}.yaml
   cloud:
     nacos:
+      discovery:
+        server-addr: 192.168.150.11:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
       config:
+        server-addr: 192.168.150.11:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
         file-extension: yaml
         refresh-enabled: true
         fail-fast: false
@@ -21,6 +30,8 @@ spring:
         flow:
           nacos:
             server-addr: 192.168.150.11:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
             data-id: ${spring.application.name}-flow-rules
             group-id: SENTINEL_GROUP
             data-type: json
@@ -28,6 +39,8 @@ spring:
         degrade:
           nacos:
             server-addr: 192.168.150.11:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
             data-id: ${spring.application.name}-degrade-rules
             group-id: SENTINEL_GROUP
             data-type: json
