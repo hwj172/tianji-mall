@@ -89,7 +89,11 @@ rocketmq:
   name-server: 192.168.150.11:9876
   producer:
     group: mall-goods-order-producer
+    access-key: ${ROCKETMQ_ACCESS_KEY:tianji-mall}
+    secret-key: ${ROCKETMQ_SECRET_KEY:tianji-mall-secret}
   consumer:
+    access-key: ${ROCKETMQ_ACCESS_KEY:tianji-mall}
+    secret-key: ${ROCKETMQ_SECRET_KEY:tianji-mall-secret}
     max-reconsume-times: 3
     delay-level-when-next-consume: 3
 

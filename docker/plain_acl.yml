@@ -1,0 +1,16 @@
+# RocketMQ ACL 配置 — 开发环境
+# RocketMQ 5.1.4 plain_acl.yml
+#
+# 启用方式：在 broker.conf 中设置 aclEnable=true
+# 或在 broker 启动命令中添加 -Drocketmq.acl.enable=true
+
+# 全局白名单 IP（不经过 ACL 校验）
+globalWhiteRemoteAddresses: []
+
+accounts:
+  # 管理员账户 — 拥有全部权限
+  - accessKey: tianji-mall
+    secretKey: tianji-mall-secret
+    admin: true
+    defaultTopicPerm: PUB|SUB
+    defaultGroupPerm: PUB|SUB
