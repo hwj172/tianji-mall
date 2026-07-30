@@ -29,6 +29,12 @@ services:
     volumes:
       - nacos-data:/home/nacos/data
       - ./nacos-db.properties:/home/nacos/conf/application.properties
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8848/nacos/v1/console/health/readiness"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   # ==================== MySQL 业务数据库 ====================
   mysql:
@@ -48,6 +54,12 @@ services:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+08:00
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
   # ==================== Redis 缓存 ====================
   redis:
@@ -58,6 +70,11 @@ services:
     volumes:
       - redis-data:/data
     command: redis-server --requirepass redis123
+    healthcheck:
+      test: ["CMD", "redis-cli", "-a", "redis123", "ping"]
+      interval: 20s
+      timeout: 5s
+      retries: 5
 
   # ==================== RocketMQ 消息队列 ====================
   rocketmq-namesrv:
@@ -68,6 +85,12 @@ services:
     command: sh mqnamesrv
     volumes:
       - rocketmq-namesrv-data:/home/rocketmq/store
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ss -tlnp | grep 9876"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 30s
 
   rocketmq-broker:
     image: apache/rocketmq:5.1.4
@@ -84,6 +107,12 @@ services:
     volumes:
       - rocketmq-broker-data:/home/rocketmq/store
       - ./plain_acl.yml:/home/rocketmq/conf/plain_acl.yml
+    healthcheck:
+      test: ["CMD", "sh", "-c", "ss -tlnp | grep 10911"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
 
   # ==================== Milvus 向量数据库 ====================
   etcd:
@@ -130,6 +159,12 @@ services:
     volumes:
       - milvus-data:/var/lib/milvus
     command: milvus run standalone
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9091/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 120s
 
   # ==================== SkyWalking 链路监控 ====================
   skywalking-oap:
@@ -159,6 +194,12 @@ services:
       - "8858:8858"
     environment:
       - JAVA_OPTS=-Dsentinel.dashboard.auth.username=sentinel -Dsentinel.dashboard.auth.password=sentinel
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8858"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
 
 volumes:
   nacos-data:
@@ -169,89 +210,155 @@ volumes:
   etcd-data:
   minio-data:
   milvus-data:
+  uploads-data:
 
   # ==================== 应用微服务（需先 mvn package -DskipTests） ====================
-  # 启动前确保各服务 application-docker.yml 已配置（Docker 网络内地址：nacos/mysql/redis 等容器名）
 
-  # gateway:
-  #   build:
-  #     context: ../gateway
-  #   container_name: gateway
-  #   depends_on:
-  #     - nacos
-  #   ports:
-  #     - "8080:8080"
-  #   environment:
-  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+  gateway:
+    build:
+      context: ..
+      dockerfile: gateway/Dockerfile
+    container_name: gateway
+    depends_on:
+      nacos:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SW_SERVICE_NAME=gateway
+      - JWT_SECRET=${JWT_SECRET}
+      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    restart: unless-stopped
 
-  # user-service:
-  #   build:
-  #     context: ../user-service
-  #   container_name: user-service
-  #   depends_on:
-  #     - nacos
-  #     - mysql
-  #   ports:
-  #     - "8081:8081"
-  #   environment:
-  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+  user-service:
+    build:
+      context: ..
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SW_SERVICE_NAME=user-service
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    restart: unless-stopped
 
-  # mall-goods-order:
-  #   build:
-  #     context: ../mall-goods-order
-  #   container_name: mall-goods-order
-  #   depends_on:
-  #     - nacos
-  #     - mysql
-  #     - redis
-  #     - rocketmq-namesrv
-  #     - rocketmq-broker
-  #   ports:
-  #     - "8082:8082"
-  #   environment:
-  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-  #     SPRING_DATA_REDIS_HOST: redis
-  #     ROCKETMQ_NAME-SERVER: rocketmq-namesrv:9876
+  mall-goods-order:
+    build:
+      context: ..
+      dockerfile: mall-goods-order/Dockerfile
+    container_name: mall-goods-order
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      rocketmq-namesrv:
+        condition: service_healthy
+      rocketmq-broker:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SW_SERVICE_NAME=mall-goods-order
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
+      - REDIS_PASSWORD=${REDIS_PASSWORD:redis123}
+      - ROCKETMQ_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY:tianji-mall}
+      - ROCKETMQ_SECRET_KEY=${ROCKETMQ_SECRET_KEY:tianji-mall-secret}
+      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    restart: unless-stopped
+    volumes:
+      - uploads-data:/app/uploads
 
-  # pay-service:
-  #   build:
-  #     context: ../pay-service
-  #   container_name: pay-service
-  #   depends_on:
-  #     - nacos
-  #     - mysql
-  #   ports:
-  #     - "8083:8083"
-  #   environment:
-  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+  pay-service:
+    build:
+      context: ..
+      dockerfile: pay-service/Dockerfile
+    container_name: pay-service
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SW_SERVICE_NAME=pay-service
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    restart: unless-stopped
 
-  # mcp-server:
-  #   build:
-  #     context: ../mcp-server
-  #   container_name: mcp-server
-  #   depends_on:
-  #     - nacos
-  #     - mysql
-  #   ports:
-  #     - "8084:8084"
-  #   environment:
-  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+  mcp-server:
+    build:
+      context: ..
+      dockerfile: mcp-server/Dockerfile
+    container_name: mcp-server
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SW_SERVICE_NAME=mcp-server
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+    restart: unless-stopped
 
-  # ai-chat-service:
-  #   build:
-  #     context: ../ai-chat-service
-  #   container_name: ai-chat-service
-  #   depends_on:
-  #     - nacos
-  #     - mysql
-  #     - milvus
-  #   ports:
-  #     - "8085:8085"
-  #   environment:
-  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
-  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
-  #     MILVUS_HOST: milvus
+  ai-chat-service:
+    build:
+      context: ..
+      dockerfile: ai-chat-service/Dockerfile
+    container_name: ai-chat-service
+    depends_on:
+      nacos:
+        condition: service_healthy
+      mysql:
+        condition: service_healthy
+      milvus:
+        condition: service_healthy
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SW_SERVICE_NAME=ai-chat-service
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
+    restart: unless-stopped
+
+  # ==================== Nginx 反向代理 ====================
+  nginx:
+    image: nginx:alpine
+    container_name: nginx
+    depends_on:
+      gateway:
+        condition: service_healthy
+    ports:
+      - "8080:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:80/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
