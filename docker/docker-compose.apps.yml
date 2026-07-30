@@ -1,0 +1,122 @@
+services:
+  gateway:
+    build:
+      context: ..
+      dockerfile: gateway/Dockerfile
+    container_name: gateway
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+      - INTERNAL_TOKEN=internal-secret
+    networks:
+      - app-net
+    ports:
+      - '8080:8080'
+    restart: unless-stopped
+
+  user-service:
+    build:
+      context: ..
+      dockerfile: user-service/Dockerfile
+    container_name: user-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+      - INTERNAL_TOKEN=internal-secret
+    networks:
+      - app-net
+    restart: unless-stopped
+
+  mall-goods-order:
+    build:
+      context: ..
+      dockerfile: mall-goods-order/Dockerfile
+    container_name: mall-goods-order
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - SPRING_DATA_REDIS_PASSWORD=redis123
+      - JAVA_OPTS=-Xms128m -Xmx256m -Dspring.data.redis.password=redis123
+      - ROCKETMQ_ACCESS_KEY=tianji-mall
+      - ROCKETMQ_SECRET_KEY=tianji-mall-secret
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+      - INTERNAL_TOKEN=internal-secret
+    networks:
+      - app-net
+    restart: unless-stopped
+    volumes:
+      - uploads-data:/app/uploads
+
+  pay-service:
+    build:
+      context: ..
+      dockerfile: pay-service/Dockerfile
+    container_name: pay-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+      - INTERNAL_TOKEN=internal-secret
+      - ALIPAY_APP_ID=your-app-id
+      - ALIPAY_PRIVATE_KEY=your-private-key
+      - ALIPAY_ALIPAY_PUBLIC_KEY=your-alipay-public-key
+      - ALIPAY_GATEWAY_URL=https://openapi-sandbox.dl.alipaydev.com/gateway.do
+      - ALIPAY_NOTIFY_URL=http://192.168.150.11:8080/api/pay/notify
+    networks:
+      - app-net
+    restart: unless-stopped
+
+  mcp-server:
+    build:
+      context: ..
+      dockerfile: mcp-server/Dockerfile
+    container_name: mcp-server
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+      - INTERNAL_TOKEN=internal-secret
+    networks:
+      - app-net
+    restart: unless-stopped
+
+  ai-chat-service:
+    build:
+      context: ..
+      dockerfile: ai-chat-service/Dockerfile
+    container_name: ai-chat-service
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
+      - MYSQL_USER=root
+      - MYSQL_PASSWORD=root
+      - NACOS_USERNAME=nacos
+      - NACOS_PASSWORD=nacos
+      - DEEPSEEK_API_KEY=your-deepseek-api-key
+      - SILICONFLOW_API_KEY=your-siliconflow-api-key
+    networks:
+      - app-net
+    restart: unless-stopped
+
+networks:
+  app-net:
+    external: true
+    name: root_default
+
+volumes:
+  uploads-data:

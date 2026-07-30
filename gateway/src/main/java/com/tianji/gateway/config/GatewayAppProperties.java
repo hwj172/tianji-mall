@@ -6,11 +6,12 @@ import org.springframework.cloud.context.config.annotation.RefreshScope;
 import org.springframework.stereotype.Component;
 
 /**
- * Gateway 业务配置属性（Nacos Config 动态刷新）。
+ * Gateway 业务扩展配置属性（Nacos Config 动态刷新）。
+ * 注意：类名避免与 Spring Cloud Gateway 内置的 GatewayProperties 冲突。
  */
 @Data
 @Component
 @RefreshScope
-@ConfigurationProperties(prefix = "gateway")
-public class GatewayProperties {
+@ConfigurationProperties(prefix = "gateway.app")
+public class GatewayAppProperties {
 }
