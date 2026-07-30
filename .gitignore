@@ -35,3 +35,8 @@ natapp/
 
 # SkyWalking
 skywalking/agent/
+
+# Build artifacts
+*.tar.gz
+*.bundle
+*.zip
