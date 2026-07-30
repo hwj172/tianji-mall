@@ -19,6 +19,10 @@ services:
       - MYSQL_SERVICE_USER=root
       - MYSQL_SERVICE_PASSWORD=root
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
+      - NACOS_AUTH_ENABLE=true
+      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+      - NACOS_AUTH_IDENTITY_KEY=serverIdentity
+      - NACOS_AUTH_IDENTITY_VALUE=security
     ports:
       - "8848:8848"
       - "9848:9848"
@@ -53,6 +57,7 @@ services:
       - "6379:6379"
     volumes:
       - redis-data:/data
+    command: redis-server --requirepass redis123
 
   # ==================== RocketMQ 消息队列 ====================
   rocketmq-namesrv:
@@ -150,6 +155,8 @@ services:
     container_name: sentinel
     ports:
       - "8858:8858"
+    environment:
+      - JAVA_OPTS=-Dsentinel.dashboard.auth.username=sentinel -Dsentinel.dashboard.auth.password=sentinel
 
 volumes:
   nacos-data:
@@ -160,3 +167,89 @@ volumes:
   etcd-data:
   minio-data:
   milvus-data:
+
+  # ==================== 应用微服务（需先 mvn package -DskipTests） ====================
+  # 启动前确保各服务 application-docker.yml 已配置（Docker 网络内地址：nacos/mysql/redis 等容器名）
+
+  # gateway:
+  #   build:
+  #     context: ../gateway
+  #   container_name: gateway
+  #   depends_on:
+  #     - nacos
+  #   ports:
+  #     - "8080:8080"
+  #   environment:
+  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+
+  # user-service:
+  #   build:
+  #     context: ../user-service
+  #   container_name: user-service
+  #   depends_on:
+  #     - nacos
+  #     - mysql
+  #   ports:
+  #     - "8081:8081"
+  #   environment:
+  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+  # mall-goods-order:
+  #   build:
+  #     context: ../mall-goods-order
+  #   container_name: mall-goods-order
+  #   depends_on:
+  #     - nacos
+  #     - mysql
+  #     - redis
+  #     - rocketmq-namesrv
+  #     - rocketmq-broker
+  #   ports:
+  #     - "8082:8082"
+  #   environment:
+  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+  #     SPRING_DATA_REDIS_HOST: redis
+  #     ROCKETMQ_NAME-SERVER: rocketmq-namesrv:9876
+
+  # pay-service:
+  #   build:
+  #     context: ../pay-service
+  #   container_name: pay-service
+  #   depends_on:
+  #     - nacos
+  #     - mysql
+  #   ports:
+  #     - "8083:8083"
+  #   environment:
+  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+  # mcp-server:
+  #   build:
+  #     context: ../mcp-server
+  #   container_name: mcp-server
+  #   depends_on:
+  #     - nacos
+  #     - mysql
+  #   ports:
+  #     - "8084:8084"
+  #   environment:
+  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+
+  # ai-chat-service:
+  #   build:
+  #     context: ../ai-chat-service
+  #   container_name: ai-chat-service
+  #   depends_on:
+  #     - nacos
+  #     - mysql
+  #     - milvus
+  #   ports:
+  #     - "8085:8085"
+  #   environment:
+  #     SPRING_CLOUD_NACOS_DISCOVERY_SERVER-ADDR: nacos:8848
+  #     SPRING_DATASOURCE_URL: jdbc:mysql://mysql:3306/tianji_mall?useSSL=false&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true
+  #     MILVUS_HOST: milvus
