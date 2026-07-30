@@ -201,16 +201,6 @@ services:
       retries: 5
       start_period: 40s
 
-volumes:
-  nacos-data:
-  mysql-data:
-  redis-data:
-  rocketmq-namesrv-data:
-  rocketmq-broker-data:
-  etcd-data:
-  minio-data:
-  milvus-data:
-  uploads-data:
 
   # ==================== 应用微服务（需先 mvn package -DskipTests） ====================
 
@@ -225,10 +215,10 @@ volumes:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - SW_SERVICE_NAME=gateway
-      - JWT_SECRET=${JWT_SECRET}
-      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
-      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - JWT_SECRET=$${JWT_SECRET}
+      - NACOS_USERNAME=$${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=$${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=$${INTERNAL_TOKEN}
     restart: unless-stopped
 
   user-service:
@@ -245,10 +235,10 @@ volumes:
       - SPRING_PROFILES_ACTIVE=docker
       - SW_SERVICE_NAME=user-service
       - MYSQL_USER=root
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
-      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
-      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - MYSQL_PASSWORD=$${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=$${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=$${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=$${INTERNAL_TOKEN}
     restart: unless-stopped
 
   mall-goods-order:
@@ -271,13 +261,13 @@ volumes:
       - SPRING_PROFILES_ACTIVE=docker
       - SW_SERVICE_NAME=mall-goods-order
       - MYSQL_USER=root
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
-      - REDIS_PASSWORD=${REDIS_PASSWORD:redis123}
-      - ROCKETMQ_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY:tianji-mall}
-      - ROCKETMQ_SECRET_KEY=${ROCKETMQ_SECRET_KEY:tianji-mall-secret}
-      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
-      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - MYSQL_PASSWORD=$${MYSQL_PASSWORD:root}
+      - REDIS_PASSWORD=$${REDIS_PASSWORD:redis123}
+      - ROCKETMQ_ACCESS_KEY=$${ROCKETMQ_ACCESS_KEY:tianji-mall}
+      - ROCKETMQ_SECRET_KEY=$${ROCKETMQ_SECRET_KEY:tianji-mall-secret}
+      - NACOS_USERNAME=$${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=$${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=$${INTERNAL_TOKEN}
     restart: unless-stopped
     volumes:
       - uploads-data:/app/uploads
@@ -296,10 +286,10 @@ volumes:
       - SPRING_PROFILES_ACTIVE=docker
       - SW_SERVICE_NAME=pay-service
       - MYSQL_USER=root
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
-      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
-      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - MYSQL_PASSWORD=$${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=$${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=$${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=$${INTERNAL_TOKEN}
     restart: unless-stopped
 
   mcp-server:
@@ -316,10 +306,10 @@ volumes:
       - SPRING_PROFILES_ACTIVE=docker
       - SW_SERVICE_NAME=mcp-server
       - MYSQL_USER=root
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
-      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
-      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - MYSQL_PASSWORD=$${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=$${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=$${NACOS_PASSWORD:nacos}
+      - INTERNAL_TOKEN=$${INTERNAL_TOKEN}
     restart: unless-stopped
 
   ai-chat-service:
@@ -338,11 +328,11 @@ volumes:
       - SPRING_PROFILES_ACTIVE=docker
       - SW_SERVICE_NAME=ai-chat-service
       - MYSQL_USER=root
-      - MYSQL_PASSWORD=${MYSQL_PASSWORD:root}
-      - NACOS_USERNAME=${NACOS_USERNAME:nacos}
-      - NACOS_PASSWORD=${NACOS_PASSWORD:nacos}
-      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
-      - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
+      - MYSQL_PASSWORD=$${MYSQL_PASSWORD:root}
+      - NACOS_USERNAME=$${NACOS_USERNAME:nacos}
+      - NACOS_PASSWORD=$${NACOS_PASSWORD:nacos}
+      - DEEPSEEK_API_KEY=$${DEEPSEEK_API_KEY}
+      - SILICONFLOW_API_KEY=$${SILICONFLOW_API_KEY}
     restart: unless-stopped
 
   # ==================== Nginx 反向代理 ====================
@@ -362,3 +352,14 @@ volumes:
       interval: 30s
       timeout: 5s
       retries: 3
+
+volumes:
+  nacos-data:
+  mysql-data:
+  redis-data:
+  rocketmq-namesrv-data:
+  rocketmq-broker-data:
+  etcd-data:
+  minio-data:
+  milvus-data:
+  uploads-data:
