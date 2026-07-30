@@ -1,0 +1,58 @@
+# Docker 环境配置 — Nacos/Sentinel 地址改为容器名
+# 激活方式: SPRING_PROFILES_ACTIVE=docker
+
+spring:
+  cloud:
+    nacos:
+      discovery:
+        server-addr: nacos:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
+      config:
+        server-addr: nacos:8848
+        username: ${NACOS_USERNAME:nacos}
+        password: ${NACOS_PASSWORD:nacos}
+        namespace: ${NACOS_NAMESPACE:}
+        file-extension: yaml
+        refresh-enabled: true
+        fail-fast: false
+    sentinel:
+      transport:
+        dashboard: sentinel:8858
+      datasource:
+        flow:
+          nacos:
+            server-addr: nacos:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
+            data-id: ${spring.application.name}-flow-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: flow
+        degrade:
+          nacos:
+            server-addr: nacos:8848
+            username: ${NACOS_USERNAME:nacos}
+            password: ${NACOS_PASSWORD:nacos}
+            data-id: ${spring.application.name}-degrade-rules
+            group-id: SENTINEL_GROUP
+            data-type: json
+            rule-type: degrade
+
+# JWT 密钥（docker-compose 环境变量注入）
+jwt:
+  secret: ${JWT_SECRET:}
+
+internal:
+  token: ${INTERNAL_TOKEN:}
+
+# Actuator 健康检查端点
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+  endpoint:
+    health:
+      show-details: always
