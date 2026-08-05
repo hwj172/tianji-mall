@@ -1,5 +1,6 @@
 package com.tianji.mall.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.mall.dto.OrderCreateRequest;
@@ -37,11 +38,11 @@ public class OrderController {
     }
 
     @GetMapping("/list")
-    public R<List<Order>> list(@RequestHeader("Authorization") String authHeader,
+    public R<Page<Order>> list(@RequestHeader("Authorization") String authHeader,
                                 @RequestParam(value = "page", defaultValue = "1") int page,
                                 @RequestParam(value = "size", defaultValue = "20") int size) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(orderService.getOrderPage(userId, page, size).getRecords());
+        return R.ok(orderService.getOrderPage(userId, page, size));
     }
 
     @GetMapping("/{id}")

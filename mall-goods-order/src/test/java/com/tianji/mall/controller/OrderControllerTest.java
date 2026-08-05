@@ -133,7 +133,7 @@ class OrderControllerTest {
                         .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
-                .andExpect(jsonPath("$.data[0].orderNo").value("202407160001"));
+                .andExpect(jsonPath("$.data.records[0].orderNo").value("202407160001"));
     }
 
     // ==================== GET /api/order/{id} ====================
