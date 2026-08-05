@@ -1,6 +1,6 @@
 package com.tianji.mall.dto;
 
-import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
 
@@ -12,8 +12,10 @@ public class OrderCreateRequest {
     @NotNull(message = "收货地址ID不能为空")
     private Long addressId;
 
-    @NotEmpty(message = "购物车项不能为空")
-    private List<Long> cartItemIds;
+    private List<Long> cartItemIds;             // 购物车结算项，优先取 cartItemIds；同时传入时 directItems 忽略
+
+    @Valid
+    private List<DirectOrderItem> directItems;  // 立即购买直购项，cartItemIds 为空时生效
 
     private Long couponId;  // 用户优惠券记录ID，可选
 

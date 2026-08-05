@@ -2,6 +2,7 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.common.exception.BizException;
+import com.tianji.mall.dto.DirectOrderItem;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.entity.*;
 import com.tianji.mall.feign.PayFeignClient;
@@ -245,6 +246,113 @@ class OrderServiceIntegrationTest {
 
         ProductSku restoredSku = skuMapper.selectById(sku.getId());
         assertThat(restoredSku.getStock()).isEqualTo(10);
+    }
+
+    // ==================== createOrder direct（立即购买） ====================
+
+    @Test
+    void shouldCreateOrderWithDirectItem() {
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(addressId);
+        DirectOrderItem d = new DirectOrderItem();
+        d.setProductId(productId);
+        d.setQuantity(2);
+        req.setDirectItems(List.of(d));
+
+        Order order = orderService.createOrder(1L, req);
+
+        assertThat(order).isNotNull();
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.valueOf(13998));
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId()));
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getProductId()).isEqualTo(productId);
+        assertThat(items.get(0).getQuantity()).isEqualTo(2);
+        assertThat(productMapper.selectById(productId).getStock()).isEqualTo(8);
+    }
+
+    @Test
+    void shouldCreateOrderWithDirectSkuItem() {
+        ProductSku sku = new ProductSku();
+        sku.setProductId(productId);
+        sku.setSpecs("颜色:红;容量:256G");
+        sku.setPrice(BigDecimal.valueOf(7999));
+        sku.setStock(5);
+        sku.setStatus(1);
+        skuMapper.insert(sku);
+
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(addressId);
+        DirectOrderItem d = new DirectOrderItem();
+        d.setProductId(productId);
+        d.setSkuId(sku.getId());
+        d.setQuantity(2);
+        req.setDirectItems(List.of(d));
+
+        Order order = orderService.createOrder(1L, req);
+
+        List<OrderItem> items = orderItemMapper.selectList(
+                new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, order.getId()));
+        assertThat(items.get(0).getPrice()).isEqualByComparingTo(BigDecimal.valueOf(7999));
+        assertThat(items.get(0).getSkuSpecs()).isEqualTo("颜色:红;容量:256G");
+        assertThat(skuMapper.selectById(sku.getId()).getStock()).isEqualTo(3);
+    }
+
+    @Test
+    void shouldNotClearCartForDirectItem() {
+        Long cartItemId = insertCartItem(1L, productId, 2);
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(addressId);
+        DirectOrderItem d = new DirectOrderItem();
+        d.setProductId(productId);
+        d.setQuantity(1);
+        req.setDirectItems(List.of(d));
+
+        Order order = orderService.createOrder(1L, req);
+
+        // 直购不触发清购物车，原购物车项仍在
+        CartItem saved = cartItemMapper.selectById(cartItemId);
+        assertThat(saved).isNotNull();
+        assertThat(saved.getQuantity()).isEqualTo(2);
+    }
+
+    @Test
+    void shouldThrowStockInsufficientForDirectItem() {
+        Long lowStockId = insertProduct("库存不足", BigDecimal.valueOf(100), 3);
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(addressId);
+        DirectOrderItem d = new DirectOrderItem();
+        d.setProductId(lowStockId);
+        d.setQuantity(10);
+        req.setDirectItems(List.of(d));
+
+        assertThatThrownBy(() -> orderService.createOrder(1L, req))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("库存不足");
+    }
+
+    @Test
+    void shouldThrowProductNotFoundForDirectItem() {
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(addressId);
+        DirectOrderItem d = new DirectOrderItem();
+        d.setProductId(999999L);
+        d.setQuantity(1);
+        req.setDirectItems(List.of(d));
+
+        assertThatThrownBy(() -> orderService.createOrder(1L, req))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("商品不存在");
+    }
+
+    @Test
+    void shouldThrowCartItemNotFoundWhenBothEmpty() {
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(addressId);
+
+        assertThatThrownBy(() -> orderService.createOrder(1L, req))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("购物车项不存在");
     }
 
     // ==================== helpers ====================

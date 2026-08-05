@@ -1,5 +1,7 @@
 package com.tianji.mall.controller;
 
+import com.tianji.common.exception.BizErrorCode;
+import com.tianji.common.exception.BizException;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.OrderCreateRequest;
 import com.tianji.mall.dto.OrderDetailResponse;
@@ -101,13 +103,17 @@ class OrderControllerTest {
 
     @Test
     void shouldRejectOrderWithoutCartItems() throws Exception {
-        // cartItemIds 为空数组，触发 @NotEmpty
+        // cartItemIds 为空数组不再被 DTO 校验拦截（directItems 模式允许为空），二选一校验下放 Service 层：
+        // 购物车为空且直购项为空 → CART_ITEM_NOT_FOUND
+        when(orderService.createOrder(eq(1L), any(OrderCreateRequest.class)))
+                .thenThrow(new BizException(BizErrorCode.CART_ITEM_NOT_FOUND));
+
         mockMvc.perform(post("/api/order/create")
                         .header("Authorization", "Bearer test-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"addressId\":10,\"cartItemIds\":[]}"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.code").value(400));
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(30009));
     }
 
     // ==================== GET /api/order/list ====================

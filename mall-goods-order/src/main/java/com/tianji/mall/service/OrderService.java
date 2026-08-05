@@ -59,33 +59,48 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             throw new BizException(BizErrorCode.ADDRESS_NOT_FOUND);
         }
 
-        // 2. 查询选中的购物车项
-        List<CartItem> cartItems = cartService.listByIds(req.getCartItemIds());
-        if (cartItems.isEmpty()) {
-            throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
-        }
-        for (CartItem item : cartItems) {
-            if (!item.getUserId().equals(userId)) {
-                throw new BizException(BizErrorCode.CART_ITEM_NOT_OWNER);
+        // 2. 解析订单行（购物车结算 或 立即购买直购）
+        List<Long> cartItemIds = req.getCartItemIds();
+        boolean fromCart = cartItemIds != null && !cartItemIds.isEmpty();
+        List<OrderLine> lines;
+        if (fromCart) {
+            List<CartItem> cartItems = cartService.listByIds(cartItemIds);
+            if (cartItems.isEmpty()) {
+                throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
             }
-            if (item.getChecked() != 1) {
-                throw new BizException(BizErrorCode.CART_ITEM_NOT_CHECKED);
+            for (CartItem item : cartItems) {
+                if (!item.getUserId().equals(userId)) {
+                    throw new BizException(BizErrorCode.CART_ITEM_NOT_OWNER);
+                }
+                if (item.getChecked() != 1) {
+                    throw new BizException(BizErrorCode.CART_ITEM_NOT_CHECKED);
+                }
             }
+            lines = cartItems.stream()
+                    .map(ci -> new OrderLine(ci.getProductId(), ci.getSkuId(), ci.getQuantity()))
+                    .toList();
+        } else {
+            if (req.getDirectItems() == null || req.getDirectItems().isEmpty()) {
+                throw new BizException(BizErrorCode.CART_ITEM_NOT_FOUND);
+            }
+            lines = req.getDirectItems().stream()
+                    .map(d -> new OrderLine(d.getProductId(), d.getSkuId(), d.getQuantity()))
+                    .toList();
         }
 
         // 3. 获取商品 ID 列表
-        List<Long> productIds = cartItems.stream()
-                .map(CartItem::getProductId)
+        List<Long> productIds = lines.stream()
+                .map(OrderLine::productId)
                 .distinct()
                 .toList();
 
         // 3.5 获取分布式锁（按 productId 和 skuId 排序，避免死锁）
         List<String> lockKeyStrings = new ArrayList<>();
-        for (CartItem cartItem : cartItems) {
-            if (cartItem.getSkuId() != null) {
-                lockKeyStrings.add("lock:sku:" + cartItem.getSkuId());
+        for (OrderLine line : lines) {
+            if (line.skuId() != null) {
+                lockKeyStrings.add("lock:sku:" + line.skuId());
             } else {
-                lockKeyStrings.add("lock:product:" + cartItem.getProductId());
+                lockKeyStrings.add("lock:product:" + line.productId());
             }
         }
         List<String> sortedLockKeys = lockKeyStrings.stream().sorted().distinct().toList();
@@ -106,8 +121,8 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             // 5. 校验库存并计算金额
             BigDecimal totalAmount = BigDecimal.ZERO;
             List<OrderItem> orderItems = new ArrayList<>();
-            for (CartItem cartItem : cartItems) {
-                Product product = productMap.get(cartItem.getProductId());
+            for (OrderLine line : lines) {
+                Product product = productMap.get(line.productId());
                 if (product == null || product.getStatus() == 0) {
                     throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND, product != null ? product.getName() : "未知");
                 }
@@ -115,13 +130,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 BigDecimal itemPrice;
                 String skuSpecs = null;
 
-                if (cartItem.getSkuId() != null) {
+                if (line.skuId() != null) {
                     // SKU 商品：用 SKU 价格和库存
-                    ProductSku sku = skuService.getById(cartItem.getSkuId());
-                    if (sku == null || !sku.getProductId().equals(cartItem.getProductId())) {
+                    ProductSku sku = skuService.getById(line.skuId());
+                    if (sku == null || !sku.getProductId().equals(line.productId())) {
                         throw new BizException(BizErrorCode.SKU_NOT_FOUND, product.getName());
                     }
-                    if (sku.getStock() < cartItem.getQuantity()) {
+                    if (sku.getStock() < line.quantity()) {
                         throw new BizException(BizErrorCode.STOCK_INSUFFICIENT, product.getName());
                     }
                     itemPrice = sku.getPrice() != null ? sku.getPrice() : product.getPrice();
@@ -129,12 +144,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 } else {
                     // 无 SKU：判秒杀窗口
                     if (seckillService.isSeckillActive(product)) {
-                        if (product.getSeckillStock() < cartItem.getQuantity()) {
+                        if (product.getSeckillStock() < line.quantity()) {
                             throw new BizException(BizErrorCode.SECKILL_STOCK_INSUFFICIENT, product.getName());
                         }
                         itemPrice = product.getSeckillPrice();
                     } else {
-                        if (product.getStock() < cartItem.getQuantity()) {
+                        if (product.getStock() < line.quantity()) {
                             throw new BizException(BizErrorCode.STOCK_INSUFFICIENT, product.getName());
                         }
                         itemPrice = product.getPrice();
@@ -145,12 +160,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 orderItem.setProductId(product.getId());
                 orderItem.setProductName(product.getName());
                 orderItem.setPrice(itemPrice);
-                orderItem.setQuantity(cartItem.getQuantity());
-                orderItem.setSkuId(cartItem.getSkuId());
+                orderItem.setQuantity(line.quantity());
+                orderItem.setSkuId(line.skuId());
                 orderItem.setSkuSpecs(skuSpecs);
                 orderItems.add(orderItem);
 
-                totalAmount = totalAmount.add(itemPrice.multiply(BigDecimal.valueOf(cartItem.getQuantity())));
+                totalAmount = totalAmount.add(itemPrice.multiply(BigDecimal.valueOf(line.quantity())));
             }
 
             // 6. 优惠券折扣（锁内）
@@ -205,8 +220,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 }
             }
 
-            // 11. 清购物车
-            cartService.removeByIds(req.getCartItemIds());
+            // 11. 清购物车（仅购物车结算；直购不产生购物车项）
+            if (fromCart) {
+                cartService.removeByIds(cartItemIds);
+            }
 
             // 12. 发送订单创建事件
             publishOrderEvent(order, "CREATED");
@@ -232,6 +249,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             multiLock.unlock();
         }
     }
+
+    /** 订单行：购物车结算与立即购买直购的统一中间结构 */
+    private record OrderLine(Long productId, Long skuId, Integer quantity) {}
 
     public List<Order> getOrderList(Long userId) {
         return getOrderPage(userId, 1, 50).getRecords();
