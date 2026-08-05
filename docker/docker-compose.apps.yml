@@ -6,10 +6,10 @@ services:
     container_name: gateway
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - INTERNAL_TOKEN=internal-secret
+      - JWT_SECRET=${JWT_SECRET}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
     networks:
       - app-net
     ports:
@@ -23,12 +23,12 @@ services:
     container_name: user-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - INTERNAL_TOKEN=internal-secret
+      - JWT_SECRET=${JWT_SECRET}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-root}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
     networks:
       - app-net
     restart: unless-stopped
@@ -40,16 +40,16 @@ services:
     container_name: mall-goods-order
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - SPRING_DATA_REDIS_PASSWORD=redis123
-      - JAVA_OPTS=-Xms128m -Xmx256m -Dspring.data.redis.password=redis123
-      - ROCKETMQ_ACCESS_KEY=tianji-mall
-      - ROCKETMQ_SECRET_KEY=tianji-mall-secret
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - INTERNAL_TOKEN=internal-secret
+      - JWT_SECRET=${JWT_SECRET}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-root}
+      - SPRING_DATA_REDIS_PASSWORD=${REDIS_PASSWORD:-redis123}
+      - JAVA_OPTS=-Xms128m -Xmx256m -Dspring.data.redis.password=${REDIS_PASSWORD:-redis123}
+      - ROCKETMQ_ACCESS_KEY=${ROCKETMQ_ACCESS_KEY:-tianji-mall}
+      - ROCKETMQ_SECRET_KEY=${ROCKETMQ_SECRET_KEY:-tianji-mall-secret}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
     networks:
       - app-net
     restart: unless-stopped
@@ -63,15 +63,15 @@ services:
     container_name: pay-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - INTERNAL_TOKEN=internal-secret
-      - ALIPAY_APP_ID=your-app-id
-      - ALIPAY_PRIVATE_KEY=your-private-key
-      - ALIPAY_ALIPAY_PUBLIC_KEY=your-alipay-public-key
+      - JWT_SECRET=${JWT_SECRET}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-root}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
+      - ALIPAY_APP_ID=9021000164684167
+      - ALIPAY_PRIVATE_KEY=${ALIPAY_PRIVATE_KEY}
+      - ALIPAY_ALIPAY_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAh+NpRJqKKXK8s9FaJUQAhKXwWB/wbckQjTEsPbeZYYiFbCYIf4sVaXLP/TUDMdAzzeCSqNu3xCWKEIaUtsPhaoeGef0X43OTAFXCn0Nnt9woWCCCXfxVlfqdzp6FVHau76GUCp76N9UlTrp7Jp4FVY6MiC1bCHvc87b2pUOVydQTGdDIPcNQsQpMuRyOKKbW2KnLSKWYNcZTJABcOMnu4llT/QQRZRlF3NPFLCCHARzAIHTQwk0HYBH+QjNF/9ZqW4aJ17dv803O/B3+1jki6/Kal47W7xA7UVj+DzPhtUPoRuoNzWWXbDFjrBPcbh0jbf83vd/p2EKxtAmbrFS1MwIDAQAB
       - ALIPAY_GATEWAY_URL=https://openapi-sandbox.dl.alipaydev.com/gateway.do
       - ALIPAY_NOTIFY_URL=http://192.168.150.11:8080/api/pay/notify
     networks:
@@ -85,12 +85,12 @@ services:
     container_name: mcp-server
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - INTERNAL_TOKEN=internal-secret
+      - JWT_SECRET=${JWT_SECRET}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-root}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - INTERNAL_TOKEN=${INTERNAL_TOKEN}
     networks:
       - app-net
     restart: unless-stopped
@@ -102,13 +102,13 @@ services:
     container_name: ai-chat-service
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - JWT_SECRET=gL1/jgtFkRK4TEeAWFTI/1/wKhADKgmNSwcNLV4xL/A=
-      - MYSQL_USER=root
-      - MYSQL_PASSWORD=root
-      - NACOS_USERNAME=nacos
-      - NACOS_PASSWORD=nacos
-      - DEEPSEEK_API_KEY=your-deepseek-api-key
-      - SILICONFLOW_API_KEY=your-siliconflow-api-key
+      - JWT_SECRET=${JWT_SECRET}
+      - MYSQL_USER=${MYSQL_USER:-root}
+      - MYSQL_PASSWORD=${MYSQL_PASSWORD:-root}
+      - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
+      - NACOS_PASSWORD=${NACOS_PASSWORD:-nacos}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - SILICONFLOW_API_KEY=${SILICONFLOW_API_KEY}
     networks:
       - app-net
     restart: unless-stopped
