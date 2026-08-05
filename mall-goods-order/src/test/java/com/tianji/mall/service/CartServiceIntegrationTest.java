@@ -3,14 +3,17 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CartAddRequest;
+import com.tianji.mall.dto.CartItemDTO;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.CartItemMapper;
+import com.tianji.mall.mapper.ProductMapper;
+import com.tianji.mall.mapper.ProductSkuMapper;
 import com.tianji.mall.service.DashboardService;
 import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.NotificationService;
-import com.tianji.mall.mapper.ProductMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.redisson.api.RedissonClient;
@@ -67,10 +70,14 @@ class CartServiceIntegrationTest {
     @Autowired
     private ProductMapper productMapper;
 
+    @Autowired
+    private ProductSkuMapper skuMapper;
+
     @BeforeEach
     void setUp() {
         cartItemMapper.delete(new LambdaQueryWrapper<>());
         productMapper.delete(new LambdaQueryWrapper<>());
+        skuMapper.delete(new LambdaQueryWrapper<>());
     }
 
     // ==================== addItem ====================
@@ -82,7 +89,7 @@ class CartServiceIntegrationTest {
 
         cartService.addItem(1L, req);
 
-        List<CartItem> items = cartService.getCartList(1L);
+        List<CartItemDTO> items = cartService.getCartList(1L);
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getProductId()).isEqualTo(product.getId());
         assertThat(items.get(0).getQuantity()).isEqualTo(2);
@@ -96,7 +103,7 @@ class CartServiceIntegrationTest {
         cartService.addItem(1L, req);
         cartService.addItem(1L, req);
 
-        List<CartItem> items = cartService.getCartList(1L);
+        List<CartItemDTO> items = cartService.getCartList(1L);
         assertThat(items).hasSize(1);
         assertThat(items.get(0).getQuantity()).isEqualTo(4);
     }
@@ -120,10 +127,49 @@ class CartServiceIntegrationTest {
         insertCartItem(1L, p1.getId(), 2);
         insertCartItem(1L, p2.getId(), 1);
 
-        List<CartItem> items = cartService.getCartList(1L);
+        List<CartItemDTO> items = cartService.getCartList(1L);
 
         assertThat(items).hasSize(2);
         assertThat(items).allMatch(i -> i.getUserId().equals(1L));
+    }
+
+    // ==================== getCartList skuSpecs ====================
+
+    @Test
+    void shouldReturnSkuSpecsForSkuItem() {
+        Product product = insertProduct("SKU商品", 10);
+        ProductSku sku = new ProductSku();
+        sku.setProductId(product.getId());
+        sku.setSpecs("颜色:红;容量:256G");
+        sku.setPrice(BigDecimal.valueOf(1200));
+        sku.setStock(5);
+        sku.setStatus(1);
+        skuMapper.insert(sku);
+
+        CartItem item = new CartItem();
+        item.setUserId(1L);
+        item.setProductId(product.getId());
+        item.setSkuId(sku.getId());
+        item.setQuantity(2);
+        item.setChecked(1);
+        cartItemMapper.insert(item);
+
+        List<CartItemDTO> items = cartService.getCartList(1L);
+
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getSkuId()).isEqualTo(sku.getId());
+        assertThat(items.get(0).getSkuSpecs()).isEqualTo("颜色:红;容量:256G");
+    }
+
+    @Test
+    void shouldReturnNullSkuSpecsForNoSkuItem() {
+        Product product = insertProduct("普通商品", 10);
+        insertCartItem(1L, product.getId(), 1);
+
+        List<CartItemDTO> items = cartService.getCartList(1L);
+
+        assertThat(items).hasSize(1);
+        assertThat(items.get(0).getSkuSpecs()).isNull();
     }
 
     // ==================== helpers ====================

@@ -3,6 +3,7 @@ package com.tianji.mall.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CartAddRequest;
+import com.tianji.mall.dto.CartItemDTO;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductSku;
@@ -51,7 +52,7 @@ class CartServiceTest {
         List<CartItem> items = List.of(buildCartItem(1L, 1L, 1L, 2));
         when(cartItemMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(items);
 
-        List<CartItem> result = cartService.getCartList(1L);
+        List<CartItemDTO> result = cartService.getCartList(1L);
 
         assertThat(result).hasSize(1);
         assertThat(result.get(0).getUserId()).isEqualTo(1L);

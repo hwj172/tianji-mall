@@ -3,6 +3,7 @@ package com.tianji.mall.controller;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.dto.CartCheckRequest;
+import com.tianji.mall.dto.CartItemDTO;
 import com.tianji.mall.dto.CartUpdateRequest;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.CartItem;
@@ -80,7 +81,11 @@ class CartControllerTest {
     @Test
     void shouldGetCartList() throws Exception {
         CartItem item = buildCartItem(1L, 100L, 2);
-        when(cartService.getCartList(1L)).thenReturn(List.of(item));
+        CartItemDTO dto = new CartItemDTO();
+        dto.setId(item.getId());
+        dto.setProductId(item.getProductId());
+        dto.setQuantity(item.getQuantity());
+        when(cartService.getCartList(1L)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/cart/list")
                         .header("Authorization", "Bearer test-token"))
@@ -160,7 +165,11 @@ class CartControllerTest {
     @Test
     void shouldGetCartListInternal() throws Exception {
         CartItem item = buildCartItem(1L, 100L, 2);
-        when(cartService.getCartList(1L)).thenReturn(List.of(item));
+        CartItemDTO dto = new CartItemDTO();
+        dto.setId(item.getId());
+        dto.setProductId(item.getProductId());
+        dto.setQuantity(item.getQuantity());
+        when(cartService.getCartList(1L)).thenReturn(List.of(dto));
 
         mockMvc.perform(get("/api/cart/internal/list")
                         .header("X-Internal-Token", "test-internal-token")

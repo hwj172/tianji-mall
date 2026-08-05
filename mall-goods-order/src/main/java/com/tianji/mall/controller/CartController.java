@@ -4,8 +4,8 @@ import com.tianji.common.result.R;
 import com.tianji.mall.dto.CartAddRequest;
 import com.tianji.mall.dto.CartCheckRequest;
 import com.tianji.mall.dto.CartInternalRequest;
+import com.tianji.mall.dto.CartItemDTO;
 import com.tianji.mall.dto.CartUpdateRequest;
-import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.service.CartService;
 import com.tianji.common.util.JwtUtil;
 import jakarta.validation.Valid;
@@ -23,7 +23,7 @@ public class CartController {
     private final JwtUtil jwtUtil;
 
     @GetMapping("/list")
-    public R<List<CartItem>> list(@RequestHeader("Authorization") String authHeader) {
+    public R<List<CartItemDTO>> list(@RequestHeader("Authorization") String authHeader) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(cartService.getCartList(userId));
     }
@@ -64,7 +64,7 @@ public class CartController {
     // ===== 内部端点（供 mcp-server Feign 调用，无需 JWT 鉴权）=====
 
     @GetMapping("/internal/list")
-    public R<List<CartItem>> listInternal(@RequestParam("userId") Long userId) {
+    public R<List<CartItemDTO>> listInternal(@RequestParam("userId") Long userId) {
         return R.ok(cartService.getCartList(userId));
     }
 

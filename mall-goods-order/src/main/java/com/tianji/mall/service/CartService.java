@@ -6,16 +6,21 @@ import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.CartAddRequest;
+import com.tianji.mall.dto.CartItemDTO;
 import com.tianji.mall.entity.CartItem;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductSku;
 import com.tianji.mall.mapper.CartItemMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Service
@@ -25,10 +30,30 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
     private final ProductService productService;
     private final ProductSkuService skuService;
 
-    public List<CartItem> getCartList(Long userId) {
-        return list(new LambdaQueryWrapper<CartItem>()
+    public List<CartItemDTO> getCartList(Long userId) {
+        List<CartItem> items = list(new LambdaQueryWrapper<CartItem>()
                 .eq(CartItem::getUserId, userId)
                 .orderByDesc(CartItem::getCreateTime));
+        if (items.isEmpty()) {
+            return List.of();
+        }
+
+        List<Long> skuIds = items.stream()
+                .map(CartItem::getSkuId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, ProductSku> skuMap = skuIds.isEmpty() ? Map.of()
+                : skuService.listByIds(skuIds).stream()
+                        .collect(Collectors.toMap(ProductSku::getId, s -> s));
+
+        return items.stream().map(item -> {
+            CartItemDTO dto = new CartItemDTO();
+            BeanUtils.copyProperties(item, dto);   // CartItemDTO 的 skuSpecs 不在 CartItem 中，复制后保持默认 null
+            ProductSku sku = item.getSkuId() != null ? skuMap.get(item.getSkuId()) : null;
+            dto.setSkuSpecs(sku != null ? sku.getSpecs() : null);
+            return dto;
+        }).toList();
     }
 
     @Transactional
