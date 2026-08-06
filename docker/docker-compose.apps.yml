@@ -73,7 +73,7 @@ services:
       - ALIPAY_PRIVATE_KEY=${ALIPAY_PRIVATE_KEY}
       - ALIPAY_ALIPAY_PUBLIC_KEY=MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAh+NpRJqKKXK8s9FaJUQAhKXwWB/wbckQjTEsPbeZYYiFbCYIf4sVaXLP/TUDMdAzzeCSqNu3xCWKEIaUtsPhaoeGef0X43OTAFXCn0Nnt9woWCCCXfxVlfqdzp6FVHau76GUCp76N9UlTrp7Jp4FVY6MiC1bCHvc87b2pUOVydQTGdDIPcNQsQpMuRyOKKbW2KnLSKWYNcZTJABcOMnu4llT/QQRZRlF3NPFLCCHARzAIHTQwk0HYBH+QjNF/9ZqW4aJ17dv803O/B3+1jki6/Kal47W7xA7UVj+DzPhtUPoRuoNzWWXbDFjrBPcbh0jbf83vd/p2EKxtAmbrFS1MwIDAQAB
       - ALIPAY_GATEWAY_URL=https://openapi-sandbox.dl.alipaydev.com/gateway.do
-      - ALIPAY_NOTIFY_URL=http://192.168.150.11:8080/api/pay/notify
+      - ALIPAY_NOTIFY_URL=http://k577a4a4.natappfree.cc/api/pay/notify
     networks:
       - app-net
     restart: unless-stopped

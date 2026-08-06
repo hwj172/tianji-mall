@@ -40,3 +40,10 @@ skywalking/agent/
 *.tar.gz
 *.bundle
 *.zip
+
+# Frontend
+tianji-mall-frontend/node_modules/
+tianji-mall-frontend/dist/
+
+# Superpowers
+.superpowers/
