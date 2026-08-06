@@ -25,7 +25,7 @@
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="row.status === 2" size="small" text type="primary" @click="openShipDialog(row)">发货</el-button>
+          <!-- 发货由商家操作（SellerController），管理员只做订单状态审核 -->
           <el-button v-if="row.status === 3" size="small" text type="success" @click="handleComplete(row)">完成</el-button>
         </template>
       </el-table-column>
@@ -41,30 +41,17 @@
         background
       />
     </div>
-
-    <!-- 发货 Dialog -->
-    <el-dialog v-model="shipVisible" title="发货" width="400px">
-      <el-form :model="shipForm" label-width="80px">
-        <el-form-item label="快递公司"><el-input v-model="shipForm.trackingCompany" placeholder="如：顺丰速运" /></el-form-item>
-        <el-form-item label="快递单号"><el-input v-model="shipForm.trackingNumber" placeholder="请输入快递单号" /></el-form-item>
-      </el-form>
-      <template #footer>
-        <el-button @click="shipVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleShip" :loading="shipping">确认发货</el-button>
-      </template>
-    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAdminOrders, shipOrder, completeOrder } from '@/api'
+import { getAdminOrders, completeOrder } from '@/api'
 
 const orders = ref([])
 const total = ref(0)
 const loading = ref(false)
-const shipping = ref(false)
 const filterStatus = ref(null)
 
 const query = reactive({ page: 1, size: 10 })
@@ -76,10 +63,6 @@ function statusTag(s) {
   const m = { 1: 'warning', 2: '', 3: '', 4: 'success', 5: 'info' }
   return m[s] || ''
 }
-
-const shipVisible = ref(false)
-const shipTarget = ref(null)
-const shipForm = reactive({ trackingCompany: '', trackingNumber: '' })
 
 onMounted(() => loadData())
 
@@ -95,28 +78,6 @@ async function loadData() {
     }
   } catch { /* ignore */ }
   finally { loading.value = false }
-}
-
-function openShipDialog(order) {
-  shipTarget.value = order
-  shipForm.trackingCompany = ''
-  shipForm.trackingNumber = ''
-  shipVisible.value = true
-}
-
-async function handleShip() {
-  if (!shipForm.trackingCompany || !shipForm.trackingNumber) {
-    ElMessage.warning('请填写快递信息')
-    return
-  }
-  shipping.value = true
-  try {
-    await shipOrder(shipTarget.value.id, shipForm)
-    ElMessage.success('已发货')
-    shipVisible.value = false
-    await loadData()
-  } catch { /* handle by interceptor */ }
-  finally { shipping.value = false }
 }
 
 async function handleComplete(order) {
