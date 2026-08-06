@@ -327,32 +327,6 @@ class AdminControllerTest {
                 .andExpect(jsonPath("$.data.total").value(5));
     }
 
-    // ==================== PUT /api/admin/order/{id}/ship ====================
-
-    @Test
-    void shouldShipOrder() throws Exception {
-        mockMvc.perform(put("/api/admin/order/1/ship")
-                        .header("X-User-Role", "admin")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
-    }
-
-    @Test
-    void shouldReturnErrorWhenShipNonExistentOrder() throws Exception {
-        doThrow(new BizException("订单不存在"))
-                .when(orderService).shipOrder(eq(Long.valueOf(999)), any(), any());
-
-        mockMvc.perform(put("/api/admin/order/999/ship")
-                        .header("X-User-Role", "admin")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123\"}"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(500))
-                .andExpect(jsonPath("$.message").value("订单不存在"));
-    }
-
     // ==================== PUT /api/admin/order/{id}/complete ====================
 
     @Test

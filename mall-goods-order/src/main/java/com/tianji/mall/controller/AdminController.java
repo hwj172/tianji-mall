@@ -12,7 +12,6 @@ import com.tianji.mall.dto.AdminAttributeRequest;
 import com.tianji.mall.dto.AdminCategoryRequest;
 import com.tianji.mall.dto.AdminProductRequest;
 import com.tianji.mall.dto.BannerRequest;
-import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.dto.SkuRequest;
 import com.tianji.mall.entity.Banner;
 import com.tianji.mall.entity.Coupon;
@@ -47,7 +46,6 @@ public class AdminController {
     private final DashboardService dashboardService;
     private final SeckillService seckillService;
     private final GroupBuyService groupBuyService;
-    private final LogisticsService logisticsService;
     private final ShopService shopService;
     private final BannerService bannerService;
     private final UserFeignClient userFeignClient;
@@ -158,14 +156,6 @@ public class AdminController {
             @RequestParam(value = "size", defaultValue = "10") int size,
             @RequestParam(value = "status", required = false) Integer status) {
         return R.ok(orderService.getOrderListAdmin(page, size, status));
-    }
-
-    @PutMapping("/order/{id}/ship")
-    public R<Void> shipOrder(@PathVariable("id") Long id,
-                              @RequestBody @Valid ShipRequest body) {
-        orderService.shipOrder(id, body.getTrackingCompany(), body.getTrackingNumber());
-        logisticsService.generateTracks(id);
-        return R.ok();
     }
 
     @PutMapping("/order/{id}/complete")
