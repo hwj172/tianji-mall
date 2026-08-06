@@ -23,6 +23,7 @@ const router = useRouter()
 const userStore = useUserStore()
 const loading = ref(false)
 
+const formRef = ref(null)
 const form = reactive({ username: '', password: '', confirmPwd: '' })
 const validateConfirmPwd = (_rule, value, callback) => {
   if (value !== form.password) callback(new Error('两次输入的密码不一致'))
@@ -35,6 +36,7 @@ const rules = {
 }
 
 async function handleRegister() {
+  try { await formRef.value.validate() } catch { return }
   loading.value = true
   try {
     await userStore.register({ username: form.username, password: form.password })

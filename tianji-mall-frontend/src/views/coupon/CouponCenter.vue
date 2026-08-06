@@ -7,22 +7,22 @@
           <el-badge v-if="unclaimedCount > 0" :value="unclaimedCount" style="margin-left: 6px" />
         </template>
         <div class="coupon-list" v-if="coupons.length">
-          <div class="coupon-card" v-for="c in coupons" :key="c.coupon.id" :class="{ claimed: c.claimed }">
+          <div class="coupon-card" v-for="c in coupons" :key="c.id" :class="{ claimed: c.claimed }">
             <div class="cc-left">
               <div class="cc-value">
-                <template v-if="c.coupon.discountType === 1">
-                  <span class="cc-symbol">¥</span>{{ c.coupon.discountValue }}
+                <template v-if="c.discountType === 'FIXED'">
+                  <span class="cc-symbol">¥</span>{{ c.discountValue }}
                 </template>
                 <template v-else>
-                  {{ c.coupon.discountValue * 100 }}<span class="cc-symbol">%</span>
+                  {{ c.discountValue * 10 }}<span class="cc-symbol">折</span>
                 </template>
               </div>
-              <div class="cc-type">{{ c.coupon.discountType === 1 ? '满减券' : '折扣券' }}</div>
+              <div class="cc-type">{{ c.discountType === 'FIXED' ? '满减券' : '折扣券' }}</div>
             </div>
             <div class="cc-right">
-              <div class="cc-name">{{ c.coupon.name }}</div>
-              <div class="cc-cond" v-if="c.coupon.minConsumption > 0">满 ¥{{ c.coupon.minConsumption }} 可用</div>
-              <div class="cc-time">{{ fmtTime(c.coupon.endTime) }} 前可用</div>
+              <div class="cc-name">{{ c.name }}</div>
+              <div class="cc-cond" v-if="c.minOrderAmount > 0">满 ¥{{ c.minOrderAmount }} 可用</div>
+              <div class="cc-time">{{ fmtTime(c.endTime) }} 前可用</div>
             </div>
             <div class="cc-action">
               <el-tag v-if="c.expiringSoon" size="small" type="warning">即将过期</el-tag>
@@ -36,22 +36,22 @@
 
       <el-tab-pane label="我的优惠券" name="my">
         <div class="coupon-list" v-if="myCoupons.length">
-          <div class="coupon-card" v-for="item in myCoupons" :key="item.id" :class="{ used: item.status === 'USED' || item.status === 'EXPIRED' }">
+          <div class="coupon-card" v-for="item in myCoupons" :key="item.userCouponId" :class="{ used: item.status === 'USED' || item.status === 'EXPIRED' }">
             <div class="cc-left">
               <div class="cc-value">
-                <template v-if="item.coupon?.discountType === 1">
-                  <span class="cc-symbol">¥</span>{{ item.coupon?.discountValue }}
+                <template v-if="item.discountType === 'FIXED'">
+                  <span class="cc-symbol">¥</span>{{ item.discountValue }}
                 </template>
                 <template v-else>
-                  {{ (item.coupon?.discountValue || 0) * 100 }}<span class="cc-symbol">%</span>
+                  {{ (item.discountValue || 0) * 10 }}<span class="cc-symbol">折</span>
                 </template>
               </div>
               <div class="cc-type">{{ statusMap[item.status] || item.status }}</div>
             </div>
             <div class="cc-right">
-              <div class="cc-name">{{ item.coupon?.name }}</div>
-              <div class="cc-cond" v-if="item.coupon?.minConsumption > 0">满 ¥{{ item.coupon?.minConsumption }} 可用</div>
-              <div class="cc-time">{{ fmtTime(item.coupon?.endTime) }} 到期</div>
+              <div class="cc-name">{{ item.name }}</div>
+              <div class="cc-cond" v-if="item.minOrderAmount > 0">满 ¥{{ item.minOrderAmount }} 可用</div>
+              <div class="cc-time">{{ fmtTime(item.endTime) }} 到期</div>
             </div>
           </div>
         </div>
@@ -105,9 +105,10 @@ async function loadMy() {
 async function handleClaim(c) {
   c.claiming = true
   try {
-    await claimCoupon(c.coupon.id)
+    await claimCoupon(c.id)
     ElMessage.success('领取成功')
     c.claimed = true
+    loadUnclaimedCount()  // 角标递减
   } catch { /* handle by interceptor */ }
   finally { c.claiming = false }
 }

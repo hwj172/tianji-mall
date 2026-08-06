@@ -1,5 +1,5 @@
 <template>
-  <div class="product-list-page">
+  <div class="product-list-page" v-loading="loading">
     <!-- 搜索热词 -->
     <div class="hot-keywords" v-if="hotKeywords.length && !route.query.keyword">
       <span class="hot-label">热门搜索：</span>
@@ -70,7 +70,8 @@ const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
 const pageSize = 20
-const currentSort = ref('')
+// 从 URL ?sort= 初始化（首页"查看更多 →"带 sort=sales）
+const currentSort = ref(route.query.sort ? String(route.query.sort) : '')
 const priceFrom = ref('')
 const priceTo = ref('')
 

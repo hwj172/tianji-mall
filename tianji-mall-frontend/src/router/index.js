@@ -1,4 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
+import { useUserStore } from '@/stores/user'
 
 const routes = [
   {
@@ -11,6 +12,7 @@ const routes = [
       { path: 'shop/:id', name: 'shopDetail', component: () => import('@/views/shop/ShopDetail.vue'), meta: { title: '店铺详情' } },
       { path: 'seckill', name: 'seckill', component: () => import('@/views/seckill/SeckillList.vue'), meta: { title: '限时秒杀' } },
       { path: 'groupbuy', name: 'groupbuy', component: () => import('@/views/groupbuy/GroupBuyList.vue'), meta: { title: '阶梯拼团' } },
+      { path: 'groupbuy/:id', name: 'groupBuyDetail', component: () => import('@/views/groupbuy/GroupBuyDetail.vue'), meta: { title: '拼团详情', auth: true } },
       { path: 'cart', name: 'cart', component: () => import('@/views/cart/CartPage.vue'), meta: { title: '购物车', auth: true } },
       { path: 'checkout', name: 'checkout', component: () => import('@/views/order/CheckoutPage.vue'), meta: { title: '确认订单', auth: true } },
       { path: 'order/list', name: 'orderList', component: () => import('@/views/order/OrderList.vue'), meta: { title: '我的订单', auth: true } },
@@ -62,14 +64,26 @@ const router = createRouter({
   scrollBehavior: () => ({ top: 0 })
 })
 
-// 路由守卫 — 鉴权
+// 路由守卫 — 鉴权 + 角色校验
 router.beforeEach((to, from, next) => {
-  const token = localStorage.getItem('token')
-  if (to.meta.auth && !token) {
+  const userStore = useUserStore()
+  if (to.meta.auth && !userStore.token) {
     next({ name: 'login', query: { redirect: to.fullPath } })
-  } else {
-    next()
+    return
   }
+  // 角色校验：userInfo 存在时拦截越权访问（刷新后 userInfo 未拉取时放行，由 fetchUserInfo 兜底）
+  if (to.meta.role && userStore.userInfo) {
+    const role = userStore.userInfo.role
+    if (to.meta.role === 'admin' && role !== 'admin') {
+      next('/')
+      return
+    }
+    if (to.meta.role === 'seller' && role !== 'seller' && role !== 'admin') {
+      next('/')
+      return
+    }
+  }
+  next()
 })
 
 // 设置页面标题

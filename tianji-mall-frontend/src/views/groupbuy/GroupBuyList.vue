@@ -1,5 +1,5 @@
 <template>
-  <div class="groupbuy-page">
+  <div class="groupbuy-page" v-loading="loading">
     <h2>👥 阶梯拼团</h2>
 
     <div class="gb-list" v-if="activities.length">
@@ -15,7 +15,7 @@
         </div>
         <div class="gb-meta">
           <span>{{ fmtTime(a.startTime) }} ~ {{ fmtTime(a.endTime) }}</span>
-          <el-button size="small" type="primary" @click="$router.push(`/product/${a.productId}`)">去参团</el-button>
+          <el-button size="small" type="primary" @click="$router.push(`/groupbuy/${a.id}`)">去参团</el-button>
         </div>
       </div>
     </div>

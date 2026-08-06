@@ -11,6 +11,9 @@
         <div class="rc-content" v-if="r.content">{{ r.content }}</div>
         <div class="rc-time">{{ fmtTime(r.createTime) }}</div>
       </div>
+      <div class="load-more" v-if="hasMore">
+        <el-button text type="primary" @click="loadMore" :loading="loadingMore">加载更多</el-button>
+      </div>
     </div>
     <el-empty v-else-if="!loading" description="暂无评价" />
   </div>
@@ -22,16 +25,36 @@ import { getMyReviews } from '@/api'
 
 const reviews = ref([])
 const loading = ref(false)
+const loadingMore = ref(false)
+const reviewPage = ref(1)
+const pageSize = 20
+const hasMore = ref(true)
 
 onMounted(() => loadData())
 
 async function loadData() {
   loading.value = true
+  reviewPage.value = 1
+  hasMore.value = true
   try {
-    const res = await getMyReviews({ page: 1, size: 50 })
+    const res = await getMyReviews({ page: 1, size: pageSize })
     reviews.value = res.data || []
+    hasMore.value = reviews.value.length >= pageSize
   } catch { /* ignore */ }
   finally { loading.value = false }
+}
+
+async function loadMore() {
+  if (loadingMore.value) return
+  loadingMore.value = true
+  try {
+    reviewPage.value++
+    const res = await getMyReviews({ page: reviewPage.value, size: pageSize })
+    const list = res.data || []
+    reviews.value = [...reviews.value, ...list]
+    hasMore.value = list.length >= pageSize
+  } catch { reviewPage.value-- }
+  finally { loadingMore.value = false }
 }
 
 function fmtTime(t) {

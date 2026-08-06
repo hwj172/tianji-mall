@@ -14,6 +14,9 @@
       <div class="status-actions" v-if="order.status === 3">
         <el-button type="primary" @click="confirmReceive" :loading="receiving">确认收货</el-button>
       </div>
+      <div class="status-actions" v-if="order.status >= 2 && order.status <= 4">
+        <el-button @click="openRefundDialog">申请退款</el-button>
+      </div>
     </div>
 
     <!-- 物流信息 -->
@@ -75,13 +78,32 @@
   </div>
 
   <el-empty v-else-if="!loading" description="订单不存在" />
+
+  <!-- 申请退款 Dialog -->
+  <el-dialog v-model="refundVisible" title="申请退款" width="420px">
+    <el-form label-width="80px">
+      <el-form-item label="退款类型">
+        <el-radio-group v-model="refundType">
+          <el-radio value="REFUND_ONLY">仅退款</el-radio>
+          <el-radio value="RETURN_REFUND">退货退款</el-radio>
+        </el-radio-group>
+      </el-form-item>
+      <el-form-item label="退款原因">
+        <el-input v-model="refundReason" type="textarea" :rows="3" placeholder="请填写退款原因" />
+      </el-form-item>
+    </el-form>
+    <template #footer>
+      <el-button @click="refundVisible = false">取消</el-button>
+      <el-button type="danger" @click="handleRefund" :loading="refunding">提交退款申请</el-button>
+    </template>
+  </el-dialog>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getOrderDetail, getProductBatch, getOrderLogistics, createPay, cancelOrder, receiveOrder } from '@/api'
+import { getOrderDetail, getProductBatch, getOrderLogistics, createPay, cancelOrder, receiveOrder, requestRefund } from '@/api'
 import { submitPayForm } from '@/utils/pay'
 
 const route = useRoute()
@@ -94,6 +116,10 @@ const loading = ref(false)
 const paying = ref(false)
 const cancelling = ref(false)
 const receiving = ref(false)
+const refunding = ref(false)
+const refundVisible = ref(false)
+const refundType = ref('REFUND_ONLY')
+const refundReason = ref('')
 const productImages = ref({})
 
 const statusMap = {
@@ -165,7 +191,7 @@ function getFirstImage(images) {
 async function goPay() {
   paying.value = true
   try {
-    const res = await createPay({ orderId: order.value.id })
+    const res = await createPay({ orderId: order.value.id, returnUrl: window.location.origin + '/order/list' })
     if (res.data?.payForm) {
       submitPayForm(res.data.payForm)
     } else {
@@ -187,6 +213,33 @@ async function handleCancel() {
     await loadDetail()
   } catch { /* handle by interceptor */ }
   finally { cancelling.value = false }
+}
+
+function openRefundDialog() {
+  refundType.value = 'REFUND_ONLY'
+  refundReason.value = ''
+  refundVisible.value = true
+}
+
+async function handleRefund() {
+  if (!refundReason.value.trim()) { ElMessage.warning('请填写退款原因'); return }
+  refunding.value = true
+  try {
+    const items = (detail.items || []).map(i => ({
+      productId: i.productId,
+      skuId: i.skuId,
+      quantity: i.quantity
+    }))
+    await requestRefund(order.value.id, {
+      reason: refundReason.value,
+      refundType: refundType.value,
+      items
+    })
+    ElMessage.success('退款申请已提交')
+    refundVisible.value = false
+    await loadDetail()
+  } catch { /* handle by interceptor */ }
+  finally { refunding.value = false }
 }
 
 async function confirmReceive() {

@@ -16,6 +16,9 @@
           <el-button type="primary" size="small" @click="openReview(item)">评价</el-button>
         </div>
       </div>
+      <div class="load-more" v-if="hasMore">
+        <el-button text type="primary" @click="loadMore" :loading="loadingMore">加载更多</el-button>
+      </div>
     </div>
     <el-empty v-else-if="!loading" description="暂无待评价商品" />
 
@@ -28,6 +31,14 @@
         <el-form-item label="内容">
           <el-input v-model="reviewForm.content" type="textarea" :rows="4" placeholder="分享你的使用体验..." />
         </el-form-item>
+        <el-form-item label="晒图">
+          <el-upload
+            action="#" :http-request="handleUpload" list-type="picture-card"
+            :limit="4" multiple accept="image/*"
+          >
+            <el-icon><Plus /></el-icon>
+          </el-upload>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -39,31 +50,69 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getPendingReviews, createReview } from '@/api'
+import { getPendingReviews, createReview, uploadImage } from '@/api'
 
 const items = ref([])
 const loading = ref(false)
 const submitting = ref(false)
+const loadingMore = ref(false)
+const reviewPage = ref(1)
+const pageSize = 20
+const hasMore = ref(true)
 const dialogVisible = ref(false)
 const reviewTarget = ref(null)
 const reviewForm = reactive({ rating: 5, content: '' })
+const uploadedImages = ref([])
+
+// el-upload 自定义上传：调 /api/upload/image，成功 URL 收集到 uploadedImages
+async function handleUpload(options) {
+  try {
+    const fd = new FormData()
+    fd.append('files', options.file)
+    const res = await uploadImage(fd)
+    const urls = res.data || []
+    if (urls.length) uploadedImages.value.push(urls[0])
+    options.onSuccess && options.onSuccess(res)
+  } catch (e) {
+    options.onError && options.onError(e)
+    ElMessage.error('图片上传失败')
+  }
+}
 
 onMounted(() => loadData())
 
 async function loadData() {
   loading.value = true
+  reviewPage.value = 1
+  hasMore.value = true
   try {
-    const res = await getPendingReviews({ page: 1, size: 50 })
+    const res = await getPendingReviews({ page: 1, size: pageSize })
     items.value = res.data || []
+    hasMore.value = items.value.length >= pageSize
   } catch { /* ignore */ }
   finally { loading.value = false }
+}
+
+async function loadMore() {
+  if (loadingMore.value) return
+  loadingMore.value = true
+  try {
+    reviewPage.value++
+    const res = await getPendingReviews({ page: reviewPage.value, size: pageSize })
+    const list = res.data || []
+    items.value = [...items.value, ...list]
+    hasMore.value = list.length >= pageSize
+  } catch { reviewPage.value-- }
+  finally { loadingMore.value = false }
 }
 
 function openReview(item) {
   reviewTarget.value = item
   reviewForm.rating = 5
   reviewForm.content = ''
+  uploadedImages.value = []
   dialogVisible.value = true
 }
 
@@ -75,7 +124,8 @@ async function handleSubmit() {
       orderId: reviewTarget.value.orderId,
       productId: reviewTarget.value.productId,
       rating: reviewForm.rating,
-      content: reviewForm.content
+      content: reviewForm.content,
+      images: uploadedImages.value.length ? JSON.stringify(uploadedImages.value) : undefined
     })
     ElMessage.success('评价成功')
     dialogVisible.value = false

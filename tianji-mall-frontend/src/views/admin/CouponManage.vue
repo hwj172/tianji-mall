@@ -9,18 +9,18 @@
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="名称" show-overflow-tooltip />
       <el-table-column label="类型" width="80">
-        <template #default="{ row }">{{ row.discountType === 1 ? '满减' : '折扣' }}</template>
+        <template #default="{ row }">{{ row.discountType === 'FIXED' ? '满减' : '折扣' }}</template>
       </el-table-column>
       <el-table-column label="面值" width="100">
         <template #default="{ row }">
-          {{ row.discountType === 1 ? `¥${row.discountValue}` : `${row.discountValue * 100}%` }}
+          {{ row.discountType === 'FIXED' ? `¥${row.discountValue}` : `${row.discountValue * 10}折` }}
         </template>
       </el-table-column>
       <el-table-column label="最低消费" width="100">
-        <template #default="{ row }">¥{{ row.minConsumption || '—' }}</template>
+        <template #default="{ row }">¥{{ row.minOrderAmount || '—' }}</template>
       </el-table-column>
       <el-table-column prop="totalQuantity" label="总量" width="70" />
-      <el-table-column prop="issuedQuantity" label="已发" width="70" />
+      <el-table-column prop="usedQuantity" label="已用" width="70" />
       <el-table-column label="有效期" width="200">
         <template #default="{ row }">{{ fmtTime(row.startTime) }} ~ {{ fmtTime(row.endTime) }}</template>
       </el-table-column>
@@ -43,15 +43,15 @@
         <el-form-item label="名称"><el-input v-model="form.name" placeholder="优惠券名称" /></el-form-item>
         <el-form-item label="类型">
           <el-radio-group v-model="form.discountType">
-            <el-radio :value="1">满减</el-radio>
-            <el-radio :value="2">折扣</el-radio>
+            <el-radio value="FIXED">满减</el-radio>
+            <el-radio value="PERCENT">折扣</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item label="面值">
-          <el-input-number v-model="form.discountValue" :min="0" :precision="form.discountType === 2 ? 2 : 0" :step="form.discountType === 2 ? 0.1 : 1" />
-          <span class="form-hint">{{ form.discountType === 1 ? '元' : '（0-1之间，0.8=8折）' }}</span>
+          <el-input-number v-model="form.discountValue" :min="0" :precision="form.discountType === 'PERCENT' ? 2 : 0" :step="form.discountType === 'PERCENT' ? 0.1 : 1" />
+          <span class="form-hint">{{ form.discountType === 'FIXED' ? '元' : '（0-1之间，0.8=8折）' }}</span>
         </el-form-item>
-        <el-form-item label="最低消费"><el-input-number v-model="form.minConsumption" :min="0" :precision="2" /></el-form-item>
+        <el-form-item label="最低消费"><el-input-number v-model="form.minOrderAmount" :min="0" :precision="2" /></el-form-item>
         <el-form-item label="发行量"><el-input-number v-model="form.totalQuantity" :min="1" /></el-form-item>
         <el-form-item label="开始时间">
           <el-date-picker v-model="form.startTime" type="datetime" placeholder="选择开始时间" format="YYYY-MM-DD HH:mm" />
@@ -86,7 +86,7 @@ const flatCategories = ref([])
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const form = reactive({
-  name: '', discountType: 1, discountValue: 10, minConsumption: 0,
+  name: '', discountType: 'FIXED', discountValue: 10, minOrderAmount: 0,
   totalQuantity: 100, startTime: null, endTime: null, applicableCategoryId: null
 })
 
@@ -125,13 +125,13 @@ function openDialog(row) {
     editingId.value = row.id
     Object.assign(form, {
       name: row.name, discountType: row.discountType, discountValue: row.discountValue,
-      minConsumption: row.minConsumption || 0, totalQuantity: row.totalQuantity,
+      minOrderAmount: row.minOrderAmount || 0, totalQuantity: row.totalQuantity,
       startTime: row.startTime, endTime: row.endTime, applicableCategoryId: row.applicableCategoryId
     })
   } else {
     editingId.value = null
     Object.assign(form, {
-      name: '', discountType: 1, discountValue: 10, minConsumption: 0,
+      name: '', discountType: 'FIXED', discountValue: 10, minOrderAmount: 0,
       totalQuantity: 100, startTime: null, endTime: null, applicableCategoryId: null
     })
   }

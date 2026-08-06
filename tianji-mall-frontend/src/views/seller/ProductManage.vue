@@ -5,6 +5,14 @@
       <el-button type="primary" @click="openDialog()">新增商品</el-button>
     </div>
 
+    <div class="sp-tabs">
+      <span
+        v-for="t in statusTabs" :key="t.value"
+        class="tab-item" :class="{ active: query.status === t.value }"
+        @click="switchStatus(t.value)"
+      >{{ t.label }}</span>
+    </div>
+
     <el-table :data="products" stripe v-loading="loading">
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="商品名称" show-overflow-tooltip />
@@ -21,7 +29,8 @@
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button size="small" text @click="openDialog(row)">编辑</el-button>
-          <el-button size="small" text type="danger" @click="handleDelete(row)">下架</el-button>
+          <el-button v-if="row.status === 0" size="small" text type="success" @click="handleRestore(row)">上架</el-button>
+          <el-button v-else size="small" text type="danger" @click="handleDelete(row)">下架</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -64,7 +73,18 @@ const total = ref(0)
 const loading = ref(false)
 const saving = ref(false)
 
-const query = reactive({ page: 1, size: 20 })
+const query = reactive({ page: 1, size: 20, status: 1 })
+
+const statusTabs = [
+  { value: 1, label: '上架' },
+  { value: 0, label: '下架' }
+]
+
+function switchStatus(v) {
+  query.status = v
+  query.page = 1
+  loadData()
+}
 
 const dialogVisible = ref(false)
 const editingId = ref(null)
@@ -75,7 +95,7 @@ onMounted(() => loadData())
 async function loadData() {
   loading.value = true
   try {
-    const res = await getSellerProducts({ page: query.page, size: query.size })
+    const res = await getSellerProducts({ page: query.page, size: query.size, status: query.status })
     if (res.data) {
       products.value = res.data.records || []
       total.value = res.data.total || 0
@@ -126,10 +146,22 @@ async function handleDelete(row) {
     await loadData()
   } catch { /* handle by interceptor */ }
 }
+
+async function handleRestore(row) {
+  try {
+    // updateById 只更新非 null 字段，仅传 status 即可恢复上架
+    await updateSellerProduct(row.id, { status: 1 })
+    ElMessage.success('已上架')
+    await loadData()
+  } catch { /* handle by interceptor */ }
+}
 </script>
 
 <style scoped>
 .seller-page h2 { margin-bottom: 16px; }
 .sp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.sp-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
+.sp-tabs .tab-item { padding: 6px 16px; font-size: 13px; cursor: pointer; border-radius: 4px; color: #666; }
+.sp-tabs .tab-item:hover, .sp-tabs .tab-item.active { background: #fff7f0; color: #ff5000; font-weight: 600; }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 16px; }
 </style>

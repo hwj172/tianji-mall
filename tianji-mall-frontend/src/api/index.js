@@ -69,6 +69,19 @@ export function getUserCenter() {
   return request.get('/user/center')
 }
 
+// ========== 用户资料 ==========
+export function updateProfile(data) {
+  return request.put('/user/profile', data)
+}
+export function updatePassword(data) {
+  return request.put('/user/password', data)
+}
+export function uploadAvatar(file) {
+  const fd = new FormData()
+  fd.append('file', file)
+  return request.put('/user/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
+}
+
 // ========== 管理后台 ==========
 
 // Dashboard
@@ -378,9 +391,6 @@ export function createPay(params) {
   return request.post('/pay/create', null, { params })
 }
 
-export function queryPay(params) {
-  return request.get('/pay/query', { params })
-}
 
 // ========== 推荐 ==========
 export function getProductRecommend(params) {
@@ -412,6 +422,10 @@ export function getRefundDetail(id) {
 
 export function getMyRefunds(params) {
   return request.get('/refund/my', { params })
+}
+
+export function requestRefund(orderId, data) {
+  return request.post(`/order/${orderId}/refund`, data)
 }
 
 export function shipRefund(id, data) {

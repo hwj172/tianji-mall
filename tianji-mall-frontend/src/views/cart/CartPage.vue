@@ -9,20 +9,21 @@
       </div>
 
       <div class="cart-list">
-        <div class="cart-item" v-for="item in cartItems" :key="item.cart.id">
-          <el-checkbox v-model="item.checked" @change="onItemCheck(item)" class="item-check" />
-          <div class="item-image" @click="$router.push(`/product/${item.product.id}`)">
-            <img :src="item.image" :alt="item.product.name" @error="onImgError" />
+        <div class="cart-item" v-for="item in cartItems" :key="item.cart.id" :class="{ invalid: item.invalid }">
+          <el-checkbox v-model="item.checked" @change="onItemCheck(item)" :disabled="item.invalid" class="item-check" />
+          <div class="item-image" @click="!item.invalid && $router.push(`/product/${item.product.id}`)">
+            <img :src="item.image" :alt="item.product.name || '商品已失效'" @error="onImgError" />
           </div>
           <div class="item-info">
-            <router-link :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
+            <router-link v-if="!item.invalid" :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
+            <span v-else class="item-name invalid-name">商品已失效</span>
             <span class="item-sku" v-if="item.specs">{{ item.specs }}</span>
           </div>
-          <div class="item-price">¥{{ item.price }}</div>
+          <div class="item-price">¥{{ item.invalid ? '—' : item.price }}</div>
           <div class="item-qty">
-            <el-input-number v-model="item.cart.quantity" :min="1" :max="item.product.stock" size="small" @change="onQtyChange(item)" />
+            <el-input-number v-model="item.cart.quantity" :min="1" :max="item.product.stock" size="small" @change="onQtyChange(item)" :disabled="item.invalid" />
           </div>
-          <div class="item-subtotal">¥{{ (item.price * item.cart.quantity).toFixed(2) }}</div>
+          <div class="item-subtotal">¥{{ item.invalid ? '—' : (item.price * item.cart.quantity).toFixed(2) }}</div>
           <el-button text type="danger" @click="removeItem(item)" class="item-del">删除</el-button>
         </div>
       </div>
@@ -91,10 +92,13 @@ async function loadCart() {
 
     cartItems.value = items.map(ci => {
       const product = productMap[ci.productId] || {}
+      // 商品不存在（下架/删除）标记失效，置灰不可选
+      const invalid = !product.id
       // 获取 SKU 描述（需从详情 API 异步获取，这里做个简化版）
       const image = getFirstImage(product.images)
-      const price = product.price || 0
-      return { cart: ci, product, image, price, specs: ci.skuSpecs || '', checked: ci.checked === 1 }
+      // 优先 CartItemDTO.price（SKU 商品为 SKU 价，无 SKU 为商品价）
+      const price = ci.price ?? product.price ?? 0
+      return { cart: ci, product, image, price, specs: ci.skuSpecs || '', checked: ci.checked === 1, invalid }
     })
     updateSelectAllState()
   } catch (e) {

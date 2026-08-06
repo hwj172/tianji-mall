@@ -48,11 +48,30 @@
         </div>
       </div>
 
+      <!-- 优惠券 -->
+      <div class="section" v-if="availableCoupons.length">
+        <h3 class="section-title">优惠券</h3>
+        <div class="coupon-options">
+          <div
+            v-for="c in availableCoupons" :key="c.userCouponId"
+            class="coupon-option" :class="{ active: selectedCouponId === c.userCouponId }"
+            @click="selectedCouponId = selectedCouponId === c.userCouponId ? null : c.userCouponId"
+          >
+            <div class="co-name">{{ c.name }}</div>
+            <div class="co-value" v-if="c.discountType === 'FIXED'">减 ¥{{ c.discountValue }}</div>
+            <div class="co-value" v-else>{{ c.discountValue * 10 }}折</div>
+            <div class="co-cond" v-if="c.minOrderAmount > 0">满 ¥{{ c.minOrderAmount }}</div>
+          </div>
+        </div>
+      </div>
+
       <!-- 底部结算 -->
       <div class="checkout-footer">
         <div class="footer-summary">
           <span>共 <b>{{ totalCount }}</b> 件，合计：</span>
-          <span class="footer-total">¥{{ totalPrice }}</span>
+          <span v-if="couponDiscount > 0" class="footer-original">¥{{ totalPrice }}</span>
+          <span class="footer-total">¥{{ payPrice }}</span>
+          <span v-if="couponDiscount > 0" class="footer-coupon">已优惠 ¥{{ couponDiscount.toFixed(2) }}</span>
         </div>
         <el-button type="primary" size="large" @click="submitOrder" :loading="submitting" class="submit-btn">
           提交订单
@@ -93,7 +112,7 @@
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree } from '@/api'
+import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree, getMyCoupons } from '@/api'
 import { useCartStore } from '@/stores/cart'
 
 const route = useRoute()
@@ -126,8 +145,38 @@ const totalPrice = computed(() => {
   return items.value.reduce((s, i) => s + i.price * i.cart.quantity, 0).toFixed(2)
 })
 
+// ====== 优惠券 ======
+const coupons = ref([])
+const selectedCouponId = ref(null)
+
+// 未使用 + 满足最低消费门槛的券
+const availableCoupons = computed(() => {
+  const total = Number(totalPrice)
+  return coupons.value.filter(c =>
+    c.status === 'UNUSED' && (!c.minOrderAmount || c.minOrderAmount <= total)
+  )
+})
+
+const couponDiscount = computed(() => {
+  const c = availableCoupons.value.find(x => x.userCouponId === selectedCouponId.value)
+  if (!c) return 0
+  const total = Number(totalPrice)
+  if (c.discountType === 'FIXED') return Math.min(Number(c.discountValue), total)
+  // PERCENT: 0.8 = 8折，优惠 = 金额 × (1 - 0.8)
+  return Math.round(total * (1 - Number(c.discountValue)) * 100) / 100
+})
+
+const payPrice = computed(() => (Number(totalPrice) - couponDiscount.value).toFixed(2))
+
+async function loadCoupons() {
+  try {
+    const res = await getMyCoupons()
+    coupons.value = res.data || []
+  } catch { /* ignore */ }
+}
+
 onMounted(async () => {
-  await Promise.all([loadAddresses(), loadRegionTree()])
+  await Promise.all([loadAddresses(), loadRegionTree(), loadCoupons()])
   if (buyParams.value) await loadBuyItem()
   else await loadItems()
 })
@@ -148,7 +197,8 @@ async function loadBuyItem() {
     let price = p.price
     let specs = ''
     if (skuId && res.data.skuMatrix) {
-      const found = Object.entries(res.data.skuMatrix).find(([, s]) => s.id === skuId)
+      // skuMatrix value 结构为 {skuId, price, stock}（buildSpecSelectorData）
+      const found = Object.entries(res.data.skuMatrix).find(([, s]) => s.skuId === skuId)
       if (found) {
         const [key, sku] = found
         price = sku.price != null ? sku.price : price
@@ -193,7 +243,7 @@ async function loadItems() {
         cart: ci,
         product,
         image: getFirstImage(product.images),
-        price: product.price || 0,
+        price: ci.price ?? product.price ?? 0,
         specs: ci.skuSpecs || ''
       }
     })
@@ -243,8 +293,8 @@ async function submitOrder() {
   submitting.value = true
   try {
     const payload = buyParams.value
-      ? { addressId: selectedAddressId.value, directItems: [{ productId: buyParams.value.productId, skuId: buyParams.value.skuId, quantity: buyParams.value.qty }] }
-      : { addressId: selectedAddressId.value, cartItemIds: items.value.map(i => i.cart.id) }
+      ? { addressId: selectedAddressId.value, directItems: [{ productId: buyParams.value.productId, skuId: buyParams.value.skuId, quantity: buyParams.value.qty }], couponId: selectedCouponId.value || undefined }
+      : { addressId: selectedAddressId.value, cartItemIds: items.value.map(i => i.cart.id), couponId: selectedCouponId.value || undefined }
     const res = await createOrder(payload)
     ElMessage.success('下单成功')
     cartStore.refreshCount()
@@ -295,6 +345,17 @@ function onImgError(e) {
 .footer-summary b { color: #ff5000; }
 .footer-total { font-size: 24px; font-weight: 700; color: #ff5000; }
 .submit-btn { background: #ff5000; border-color: #ff5000; padding: 12px 48px; font-size: 16px; }
+.footer-original { color: #999; text-decoration: line-through; font-size: 13px; }
+.footer-coupon { color: #ff5000; font-size: 13px; }
+
+/* 优惠券 */
+.coupon-options { display: flex; flex-wrap: wrap; gap: 12px; }
+.coupon-option { border: 1px solid #f0f0f0; border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
+.coupon-option:hover { border-color: #ff5000; }
+.coupon-option.active { border-color: #ff5000; background: #fff7f0; }
+.co-name { font-size: 14px; font-weight: 600; }
+.co-value { color: #ff5000; font-weight: 700; font-size: 14px; }
+.co-cond { font-size: 12px; color: #999; }
 
 .region-row { display: flex; gap: 8px; }
 .region-input { flex: 1; }

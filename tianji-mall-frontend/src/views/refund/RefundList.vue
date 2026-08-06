@@ -10,14 +10,14 @@
           <span class="rc-order">关联订单：{{ r.orderId }}</span>
           <el-tag :type="typeTag(r.refundType)" size="small">{{ typeText(r.refundType) }}</el-tag>
           <el-tag :type="statusTag(r.status)" size="small">{{ statusText(r.status) }}</el-tag>
-          <span class="rc-time">{{ fmtTime(r.createTime) }}</span>
+          <span class="rc-time">{{ fmtTime(r.createdAt) }}</span>
         </div>
         <div class="rc-body">
           <div class="rc-amount">¥{{ r.amount }}</div>
           <div class="rc-actions" @click.stop>
-            <!-- 退货退款 + 已寄回：确认收货 -->
+            <!-- 退货退款 + 已寄回 + 卖家/管理员：确认收货 -->
             <el-button
-              v-if="r.refundType === 'RETURN_REFUND' && r.returnStatus === 'SHIPPED' && r.status === 'processing'"
+              v-if="userStore.isSeller && r.refundType === 'RETURN_REFUND' && r.returnStatus === 'SHIPPED' && r.status === 'processing'"
               size="small" type="success" @click="handleReceive(r)"
             >确认收货</el-button>
           </div>
@@ -65,11 +65,11 @@
             {{ detailRefund.trackingCompany }} {{ detailRefund.trackingNumber }}
           </el-descriptions-item>
           <el-descriptions-item label="退款原因" :span="2">{{ detailRefund.reason || '—' }}</el-descriptions-item>
-          <el-descriptions-item label="创建时间" :span="2">{{ fmtTime(detailRefund.createTime) }}</el-descriptions-item>
+          <el-descriptions-item label="创建时间" :span="2">{{ fmtTime(detailRefund.createdAt) }}</el-descriptions-item>
         </el-descriptions>
-        <div v-if="detailRefund.items && detailRefund.items.length" style="margin-top: 16px;">
+        <div v-if="detailItems && detailItems.length" style="margin-top: 16px;">
           <h4 style="margin-bottom: 8px;">退款商品</h4>
-          <div class="refund-item" v-for="item in detailRefund.items" :key="item.id">
+          <div class="refund-item" v-for="item in detailItems" :key="item.id">
             <span>商品 #{{ item.productId }}</span>
             <span v-if="item.skuId">SKU #{{ item.skuId }}</span>
             <span>x{{ item.quantity }}</span>
@@ -84,6 +84,9 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyRefunds, getRefundDetail, receiveRefund } from '@/api'
+import { useUserStore } from '@/stores/user'
+
+const userStore = useUserStore()
 
 const refunds = ref([])
 const loading = ref(false)
@@ -93,6 +96,7 @@ const total = ref(0)
 
 const dialogVisible = ref(false)
 const detailRefund = ref(null)
+const detailItems = ref([])
 
 const statusMap = { processing: '处理中', success: '已完成', fail: '失败' }
 const typeMap = { REFUND_ONLY: '仅退款', RETURN_REFUND: '退货退款' }
@@ -105,7 +109,7 @@ function statusTag(s) {
 }
 function typeText(t) { return typeMap[t] || t || '未知' }
 function typeTag(t) {
-  const m = { REFUND_ONLY: '', RETURN_REFUND: '' }
+  const m = { REFUND_ONLY: 'info', RETURN_REFUND: 'warning' }
   return m[t] || ''
 }
 function returnStatusText(s) { return returnStatusMap[s] || s }
@@ -134,7 +138,8 @@ async function loadData() {
 async function showDetail(id) {
   try {
     const res = await getRefundDetail(id)
-    detailRefund.value = res.data
+    detailRefund.value = res.data?.refund || null
+    detailItems.value = res.data?.items || []
     dialogVisible.value = true
   } catch { /* ignore */ }
 }

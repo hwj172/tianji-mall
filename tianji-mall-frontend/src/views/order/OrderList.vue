@@ -7,13 +7,13 @@
       <span
         v-for="tab in tabs" :key="tab.key"
         class="tab-item" :class="{ active: activeTab === tab.key }"
-        @click="activeTab = tab.key"
+        @click="switchTab(tab.key)"
       >{{ tab.label }}</span>
     </div>
 
     <!-- 订单列表 -->
-    <div v-if="filteredOrders.length" class="order-list">
-      <div class="order-card" v-for="order in filteredOrders" :key="order.id" @click="$router.push(`/order/${order.id}`)">
+    <div v-if="orders.length" class="order-list">
+      <div class="order-card" v-for="order in orders" :key="order.id" @click="$router.push(`/order/${order.id}`)">
         <div class="oc-header">
           <span class="oc-no">订单号：{{ order.orderNo }}</span>
           <el-tag :type="statusTag(order.status)" size="small">{{ statusText(order.status) }}</el-tag>
@@ -51,17 +51,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderList, cancelOrder, createPay, receiveOrder } from '@/api'
 import { submitPayForm } from '@/utils/pay'
 
 const router = useRouter()
+const route = useRoute()
 
 const orders = ref([])
 const loading = ref(false)
-const activeTab = ref('all')
+// 从 URL ?status=N 初始化（个人中心订单统计跳转）；后端按状态过滤
+const activeTab = ref(route.query.status ? String(route.query.status) : 'all')
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
@@ -83,17 +85,20 @@ function statusTag(s) {
   return m[s] || ''
 }
 
-const filteredOrders = computed(() => {
-  if (activeTab.value === 'all') return orders.value
-  return orders.value.filter(o => o.status === Number(activeTab.value))
-})
+function switchTab(key) {
+  activeTab.value = key
+  currentPage.value = 1
+  loadOrders()
+}
 
 onMounted(() => loadOrders())
 
 async function loadOrders() {
   loading.value = true
   try {
-    const res = await getOrderList({ page: currentPage.value, size: pageSize.value })
+    const params = { page: currentPage.value, size: pageSize.value }
+    if (activeTab.value !== 'all') params.status = activeTab.value
+    const res = await getOrderList(params)
     const data = res.data || {}
     orders.value = data.records || []
     total.value = data.total || 0
@@ -115,7 +120,7 @@ async function handleCancel(order) {
 
 async function handlePay(order) {
   try {
-    const res = await createPay({ orderId: order.id })
+    const res = await createPay({ orderId: order.id, returnUrl: window.location.origin + '/order/list' })
     if (res.data?.payForm) {
       submitPayForm(res.data.payForm)
     } else {

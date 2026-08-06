@@ -14,7 +14,12 @@ export const useUserStore = defineStore('user', () => {
   async function login(credentials) {
     const res = await request.post('/user/login', credentials)
     token.value = res.data.token
-    userInfo.value = res.data.user
+    // LoginResponse 扁平结构：{userId, username, token, role}
+    userInfo.value = {
+      id: res.data.userId,
+      username: res.data.username,
+      role: res.data.role
+    }
     localStorage.setItem('token', res.data.token)
     return res.data
   }

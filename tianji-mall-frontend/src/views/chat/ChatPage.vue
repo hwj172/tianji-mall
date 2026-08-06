@@ -21,10 +21,13 @@
             <div class="msg-text">{{ msg.content }}</div>
             <!-- 推荐商品 -->
             <div class="msg-products" v-if="msg.products && msg.products.length">
-              <div class="rec-item" v-for="p in msg.products" :key="p.id" @click="$router.push(`/product/${p.id}`)">
-                <el-image :src="getFirstImage(p.images)" style="width:60px;height:60px" @error="onImgError" />
+              <div class="rec-card" v-for="p in msg.products" :key="p.id" @click="$router.push(`/product/${p.id}`)">
+                <div class="rec-img">
+                  <el-image :src="getFirstImage(p.images)" fit="cover" @error="onImgError" />
+                </div>
                 <div class="rec-info">
                   <span class="rec-name">{{ p.name }}</span>
+                  <span class="rec-desc">{{ p.description || '暂无简介' }}</span>
                   <span class="rec-price">¥{{ p.price }}</span>
                 </div>
               </div>
@@ -58,8 +61,9 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
+import { Promotion } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { sendChatMessage, getChatHistory } from '@/api'
+import { sendChatMessage } from '@/api'
 
 const messages = ref([])
 const inputText = ref('')
@@ -163,11 +167,14 @@ function onImgError(e) {
 
 /* 推荐商品 */
 .msg-products { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.rec-item { display: flex; gap: 8px; align-items: center; background: #fff; border-radius: 6px; padding: 8px; cursor: pointer; transition: box-shadow .2s; }
-.rec-item:hover { box-shadow: 0 2px 8px rgba(0,0,0,.08); }
-.rec-info { display: flex; flex-direction: column; font-size: 13px; }
-.rec-name { color: #333; max-width: 120px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rec-price { color: #ff5000; font-weight: 600; }
+.rec-card { display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; padding: 8px; cursor: pointer; transition: all .2s; width: 230px; }
+.rec-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); border-color: #ff5000; }
+.rec-img { width: 64px; height: 64px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
+.rec-img .el-image { width: 100%; height: 100%; }
+.rec-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
+.rec-name { color: #333; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-desc { color: #999; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-price { color: #ff5000; font-weight: 700; font-size: 14px; }
 
 /* 输入框 */
 .chat-input { padding: 16px; border-top: 1px solid #f0f0f0; }

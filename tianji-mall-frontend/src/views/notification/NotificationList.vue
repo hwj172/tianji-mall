@@ -44,7 +44,7 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
-import { getNotifications, markRead, markAllRead } from '@/api'
+import { getNotifications, markRead, markAllRead, getUnreadCount } from '@/api'
 
 const notifications = ref([])
 const loading = ref(false)
@@ -56,9 +56,18 @@ const typeIcons = { CREATED: '🛒', SHIPPED: '📦', COMPLETED: '✅' }
 
 function typeIcon(t) { return typeIcons[t] || '📌' }
 
-const hasUnread = computed(() => notifications.value.some(n => !n.isRead))
+// 用后端全局未读数判断（避免分页后"全部已读"按钮失真）
+const globalUnread = ref(0)
+const hasUnread = computed(() => globalUnread.value > 0)
 
-onMounted(() => loadData())
+async function loadUnread() {
+  try {
+    const res = await getUnreadCount()
+    globalUnread.value = res.data != null ? Number(res.data) : 0
+  } catch { /* ignore */ }
+}
+
+onMounted(() => { loadData(); loadUnread() })
 
 async function loadData() {
   loading.value = true
@@ -87,6 +96,7 @@ async function handleMarkAllRead() {
   try {
     await markAllRead()
     notifications.value.forEach(n => { n.isRead = true })
+    globalUnread.value = 0
     ElMessage.success('全部已读')
   } catch { /* ignore */ }
 }

@@ -45,6 +45,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
+import { Shop } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getSellerDashboard, getSellerShop, updateSellerShop } from '@/api'
 

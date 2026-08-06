@@ -50,7 +50,7 @@
     </section>
 
     <!-- 个性化推荐（独立接口） -->
-    <section class="home-section" v-loading="recommendLoading" v-if="personalRecommend.length || personalAlsoBuy.length">
+    <section class="home-section" v-if="personalRecommend.length || personalAlsoBuy.length">
       <template v-if="personalRecommend.length">
         <div class="section-header"><h3>💝 猜你喜欢</h3></div>
         <div class="product-grid cols-5">
@@ -70,7 +70,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '@/stores/user'
-import { getHomeData, getProductRecommend } from '@/api'
+import { getHomeData } from '@/api'
 import HomeBanner from '@/components/home/HomeBanner.vue'
 import ProductCard from '@/components/common/ProductCard.vue'
 
@@ -84,7 +84,6 @@ const homeData = reactive({
 })
 const categories = ref([])
 const activeCategory = ref(null)
-const recommendLoading = ref(false)
 const personalRecommend = ref([])
 const personalAlsoBuy = ref([])
 
@@ -98,27 +97,14 @@ onMounted(async () => {
         recommend: res.data.recommend || { guessYouLike: [], hotSales: [], buyAfterBuy: [] }
       })
       categories.value = res.data.categories || []
+      // 首页接口已返回推荐数据（RecommendResponse），直接复用，不再单独请求
+      personalRecommend.value = homeData.recommend.guessYouLike || []
+      personalAlsoBuy.value = homeData.recommend.buyAfterBuy || []
     }
   } catch (e) {
     console.error('首页数据加载失败', e)
   }
-  loadRecommend()
 })
-
-async function loadRecommend() {
-  recommendLoading.value = true
-  try {
-    const res = await getProductRecommend({ count: 10 })
-    if (res.data) {
-      personalRecommend.value = res.data.recommend || []
-      personalAlsoBuy.value = res.data.alsoBuy || []
-    }
-  } catch {
-    // 静默降级
-  } finally {
-    recommendLoading.value = false
-  }
-}
 </script>
 
 <style scoped>

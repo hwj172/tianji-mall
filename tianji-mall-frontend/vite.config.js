@@ -13,6 +13,11 @@ export default defineConfig({
       '/api': {
         target: 'http://192.168.150.11:8080',
         changeOrigin: true
+      },
+      // 上传图片静态资源（后端返回 /uploads/x.jpg，经网关映射到 mall-goods-order）
+      '/uploads': {
+        target: 'http://192.168.150.11:8080',
+        changeOrigin: true
       }
     }
   },

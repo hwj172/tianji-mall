@@ -23,6 +23,7 @@ const route = useRoute()
 const userStore = useUserStore()
 const loading = ref(false)
 
+const formRef = ref(null)
 const form = reactive({ username: '', password: '' })
 const rules = {
   username: [{ required: true, message: '请输入用户名', trigger: 'blur' }],
@@ -30,6 +31,7 @@ const rules = {
 }
 
 async function handleLogin() {
+  try { await formRef.value.validate() } catch { return }
   loading.value = true
   try {
     await userStore.login(form)

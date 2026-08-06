@@ -1,11 +1,11 @@
 <template>
-  <div class="seckill-page">
+  <div class="seckill-page" v-loading="loading">
     <div class="sk-header">
       <h2>⚡ 限时秒杀</h2>
     </div>
 
     <div class="product-grid" v-if="products.length">
-      <ProductCard v-for="p in products" :key="p.id" :product="enrich(p)" />
+      <ProductCard v-for="p in products" :key="p.id" :product="enrich(p)" showOriginalPrice />
     </div>
     <el-empty v-else-if="!loading" description="暂无秒杀活动" />
 

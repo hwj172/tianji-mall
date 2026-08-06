@@ -15,7 +15,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { getBrowsingHistory, clearBrowsingHistory } from '@/api'
+import { getBrowsingHistory, clearBrowsingHistory, getProductBatch } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
 
 const products = ref([])
@@ -23,13 +23,19 @@ const loading = ref(false)
 
 onMounted(() => loadData())
 
+// 后端返回 List<BrowsingHistory>（仅 productId），批量查询商品回填详情后渲染
 async function loadData() {
   loading.value = true
   try {
     const res = await getBrowsingHistory()
-    if (res.data) {
-      products.value = res.data.records || res.data || []
+    const hist = res.data || []
+    if (!hist.length) {
+      products.value = []
+      return
     }
+    const pRes = await getProductBatch(hist.map(h => h.productId))
+    const byId = new Map((pRes.data || []).map(p => [p.id, p]))
+    products.value = hist.map(h => byId.get(h.productId)).filter(Boolean)
   } catch { /* ignore */ }
   finally { loading.value = false }
 }

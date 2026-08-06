@@ -1,4 +1,5 @@
 <template>
+  <div v-if="loading && !product" v-loading="true" class="detail-loading-wrap"></div>
   <div class="product-detail-page" v-if="product">
     <div class="detail-main">
       <!-- 左：图片 -->
@@ -133,8 +134,8 @@
             <span class="review-time">{{ fmtReviewTime(r.createTime) }}</span>
           </div>
           <div class="review-content" v-if="r.content">{{ r.content }}</div>
-          <div class="review-images" v-if="r.images?.length">
-            <img v-for="(img, i) in r.images" :key="i" :src="img" class="review-img" />
+          <div class="review-images" v-if="reviewImages(r).length">
+            <img v-for="(img, i) in reviewImages(r)" :key="i" :src="img" class="review-img" />
           </div>
         </div>
         <div class="review-load-more" v-if="reviewTotal > reviews.length">
@@ -152,7 +153,7 @@ import { ref, reactive, computed, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Star, StarFilled } from '@element-plus/icons-vue'
-import { getProductDetail, getProductReviews, toggleFavorite } from '@/api'
+import { getProductDetail, getProductReviews, toggleFavorite, getFavorites } from '@/api'
 import { addToCart as apiAddToCart } from '@/api'
 import { useCartStore } from '@/stores/cart'
 
@@ -236,6 +237,7 @@ async function loadDetail() {
       specTree.value = res.data.specTree || null
       skuMatrix.value = res.data.skuMatrix || null
     }
+    await loadFavoriteStatus()
   } catch (e) {
     console.error('加载商品详情失败', e)
   } finally {
@@ -251,8 +253,18 @@ function selectSpec(name, value) {
 function isSpecDisabled(name, value) {
   if (!specTree.value?.length || !skuMatrix.value) return false
   const testSpecs = { ...selectedSpecs, [name]: value }
-  const key = specTree.value.map(s => testSpecs[s.name] || '').join(';')
-  return !(key in skuMatrix.value)
+  const dimensionNames = specTree.value.map(s => s.name)
+  // 多规格：只要存在一个完整组合包含当前已选规格即可选（不能要求 key 完全命中，
+  // 否则首次选择时其他维度为空，所有规格都被禁用）
+  const hasMatch = Object.keys(skuMatrix.value).some(key => {
+    const parts = key.split(';')
+    return dimensionNames.every((dim, i) => {
+      const selected = testSpecs[dim]
+      if (selected == null || selected === '') return true // 未选维度不限制
+      return parts[i] === selected
+    })
+  })
+  return !hasMatch
 }
 
 async function addToCart() {
@@ -263,7 +275,7 @@ async function addToCart() {
   try {
     await apiAddToCart({
       productId: product.value.id,
-      skuId: currentSkuInfo.value?.id || null,
+      skuId: currentSkuInfo.value?.skuId || null,
       quantity: quantity.value
     })
     cartStore.refreshCount()
@@ -281,7 +293,7 @@ function buyNow() {
     query: {
       mode: 'buy',
       productId: product.value.id,
-      skuId: currentSkuInfo.value?.id || '',
+      skuId: currentSkuInfo.value?.skuId || '',
       qty: quantity.value
     }
   })
@@ -289,12 +301,23 @@ function buyNow() {
 
 async function toggleFav() {
   try {
-    await toggleFavorite(product.value.id)
-    isFavorite.value = !isFavorite.value
+    const res = await toggleFavorite(product.value.id)
+    // 以后端返回的 favorited 为准（避免本地取反与服务端状态不同步）
+    isFavorite.value = res.data?.favorited ?? !isFavorite.value
     ElMessage.success(isFavorite.value ? '已收藏' : '已取消收藏')
   } catch {
     // handle by interceptor
   }
+}
+
+// 加载商品时同步收藏状态（老用户重访时按钮状态正确）
+async function loadFavoriteStatus() {
+  if (!product.value?.id) return
+  try {
+    const res = await getFavorites()
+    const list = res.data || []
+    isFavorite.value = list.some(f => f.productId === product.value.id)
+  } catch { /* ignore */ }
 }
 
 async function loadReviews() {
@@ -311,6 +334,14 @@ async function loadReviews() {
   } finally {
     reviewLoading.value = false
   }
+}
+
+function reviewImages(r) {
+  if (!r || !r.images) return []
+  try {
+    const arr = typeof r.images === 'string' ? JSON.parse(r.images) : r.images
+    return Array.isArray(arr) ? arr : []
+  } catch { return [] }
 }
 
 async function loadMoreReviews() {

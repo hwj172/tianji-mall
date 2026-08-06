@@ -10,7 +10,7 @@
         <span class="uc-role">{{ roleText }}</span>
       </div>
       <div class="uc-actions">
-        <el-button size="small" @click="$router.push('/user/center')">编辑资料</el-button>
+        <el-button size="small" @click="openEditDialog">编辑资料</el-button>
       </div>
     </div>
 
@@ -55,7 +55,7 @@
           <el-icon :size="22"><Star /></el-icon>
           <span>我的评价</span>
         </div>
-        <div class="ql-item" @click="$router.push('/user/favorites')">
+        <div class="ql-item" @click="$router.push('/favorite/list')">
           <span class="ql-emoji">❤️</span>
           <span>我的收藏</span>
           <el-badge v-if="centerData.favoriteCount" :value="centerData.favoriteCount" class="ql-badge" />
@@ -64,19 +64,14 @@
           <span class="ql-emoji">👣</span>
           <span>浏览足迹</span>
         </div>
-        <div class="ql-item" @click="$router.push('/refund/my')">
+        <div class="ql-item" @click="$router.push('/refund/list')">
           <span class="ql-emoji">🔙</span>
           <span>退款/售后</span>
         </div>
-        <div class="ql-item" @click="$router.push('/user/notifications')">
+        <div class="ql-item" @click="$router.push('/notification/list')">
           <span class="ql-emoji">🔔</span>
           <span>消息通知</span>
           <el-badge v-if="unreadCount" :value="unreadCount" class="ql-badge" />
-        </div>
-        <div class="ql-item" @click="$router.push('/shop/following')">
-          <span class="ql-emoji">🏪</span>
-          <span>关注的店铺</span>
-          <el-badge v-if="centerData.followShopCount" :value="centerData.followShopCount" class="ql-badge" />
         </div>
         <div class="ql-item" @click="handleLogout">
           <el-icon :size="22"><SwitchButton /></el-icon>
@@ -84,16 +79,38 @@
         </div>
       </div>
     </div>
+
+    <!-- 编辑资料 Dialog -->
+    <el-dialog v-model="editVisible" title="编辑资料" width="460px">
+      <el-form :model="editForm" label-width="70px">
+        <el-form-item label="头像">
+          <div class="avatar-upload" @click="avatarInput?.click()">
+            <el-avatar :size="64" :src="editForm.avatar" />
+            <div class="avatar-mask">更换头像</div>
+          </div>
+          <input ref="avatarInput" type="file" accept="image/*" style="display:none" @change="handleAvatarChange" />
+        </el-form-item>
+        <el-form-item label="用户名"><el-input v-model="editForm.username" maxlength="64" /></el-form-item>
+        <el-form-item label="手机号"><el-input v-model="editForm.phone" /></el-form-item>
+        <el-form-item label="邮箱"><el-input v-model="editForm.email" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="editVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveProfile" :loading="savingProfile">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
-import { ElMessageBox } from 'element-plus'
-import { getUserCenter, getUnreadCount } from '@/api'
+import { ElMessage, ElMessageBox } from 'element-plus'
+import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar } from '@/api'
+import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
+const userStore = useUserStore()
 
 const user = ref({})
 const unreadCount = ref(0)
@@ -138,10 +155,56 @@ async function loadUnreadCount() {
 
 function handleLogout() {
   ElMessageBox.confirm('确定退出登录？', '提示', { type: 'warning' }).then(() => {
-    localStorage.removeItem('token')
-    router.push('/')
-    window.location.reload()
+    userStore.logout()   // 清 Pinia 状态 + localStorage + 跳登录页
   }).catch(() => {})
+}
+
+// ========== 编辑资料 ==========
+
+const editVisible = ref(false)
+const savingProfile = ref(false)
+const avatarInput = ref(null)
+const editForm = ref({ username: '', phone: '', email: '', avatar: '' })
+
+function openEditDialog() {
+  editForm.value = {
+    username: user.value.username || '',
+    phone: user.value.phone || '',
+    email: user.value.email || '',
+    avatar: user.value.avatar || ''
+  }
+  editVisible.value = true
+}
+
+async function handleAvatarChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  try {
+    const res = await uploadAvatar(file)
+    if (res.data) {
+      editForm.value.avatar = res.data
+      user.value.avatar = res.data
+    }
+    ElMessage.success('头像已更新')
+  } catch { /* handle by interceptor */ }
+  e.target.value = ''
+}
+
+async function saveProfile() {
+  savingProfile.value = true
+  try {
+    await updateProfile({
+      username: editForm.value.username,
+      phone: editForm.value.phone,
+      email: editForm.value.email
+    })
+    user.value.username = editForm.value.username
+    user.value.phone = editForm.value.phone
+    user.value.email = editForm.value.email
+    ElMessage.success('保存成功')
+    editVisible.value = false
+  } catch { /* handle by interceptor */ }
+  finally { savingProfile.value = false }
 }
 </script>
 
@@ -154,6 +217,9 @@ function handleLogout() {
 .uc-info h3 { font-size: 22px; margin-bottom: 4px; }
 .uc-role { font-size: 13px; opacity: .85; }
 .uc-actions { margin-left: auto; }
+.avatar-upload { position: relative; cursor: pointer; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
+.avatar-mask { position: absolute; inset: 0; background: rgba(0,0,0,.45); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; }
+.avatar-upload:hover .avatar-mask { opacity: 1; }
 
 /* 通用区块 */
 .section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
