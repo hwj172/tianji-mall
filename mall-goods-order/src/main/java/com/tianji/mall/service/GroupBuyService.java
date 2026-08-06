@@ -218,11 +218,9 @@ public class GroupBuyService {
 
     private void sendTimeoutMessage(Long gboId, int expireHours) {
         try {
-            String delayLevel = expireHours <= 2 ? String.valueOf(16 + expireHours) : "18";
-            Message<String> msg = MessageBuilder.withPayload(gboId.toString())
-                    .setHeader("DELAY", delayLevel)
-                    .build();
-            rocketMQTemplate.syncSend("group-buy-topic:TIMEOUT_CHECK", msg, 3000);
+            int delayLevel = expireHours <= 2 ? (16 + expireHours) : 18;
+            Message<String> msg = MessageBuilder.withPayload(gboId.toString()).build();
+            rocketMQTemplate.syncSend("group-buy-topic:TIMEOUT_CHECK", msg, 3000, delayLevel);
             log.info("拼团超时消息已发送: gboId={}, expireHours={}, delayLevel={}", gboId, expireHours, delayLevel);
         } catch (Exception e) {
             log.error("发送拼团超时消息失败: gboId={}", gboId, e);

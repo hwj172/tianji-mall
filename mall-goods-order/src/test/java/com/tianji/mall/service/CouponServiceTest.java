@@ -259,17 +259,16 @@ class CouponServiceTest {
         when(userCouponMapper.selectById(2L)).thenReturn(uc);
 
         Coupon coupon = buildCoupon(20L, "8折", "PERCENT", 8, 100);
+        coupon.setDiscountValue(BigDecimal.valueOf(0.8)); // 0.8 = 8 折（付 80%）
         coupon.setStatus(1);
         coupon.setEndTime(LocalDateTime.now().plusDays(7));
         when(couponMapper.selectById(20L)).thenReturn(coupon);
         when(userCouponMapper.markUsed(2L, null)).thenReturn(1);
 
-        // 8折 = discountValue=8，即 100 * 8 / 10 = 80，实际折扣 = 100 * (1 - 0.8) = 20...
-        // Wait, the implementation uses: orderAmount * discountValue / 10
-        // PERCENT with value=8: discount = 150 * 8 / 10 = 120
+        // 0.8 = 8 折：折扣金额 = 150 × (1 - 0.8) = 30
         BigDecimal discount = couponService.applyCoupon(100L, 2L, BigDecimal.valueOf(150));
 
-        assertThat(discount).isEqualByComparingTo(BigDecimal.valueOf(120));
+        assertThat(discount).isEqualByComparingTo(BigDecimal.valueOf(30));
     }
 
     @Test

@@ -47,11 +47,29 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
                 : skuService.listByIds(skuIds).stream()
                         .collect(Collectors.toMap(ProductSku::getId, s -> s));
 
+        // 商品批量查询：无 SKU 的购物车项取商品默认价
+        List<Long> productIds = items.stream()
+                .map(CartItem::getProductId)
+                .filter(Objects::nonNull)
+                .distinct()
+                .toList();
+        Map<Long, Product> productMap = productIds.isEmpty() ? Map.of()
+                : productService.listByIds(productIds).stream()
+                        .collect(Collectors.toMap(Product::getId, p -> p));
+
         return items.stream().map(item -> {
             CartItemDTO dto = new CartItemDTO();
             BeanUtils.copyProperties(item, dto);   // CartItemDTO 的 skuSpecs 不在 CartItem 中，复制后保持默认 null
             ProductSku sku = item.getSkuId() != null ? skuMap.get(item.getSkuId()) : null;
             dto.setSkuSpecs(sku != null ? sku.getSpecs() : null);
+            if (sku != null) {
+                dto.setPrice(sku.getPrice());
+            } else {
+                Product product = productMap.get(item.getProductId());
+                if (product != null) {
+                    dto.setPrice(product.getPrice());
+                }
+            }
             return dto;
         }).toList();
     }

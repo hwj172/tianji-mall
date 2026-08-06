@@ -1,5 +1,6 @@
 package com.tianji.mall.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.ReviewCreateRequest;
@@ -128,14 +129,15 @@ class ReviewControllerTest {
         resp.setId(1L);
         resp.setRating(5);
         resp.setContent("好评");
-        when(reviewService.getProductReviews(10L, 1, 20)).thenReturn(List.of(resp));
+        when(reviewService.getProductReviews(10L, 1, 20))
+                .thenReturn(new Page<ReviewResponse>().setRecords(List.of(resp)));
 
         mockMvc.perform(get("/api/review/product/10")
                         .param("page", "1")
                         .param("size", "20"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].rating").value(5))
-                .andExpect(jsonPath("$.data[0].content").value("好评"));
+                .andExpect(jsonPath("$.data.records[0].rating").value(5))
+                .andExpect(jsonPath("$.data.records[0].content").value("好评"));
     }
 
     @Test

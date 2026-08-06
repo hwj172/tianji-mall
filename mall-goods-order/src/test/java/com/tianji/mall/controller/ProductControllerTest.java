@@ -85,7 +85,7 @@ class ProductControllerTest {
     void shouldListProducts() throws Exception {
         Page<Product> page = new Page<>(1, 20);
         page.setTotal(0);
-        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/product/list"))
@@ -98,7 +98,7 @@ class ProductControllerTest {
     void shouldSearchByKeyword() throws Exception {
         Page<Product> page = new Page<>(1, 20);
         page.setTotal(1);
-        when(productService.getProductPage(isNull(), eq("手机"), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), eq("手机"), isNull(), isNull(), isNull(), isNull(), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/product/list")
@@ -156,7 +156,7 @@ class ProductControllerTest {
         RecommendResponse resp = new RecommendResponse(
                 List.of(),
                 List.of(new RecommendResponse.RecommendItem(1L, "iPhone",
-                        java.math.BigDecimal.valueOf(6999), 5000L, "")),
+                        java.math.BigDecimal.valueOf(6999), 5000L, "", "")),
                 List.of()
         );
         when(recommendService.recommend(isNull(), eq(10))).thenReturn(resp);
@@ -174,10 +174,10 @@ class ProductControllerTest {
 
         RecommendResponse resp = new RecommendResponse(
                 List.of(new RecommendResponse.RecommendItem(2L, "保护壳",
-                        java.math.BigDecimal.valueOf(49), 3000L, "")),
+                        java.math.BigDecimal.valueOf(49), 3000L, "", "")),
                 List.of(),
                 List.of(new RecommendResponse.RecommendItem(3L, "数据线",
-                        java.math.BigDecimal.valueOf(29), 2000L, "和 iPhone 一起买"))
+                        java.math.BigDecimal.valueOf(29), 2000L, "和 iPhone 一起买", ""))
         );
         when(recommendService.recommend(eq(1L), eq(5))).thenReturn(resp);
 

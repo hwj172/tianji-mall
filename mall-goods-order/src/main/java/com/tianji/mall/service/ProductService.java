@@ -47,9 +47,10 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     // NOTE: 不用 @Cacheable — Page 对象无法通过 GenericJackson2JsonRedisSerializer 正确反序列化
     public Page<Product> getProductPage(Long categoryId, String keyword,
                                         BigDecimal minPrice, BigDecimal maxPrice,
-                                        String sortBy, Long shopId, int page, int size) {
+                                        String sortBy, Long shopId, Integer status, int page, int size) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(Product::getStatus, 1);
+        // status 可空：null 默认只查上架商品；卖家传 0 可查下架商品（实现上架恢复）
+        wrapper.eq(Product::getStatus, status != null ? status : 1);
         if (categoryId != null) {
             wrapper.eq(Product::getCategoryId, categoryId);
         }

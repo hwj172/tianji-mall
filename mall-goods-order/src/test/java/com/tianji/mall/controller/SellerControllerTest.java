@@ -115,7 +115,7 @@ class SellerControllerTest {
         when(shopService.getBySellerId(2L)).thenReturn(buildShop());
 
         Page<Product> page = new Page<>(1, 20);
-        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
 
         mockMvc.perform(get("/api/seller/products")

@@ -25,5 +25,6 @@ public class RecommendResponse {
         private BigDecimal price;
         private Long sales;
         private String reason;
+        private String images;
     }
 }

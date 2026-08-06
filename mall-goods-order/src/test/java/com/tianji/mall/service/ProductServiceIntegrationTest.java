@@ -72,7 +72,7 @@ class ProductServiceIntegrationTest {
         insertProduct("iPad", "苹果平板", BigDecimal.valueOf(4999), 1L, 5, 1);
         insertProduct("已下架商品", "已下架", BigDecimal.valueOf(100), 1L, 3, 0);
 
-        Page<Product> page = productService.getProductPage(null, null, null, null, null, null, 1, 10);
+        Page<Product> page = productService.getProductPage(null, null, null, null, null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(2);
         assertThat(page.getRecords()).hasSize(2);
@@ -83,7 +83,7 @@ class ProductServiceIntegrationTest {
         insertProduct("iPhone 15 Pro", "苹果旗舰手机", BigDecimal.valueOf(7999), 1L, 10, 1);
         insertProduct("MacBook Pro", "苹果笔记本", BigDecimal.valueOf(12999), 1L, 5, 1);
 
-        Page<Product> page = productService.getProductPage(null, "iPhone", null, null, null, null, 1, 10);
+        Page<Product> page = productService.getProductPage(null, "iPhone", null, null, null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(1);
         assertThat(page.getRecords().get(0).getName()).contains("iPhone");
@@ -94,7 +94,7 @@ class ProductServiceIntegrationTest {
         insertProduct("MBP", "MacBook Pro 笔记本电脑", BigDecimal.valueOf(12999), 1L, 10, 1);
         insertProduct("iPad Air", "平板电脑", BigDecimal.valueOf(4999), 1L, 5, 1);
 
-        Page<Product> page = productService.getProductPage(null, "笔记本", null, null, null, null, 1, 10);
+        Page<Product> page = productService.getProductPage(null, "笔记本", null, null, null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(1);
         assertThat(page.getRecords().get(0).getName()).isEqualTo("MBP");
@@ -105,7 +105,7 @@ class ProductServiceIntegrationTest {
         insertProduct("手机", "手机", BigDecimal.valueOf(5000), 1L, 10, 1);
         insertProduct("笔记本", "笔记本", BigDecimal.valueOf(8000), 2L, 5, 1);
 
-        Page<Product> page = productService.getProductPage(2L, null, null, null, null, null, 1, 10);
+        Page<Product> page = productService.getProductPage(2L, null, null, null, null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(1);
         assertThat(page.getRecords().get(0).getName()).isEqualTo("笔记本");
@@ -118,7 +118,7 @@ class ProductServiceIntegrationTest {
         insertProduct("昂贵商品", "desc", BigDecimal.valueOf(5000), 1L, 10, 1);
 
         Page<Product> page = productService.getProductPage(null, null,
-                BigDecimal.valueOf(100), BigDecimal.valueOf(1000), null, null, 1, 10);
+                BigDecimal.valueOf(100), BigDecimal.valueOf(1000), null, null, null, 1, 10);
 
         assertThat(page.getTotal()).isEqualTo(1);
         assertThat(page.getRecords().get(0).getName()).isEqualTo("中等商品");
@@ -131,7 +131,7 @@ class ProductServiceIntegrationTest {
         insertProduct("C", "desc", BigDecimal.valueOf(300), 1L, 10, 1);
 
         Page<Product> page = productService.getProductPage(null, null,
-                null, null, "price_asc", null, 1, 10);
+                null, null, "price_asc", null, null, 1, 10);
 
         assertThat(page.getRecords()).hasSize(3);
         assertThat(page.getRecords().get(0).getPrice()).isEqualByComparingTo(BigDecimal.valueOf(100));
@@ -144,7 +144,7 @@ class ProductServiceIntegrationTest {
         insertProduct("A", "desc", BigDecimal.valueOf(100), 1L, 10, 1);
 
         Page<Product> page = productService.getProductPage(null, null,
-                null, null, "price_desc", null, 1, 10);
+                null, null, "price_desc", null, null, 1, 10);
 
         assertThat(page.getRecords().get(0).getPrice()).isEqualByComparingTo(BigDecimal.valueOf(200));
     }

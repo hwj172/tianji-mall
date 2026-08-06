@@ -85,7 +85,7 @@ class ShopControllerTest {
         page.setTotal(0);
 
         when(shopService.getById(1L)).thenReturn(shop);
-        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
         when(shopFollowService.countFollowers(1L)).thenReturn(42L);
 
@@ -108,7 +108,7 @@ class ShopControllerTest {
         page.setTotal(0);
 
         when(shopService.getById(1L)).thenReturn(shop);
-        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), eq(1), eq(20)))
+        when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(), isNull(), eq(1L), isNull(), eq(1), eq(20)))
                 .thenReturn(page);
         when(shopFollowService.countFollowers(1L)).thenReturn(5L);
         when(shopFollowService.isFollowing(1L, 1L)).thenReturn(true);

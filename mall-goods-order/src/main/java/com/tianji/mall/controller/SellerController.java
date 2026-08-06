@@ -54,12 +54,13 @@ public class SellerController {
     @GetMapping("/products")
     public R<Page<Product>> products(@RequestHeader("Authorization") String authHeader,
                                       @RequestParam(defaultValue = "1") int page,
-                                      @RequestParam(defaultValue = "20") int size) {
+                                      @RequestParam(defaultValue = "20") int size,
+                                      @RequestParam(value = "status", required = false) Integer status) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
+        // status 可空：null 只查上架，传 0 查下架（供商家恢复上架）
         Page<Product> result = productService.getProductPage(
-                null, null, null, null, null, shop.getId(), page, size);
-        // 过滤本店商品 — 后续 Product 加 shopId 后由 Service 层筛选
+                null, null, null, null, null, shop.getId(), status, page, size);
         return R.ok(result);
     }
 

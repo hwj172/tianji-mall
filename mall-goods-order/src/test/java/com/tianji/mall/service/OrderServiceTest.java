@@ -472,6 +472,39 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldSendTimeoutMessageWithDelayLevelOnCreateOrder() {
+        // 回归测试：超时取消消息必须用 4 参 syncSend(..., delayLevel=16=30min)。
+        // 若误用 DELAY header / 3 参 syncSend，消息会立即投递导致订单秒被"超时"取消。
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(1L);
+        req.setCartItemIds(List.of(1L));
+
+        Address addr = buildAddress(1L, 100L);
+        CartItem cartItem = buildCartItem(1L, 100L, 1L, 2);
+        cartItem.setSkuId(10L);
+        Product product = buildProduct(1L, "iPhone", 100, 1);
+        ProductSku sku = buildSku(10L, 1L, "颜色:红;容量:256G", BigDecimal.valueOf(7999), 10);
+
+        when(addressService.getById(1L)).thenReturn(addr);
+        when(cartService.listByIds(List.of(1L))).thenReturn(List.of(cartItem));
+        when(productService.listByIds(List.of(1L))).thenReturn(List.of(product));
+        when(skuService.getById(10L)).thenReturn(sku);
+        // mock 不会自动回填自增 ID——需在 insert 桩里手动 setId，否则 order.getId()=null，
+        // 第 13 步 `order.getId().toString()` NPE 被 best-effort catch 吞掉，syncSend 永不被调用
+        when(orderMapper.insert(any(Order.class))).thenAnswer(inv -> {
+            Order o = inv.getArgument(0);
+            o.setId(123L);
+            return 1;
+        });
+        when(orderItemMapper.insert(any(OrderItem.class))).thenReturn(1);
+
+        orderService.createOrder(100L, req);
+
+        verify(rocketMQTemplate).syncSend(eq("order-topic:TIMEOUT_CHECK"),
+                any(org.springframework.messaging.Message.class), eq(3000L), eq(16));
+    }
+
+    @Test
     void shouldThrowWhenSkuStockInsufficientForOrder() {
         OrderCreateRequest req = new OrderCreateRequest();
         req.setAddressId(1L);

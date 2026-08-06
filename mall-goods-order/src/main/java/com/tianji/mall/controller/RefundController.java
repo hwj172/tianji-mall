@@ -1,6 +1,8 @@
 package com.tianji.mall.controller;
 
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.tianji.common.exception.BizErrorCode;
+import com.tianji.common.exception.BizException;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.ShipRequest;
@@ -43,7 +45,12 @@ public class RefundController {
     }
 
     @PutMapping("/{id}/receive")
-    public R<Void> confirmReceive(@PathVariable("id") Long id) {
+    public R<Void> confirmReceive(@RequestHeader(value = "X-User-Role", required = false) String role,
+                                  @PathVariable("id") Long id) {
+        // 卖家确认收货退款：仅 seller / admin 可操作（网关已注入 X-User-Role；无 header 视为未认证）
+        if (role == null || (!"seller".equals(role) && !"admin".equals(role))) {
+            throw new BizException(BizErrorCode.FORBIDDEN);
+        }
         refundService.confirmReceive(id);
         return R.ok();
     }

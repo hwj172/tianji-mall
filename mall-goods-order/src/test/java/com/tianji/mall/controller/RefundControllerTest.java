@@ -134,9 +134,19 @@ class RefundControllerTest {
     void shouldConfirmReceive() throws Exception {
         doNothing().when(refundService).confirmReceive(1L);
 
-        mockMvc.perform(put("/api/refund/1/receive"))
+        mockMvc.perform(put("/api/refund/1/receive")
+                        .header("X-User-Role", "seller"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldRejectConfirmReceiveForNonSeller() throws Exception {
+        // 买家/无角色 header 不可确认收货退款
+        mockMvc.perform(put("/api/refund/1/receive")
+                        .header("X-User-Role", "user"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(403));
     }
 
     // ==================== exception scenarios ====================

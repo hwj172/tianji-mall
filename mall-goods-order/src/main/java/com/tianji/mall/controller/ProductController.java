@@ -37,7 +37,7 @@ public class ProductController {
                                   @RequestParam(defaultValue = "1") int page,
                                   @RequestParam(defaultValue = "20") int size) {
         return R.ok(productService.getProductPage(categoryId, keyword,
-                minPrice, maxPrice, sortBy, null, page, size));
+                minPrice, maxPrice, sortBy, null, null, page, size));
     }
 
     @GetMapping("/{id}")

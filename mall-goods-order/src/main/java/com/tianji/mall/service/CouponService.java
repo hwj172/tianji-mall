@@ -257,8 +257,14 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
         if ("FIXED".equals(coupon.getDiscountType())) {
             discount = coupon.getDiscountValue();
         } else {
-            discount = orderAmount.multiply(coupon.getDiscountValue())
-                    .divide(BigDecimal.valueOf(10), 2, RoundingMode.HALF_UP);
+            // PERCENT 语义：discountValue = 折扣比例（0.8 = 8 折 = 付 80%），折扣金额 = 金额 × (1 - 0.8)
+            // 兼容旧数据：历史录入用 8 表示 8 折（>1 时归一化为 0.8）
+            BigDecimal rate = coupon.getDiscountValue();
+            if (rate.compareTo(BigDecimal.ONE) > 0) {
+                rate = rate.divide(BigDecimal.TEN, 2, RoundingMode.HALF_UP);
+            }
+            discount = orderAmount.multiply(BigDecimal.ONE.subtract(rate))
+                    .setScale(2, RoundingMode.HALF_UP);
         }
         // 折扣不能超过订单金额
         if (discount.compareTo(orderAmount) > 0) {

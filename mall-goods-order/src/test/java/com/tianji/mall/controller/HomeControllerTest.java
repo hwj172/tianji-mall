@@ -110,7 +110,7 @@ class HomeControllerTest {
         Page<Product> productPage = new Page<>(1, 8);
         productPage.setRecords(List.of(product));
         when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(),
-                eq("sales"), isNull(), eq(1), eq(8))).thenReturn(productPage);
+                eq("sales"), isNull(), isNull(), eq(1), eq(8))).thenReturn(productPage);
 
         RecommendResponse recommend = new RecommendResponse(List.of(), List.of(), List.of());
         when(recommendService.recommend(isNull(), eq(10))).thenReturn(recommend);
@@ -133,7 +133,7 @@ class HomeControllerTest {
         Page<Product> emptyPage = new Page<>(1, 8);
         emptyPage.setRecords(List.of());
         when(productService.getProductPage(isNull(), isNull(), isNull(), isNull(),
-                eq("sales"), isNull(), eq(1), eq(8))).thenReturn(emptyPage);
+                eq("sales"), isNull(), isNull(), eq(1), eq(8))).thenReturn(emptyPage);
 
         RecommendResponse recommend = new RecommendResponse(List.of(), List.of(), List.of());
         when(recommendService.recommend(eq(1L), eq(10))).thenReturn(recommend);

@@ -250,8 +250,8 @@ class CouponServiceIntegrationTest {
         // That's the actual behavior. Let me just verify that.
         BigDecimal discount = couponService.applyCoupon(userId, userCouponId, BigDecimal.valueOf(200));
 
-        // discountValue=8, orderAmount=200 → discount = 200 * 8 / 10 = 160
-        assertThat(discount).isEqualByComparingTo(BigDecimal.valueOf(160));
+        // discountValue=8（>1 时归一化为 0.8 = 8折）：discount = 200 × (1 - 0.8) = 40
+        assertThat(discount).isEqualByComparingTo(BigDecimal.valueOf(40));
 
         UserCoupon uc = userCouponMapper.selectById(userCouponId);
         assertThat(uc.getStatus()).isEqualTo("USED");

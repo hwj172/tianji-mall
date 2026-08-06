@@ -40,9 +40,10 @@ public class OrderController {
     @GetMapping("/list")
     public R<Page<Order>> list(@RequestHeader("Authorization") String authHeader,
                                 @RequestParam(value = "page", defaultValue = "1") int page,
-                                @RequestParam(value = "size", defaultValue = "20") int size) {
+                                @RequestParam(value = "size", defaultValue = "20") int size,
+                                @RequestParam(value = "status", required = false) Integer status) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(orderService.getOrderPage(userId, page, size));
+        return R.ok(orderService.getOrderPage(userId, page, size, status));
     }
 
     @GetMapping("/{id}")

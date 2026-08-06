@@ -1,16 +1,19 @@
 package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.exception.BizException;
+import com.tianji.common.result.R;
 import com.tianji.mall.dto.PendingReviewResponse;
 import com.tianji.mall.dto.ReviewCreateRequest;
 import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.entity.Review;
+import com.tianji.mall.feign.UserFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
 import com.tianji.mall.mapper.ReviewMapper;
@@ -29,10 +32,12 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final UserFeignClient userFeignClient;
 
-    public ReviewService(OrderMapper orderMapper, OrderItemMapper orderItemMapper) {
+    public ReviewService(OrderMapper orderMapper, OrderItemMapper orderItemMapper, UserFeignClient userFeignClient) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
+        this.userFeignClient = userFeignClient;
     }
 
     @Transactional
@@ -79,13 +84,13 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
         log.info("用户 {} 评价商品 {}，评分 {}", userId, req.getProductId(), req.getRating());
     }
 
-    public List<ReviewResponse> getProductReviews(Long productId, int page, int size) {
+    public IPage<ReviewResponse> getProductReviews(Long productId, int page, int size) {
         Page<Review> pageResult = page(new Page<>(page, size),
                 new LambdaQueryWrapper<Review>()
                         .eq(Review::getProductId, productId)
                         .eq(Review::getStatus, 1)
                         .orderByDesc(Review::getCreateTime));
-        return pageResult.getRecords().stream().map(this::toResponse).toList();
+        return pageResult.convert(this::toResponse);
     }
 
     public List<ReviewResponse> getMyReviews(Long userId, int page, int size) {
@@ -99,7 +104,21 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
     private ReviewResponse toResponse(Review review) {
         ReviewResponse resp = new ReviewResponse();
         BeanUtils.copyProperties(review, resp);
+        resp.setUsername(fetchUsername(review.getUserId()));
         return resp;
+    }
+
+    /** 查询评价用户昵称（best-effort，失败返回 null 不阻塞评价列表） */
+    private String fetchUsername(Long userId) {
+        if (userId == null) return null;
+        try {
+            R<Map<String, Object>> result = userFeignClient.getUserById(userId);
+            Map<String, Object> data = result != null ? result.getData() : null;
+            return data != null ? (String) data.get("username") : null;
+        } catch (Exception e) {
+            log.warn("查询评价用户昵称失败 userId={}: {}", userId, e.getMessage());
+            return null;
+        }
     }
 
     public List<PendingReviewResponse> getPendingReviews(Long userId, int page, int size) {

@@ -16,4 +16,5 @@ public class ReviewResponse {
     private String images;
     private Integer status;
     private LocalDateTime createTime;
+    private String username;   // 评价用户昵称（Feign 查 user-service，失败为 null）
 }

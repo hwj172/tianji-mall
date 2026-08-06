@@ -1,5 +1,6 @@
 package com.tianji.mall.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.PendingReviewResponse;
@@ -29,7 +30,7 @@ public class ReviewController {
     }
 
     @GetMapping("/product/{productId}")
-    public R<List<ReviewResponse>> productReviews(@PathVariable("productId") Long productId,
+    public R<IPage<ReviewResponse>> productReviews(@PathVariable("productId") Long productId,
                                                    @RequestParam(defaultValue = "1") int page,
                                                    @RequestParam(defaultValue = "20") int size) {
         return R.ok(reviewService.getProductReviews(productId, page, size));

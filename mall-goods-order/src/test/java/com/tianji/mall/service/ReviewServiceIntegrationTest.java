@@ -1,6 +1,7 @@
 package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.ReviewCreateRequest;
 import com.tianji.mall.dto.ReviewResponse;
@@ -164,16 +165,16 @@ class ReviewServiceIntegrationTest {
         ReviewCreateRequest req2 = buildCreateRequest(orderId2, productId, 3, "一般");
         reviewService.createReview(userId, req2);
 
-        List<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10);
+        IPage<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10);
 
-        assertThat(reviews).hasSize(2);
-        assertThat(reviews).extracting(ReviewResponse::getRating).containsExactlyInAnyOrder(5, 3);
+        assertThat(reviews.getRecords()).hasSize(2);
+        assertThat(reviews.getRecords()).extracting(ReviewResponse::getRating).containsExactlyInAnyOrder(5, 3);
     }
 
     @Test
     void shouldGetEmptyReviewsForProduct() {
-        List<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10);
-        assertThat(reviews).isEmpty();
+        IPage<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10);
+        assertThat(reviews.getRecords()).isEmpty();
     }
 
     // ==================== getMyReviews ====================

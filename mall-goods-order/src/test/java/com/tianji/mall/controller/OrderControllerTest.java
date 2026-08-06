@@ -125,7 +125,7 @@ class OrderControllerTest {
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 20);
         orderPage.setRecords(List.of(order));
         orderPage.setTotal(1);
-        when(orderService.getOrderPage(1L, 1, 20)).thenReturn(orderPage);
+        when(orderService.getOrderPage(1L, 1, 20, null)).thenReturn(orderPage);
 
         mockMvc.perform(get("/api/order/list")
                         .param("page", "1")

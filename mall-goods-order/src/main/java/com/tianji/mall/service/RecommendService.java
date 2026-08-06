@@ -77,7 +77,7 @@ public class RecommendService {
                             + countFavorites(p.getId()) * 0.3
                             + countReviews(p.getId()) * 0.2;
                     return new RecommendResponse.RecommendItem(
-                            p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "");
+                            p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "", p.getImages());
                 })
                 .sorted((a, b) -> Long.compare(b.getSales(), a.getSales()))
                 .limit(TOP_N)
@@ -122,7 +122,7 @@ public class RecommendService {
                                     java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                             .limit(count - result.size()).toList()) {
                         result.add(new RecommendResponse.RecommendItem(
-                                p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), ""));
+                                p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "", p.getImages()));
                         excluded.add(p.getId());
                     }
                 });
@@ -156,7 +156,7 @@ public class RecommendService {
                     if (p != null && p.getStatus() == 1) {
                         result.add(new RecommendResponse.RecommendItem(
                                 p.getId(), p.getName(), p.getPrice(), (long) p.getSales(),
-                                "和 " + getProductName(seedId) + " 一起买"));
+                                "和 " + getProductName(seedId) + " 一起买", p.getImages()));
                     }
                 }
             }

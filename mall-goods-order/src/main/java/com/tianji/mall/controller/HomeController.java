@@ -41,7 +41,7 @@ public class HomeController {
 
         // 热销 Top 8
         List<Product> hotProducts = productService.getProductPage(
-                null, null, null, null, "sales", null, 1, 8).getRecords();
+                null, null, null, null, "sales", null, null, 1, 8).getRecords();
 
         // 推荐（JWT 可选）
         Long userId = null;

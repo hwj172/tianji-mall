@@ -36,7 +36,7 @@ public class ShopController {
             return R.fail(BizErrorCode.SHOP_NOT_FOUND);
         }
         Page<Product> products = productService.getProductPage(
-                null, null, null, null, null, id, page, size);
+                null, null, null, null, null, id, null, page, size);
         long followerCount = shopFollowService.countFollowers(id);
         boolean isFollowing = false;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {

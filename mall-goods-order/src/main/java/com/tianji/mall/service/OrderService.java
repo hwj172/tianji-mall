@@ -233,9 +233,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 org.springframework.messaging.Message<String> timeoutMsg =
                         org.springframework.messaging.support.MessageBuilder
                                 .withPayload(order.getId().toString())
-                                .setHeader("DELAY", "16")
                                 .build();
-                rocketMQTemplate.syncSend("order-topic:TIMEOUT_CHECK", timeoutMsg, 3000);
+                // 延迟消息必须用 4 参 syncSend(dest, msg, timeout, delayLevel)——DELAY header 不生效
+                rocketMQTemplate.syncSend("order-topic:TIMEOUT_CHECK", timeoutMsg, 3000, 16);
             } catch (Exception e) {
                 log.error("发送超时延迟消息失败: orderId={}", order.getId(), e);
             }
@@ -254,14 +254,15 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private record OrderLine(Long productId, Long skuId, Integer quantity) {}
 
     public List<Order> getOrderList(Long userId) {
-        return getOrderPage(userId, 1, 50).getRecords();
+        return getOrderPage(userId, 1, 50, null).getRecords();
     }
 
-    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> getOrderPage(Long userId, int page, int size) {
-        return page(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size),
-                new LambdaQueryWrapper<Order>()
-                        .eq(Order::getUserId, userId)
-                        .orderByDesc(Order::getCreateTime));
+    public com.baomidou.mybatisplus.extension.plugins.pagination.Page<Order> getOrderPage(Long userId, int page, int size, Integer status) {
+        LambdaQueryWrapper<Order> wrapper = new LambdaQueryWrapper<Order>()
+                .eq(Order::getUserId, userId)
+                .eq(status != null, Order::getStatus, status)
+                .orderByDesc(Order::getCreateTime);
+        return page(new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(page, size), wrapper);
     }
 
     public OrderDetailResponse getOrderDetail(Long userId, Long orderId) {

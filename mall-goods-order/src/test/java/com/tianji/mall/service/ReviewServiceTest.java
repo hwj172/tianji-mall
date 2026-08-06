@@ -1,6 +1,7 @@
 package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.PendingReviewResponse;
@@ -9,6 +10,7 @@ import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.entity.Review;
+import com.tianji.mall.feign.UserFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
 import com.tianji.mall.mapper.ReviewMapper;
@@ -42,11 +44,14 @@ class ReviewServiceTest {
     @Mock
     private OrderItemMapper orderItemMapper;
 
+    @Mock
+    private UserFeignClient userFeignClient;
+
     private ReviewService reviewService;
 
     @BeforeEach
     void setUp() {
-        reviewService = new ReviewService(orderMapper, orderItemMapper);
+        reviewService = new ReviewService(orderMapper, orderItemMapper, userFeignClient);
         ReflectionTestUtils.setField(reviewService, "baseMapper", reviewMapper);
     }
 
@@ -181,10 +186,10 @@ class ReviewServiceTest {
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                 .thenReturn(new Page<Review>().setRecords(List.of(review)));
 
-        List<ReviewResponse> result = reviewService.getProductReviews(10L, 1, 20);
+        IPage<ReviewResponse> result = reviewService.getProductReviews(10L, 1, 20);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getRating()).isEqualTo(5);
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getRating()).isEqualTo(5);
     }
 
     @Test
