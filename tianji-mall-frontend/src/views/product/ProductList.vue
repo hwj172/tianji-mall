@@ -1,0 +1,155 @@
+<template>
+  <div class="product-list-page">
+    <!-- 搜索热词 -->
+    <div class="hot-keywords" v-if="hotKeywords.length && !route.query.keyword">
+      <span class="hot-label">热门搜索：</span>
+      <span v-for="kw in hotKeywords" :key="kw" class="hot-tag" @click="search(kw)">{{ kw }}</span>
+    </div>
+
+    <!-- 筛选栏 -->
+    <div class="filter-bar">
+      <div class="filter-sorts">
+        <span
+          v-for="opt in sortOptions" :key="opt.value"
+          class="sort-item"
+          :class="{ active: currentSort === opt.value }"
+          @click="changeSort(opt.value)"
+        >
+          {{ opt.label }}
+          <template v-if="opt.value === 'price_asc'">↑</template>
+          <template v-if="opt.value === 'price_desc'">↓</template>
+        </span>
+      </div>
+      <div class="filter-price">
+        <el-input v-model="priceFrom" placeholder="¥ 最低价" size="small" class="price-input" @keyup.enter="applyPrice" />
+        <span class="price-sep">—</span>
+        <el-input v-model="priceTo" placeholder="¥ 最高价" size="small" class="price-input" @keyup.enter="applyPrice" />
+        <el-button size="small" @click="applyPrice" type="primary">确定</el-button>
+      </div>
+    </div>
+
+    <!-- 商品网格 -->
+    <div class="product-grid cols-4" v-if="products.length">
+      <ProductCard v-for="p in products" :key="p.id" :product="p" />
+    </div>
+    <el-empty v-if="!loading && !products.length" description="暂无商品" />
+
+    <!-- 分页 -->
+    <div class="pagination-wrap" v-if="total > pageSize">
+      <el-pagination
+        v-model:current-page="currentPage"
+        :page-size="pageSize"
+        :total="total"
+        layout="total, prev, pager, next"
+        @current-change="loadProducts"
+      />
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { ref, reactive, onMounted, watch } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { getProductList, getHotKeywords } from '@/api'
+import ProductCard from '@/components/common/ProductCard.vue'
+
+const route = useRoute()
+const router = useRouter()
+
+const sortOptions = [
+  { label: '综合', value: '' },
+  { label: '价格', value: 'price_asc' },
+  { label: '价格', value: 'price_desc' },
+  { label: '销量', value: 'sales' },
+  { label: '新品', value: 'created' }
+]
+
+const products = ref([])
+const hotKeywords = ref([])
+const loading = ref(false)
+const currentPage = ref(1)
+const total = ref(0)
+const pageSize = 20
+const currentSort = ref('')
+const priceFrom = ref('')
+const priceTo = ref('')
+
+onMounted(() => {
+  loadProducts()
+  loadHotKeywords()
+})
+
+// 监听路由 query 变化重新加载
+watch(() => route.query, () => {
+  currentPage.value = 1
+  loadProducts()
+})
+
+async function loadProducts() {
+  loading.value = true
+  try {
+    const res = await getProductList(buildParams())
+    if (res.data) {
+      products.value = res.data.records || []
+      total.value = res.data.total || 0
+    }
+  } catch (e) {
+    console.error('加载商品列表失败', e)
+  } finally {
+    loading.value = false
+  }
+}
+
+async function loadHotKeywords() {
+  try {
+    const res = await getHotKeywords()
+    if (res.data) hotKeywords.value = res.data.slice(0, 10)
+  } catch { /* hot keywords are optional */ }
+}
+
+function buildParams() {
+  const params = {
+    page: currentPage.value,
+    size: pageSize
+  }
+  if (route.query.keyword) params.keyword = route.query.keyword
+  if (route.query.categoryId) params.categoryId = route.query.categoryId
+  if (priceFrom.value) params.minPrice = priceFrom.value
+  if (priceTo.value) params.maxPrice = priceTo.value
+  if (currentSort.value) params.sortBy = currentSort.value
+  return params
+}
+
+function changeSort(value) {
+  currentSort.value = value
+  currentPage.value = 1
+  loadProducts()
+}
+
+function applyPrice() {
+  currentPage.value = 1
+  loadProducts()
+}
+
+function search(keyword) {
+  router.push({ name: 'productList', query: { keyword } })
+}
+</script>
+
+<style scoped>
+.product-list-page { max-width: 1200px; margin: 0 auto; }
+.hot-keywords { padding: 10px 0; font-size: 13px; }
+.hot-label { color: #ff5000; }
+.hot-tag { color: #666; margin: 0 8px; cursor: pointer; }
+.hot-tag:hover { color: #ff5000; }
+.filter-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+.filter-sorts { display: flex; gap: 4px; }
+.sort-item { padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }
+.sort-item:hover, .sort-item.active { background: #fff5f0; color: #ff5000; font-weight: 600; }
+.filter-price { display: flex; align-items: center; gap: 6px; }
+.price-input { width: 90px; }
+.price-sep { color: #999; font-size: 12px; }
+.product-grid { display: grid; gap: 16px; }
+.product-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.pagination-wrap { display: flex; justify-content: center; margin-top: 24px; padding-bottom: 40px; }
+</style>

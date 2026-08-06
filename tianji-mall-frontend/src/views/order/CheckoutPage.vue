@@ -1,0 +1,301 @@
+<template>
+  <div class="checkout-page">
+    <h2 class="page-title">确认订单</h2>
+
+    <div class="checkout-main" v-if="items.length">
+      <!-- 收货地址 -->
+      <div class="section">
+        <h3 class="section-title">收货地址</h3>
+        <div class="address-list">
+          <div
+            v-for="addr in addresses" :key="addr.id"
+            class="addr-card"
+            :class="{ active: selectedAddressId === addr.id }"
+            @click="selectedAddressId = addr.id"
+          >
+            <div class="addr-radio"><span class="radio-dot" v-if="selectedAddressId === addr.id" /></div>
+            <div class="addr-body">
+              <div class="addr-contact">
+                <b>{{ addr.receiverName }}</b>
+                <span>{{ addr.phone }}</span>
+                <el-tag v-if="addr.isDefault" size="small" type="danger">默认</el-tag>
+              </div>
+              <p class="addr-text">{{ addr.province }} {{ addr.city }} {{ addr.district }} {{ addr.detail }}</p>
+            </div>
+          </div>
+        </div>
+        <el-button text type="primary" @click="showAddAddress = true" class="add-addr-btn">
+          + 添加新地址
+        </el-button>
+      </div>
+
+      <!-- 商品明细 -->
+      <div class="section">
+        <h3 class="section-title">商品明细</h3>
+        <div class="item-list">
+          <div class="checkout-item" v-for="item in items" :key="item.product.id">
+            <div class="item-img" @click="$router.push(`/product/${item.product.id}`)">
+              <img :src="item.image" :alt="item.product.name" @error="onImgError" />
+            </div>
+            <div class="item-info">
+              <router-link :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
+              <span class="item-spec" v-if="item.specs">{{ item.specs }}</span>
+            </div>
+            <div class="item-price">¥{{ item.price }}</div>
+            <div class="item-qty">×{{ item.cart.quantity }}</div>
+            <div class="item-subtotal">¥{{ (item.price * item.cart.quantity).toFixed(2) }}</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部结算 -->
+      <div class="checkout-footer">
+        <div class="footer-summary">
+          <span>共 <b>{{ totalCount }}</b> 件，合计：</span>
+          <span class="footer-total">¥{{ totalPrice }}</span>
+        </div>
+        <el-button type="primary" size="large" @click="submitOrder" :loading="submitting" class="submit-btn">
+          提交订单
+        </el-button>
+      </div>
+    </div>
+
+    <el-empty v-else description="没有待结算的商品">
+      <el-button type="primary" @click="$router.push('/cart')">返回购物车</el-button>
+    </el-empty>
+
+    <!-- 添加地址 Dialog -->
+    <el-dialog v-model="showAddAddress" title="添加收货地址" width="500px">
+      <el-form :model="newAddr" label-width="80px">
+        <el-form-item label="收货人"><el-input v-model="newAddr.receiverName" placeholder="请输入收货人姓名" /></el-form-item>
+        <el-form-item label="手机号"><el-input v-model="newAddr.phone" placeholder="请输入手机号" /></el-form-item>
+        <el-form-item label="所在地区">
+          <el-cascader
+            v-model="regionPath"
+            :options="regionTree"
+            :props="{ value: 'name', label: 'name', children: 'children' }"
+            placeholder="请选择省/市/区"
+            clearable
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="详细地址"><el-input v-model="newAddr.detail" placeholder="街道/门牌号" /></el-form-item>
+        <el-form-item><el-checkbox v-model="newAddr.isDefault">设为默认地址</el-checkbox></el-form-item>
+        <el-form-item>
+          <el-button type="primary" @click="saveAddress" :loading="savingAddr">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-dialog>
+  </div>
+</template>
+
+<script setup>
+import { ref, computed, onMounted, reactive } from 'vue'
+import { useRoute, useRouter } from 'vue-router'
+import { ElMessage } from 'element-plus'
+import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree } from '@/api'
+import { useCartStore } from '@/stores/cart'
+
+const route = useRoute()
+const router = useRouter()
+const cartStore = useCartStore()
+
+const addresses = ref([])
+const selectedAddressId = ref(null)
+const items = ref([])
+const submitting = ref(false)
+
+// 新增地址
+const showAddAddress = ref(false)
+const savingAddr = ref(false)
+const newAddr = reactive({
+  receiverName: '', phone: '', province: '', city: '', district: '', detail: '', isDefault: false
+})
+
+const regionTree = ref([])
+const regionPath = ref([])
+
+const buyParams = computed(() => route.query.mode === 'buy' ? {
+  productId: Number(route.query.productId),
+  skuId: route.query.skuId ? Number(route.query.skuId) : null,
+  qty: Number(route.query.qty) || 1
+} : null)
+
+const totalCount = computed(() => items.value.reduce((s, i) => s + i.cart.quantity, 0))
+const totalPrice = computed(() => {
+  return items.value.reduce((s, i) => s + i.price * i.cart.quantity, 0).toFixed(2)
+})
+
+onMounted(async () => {
+  await Promise.all([loadAddresses(), loadRegionTree()])
+  if (buyParams.value) await loadBuyItem()
+  else await loadItems()
+})
+
+async function loadRegionTree() {
+  try {
+    const res = await getRegionTree()
+    regionTree.value = res.data || []
+  } catch { /* ignore */ }
+}
+
+async function loadBuyItem() {
+  try {
+    const { productId, skuId, qty } = buyParams.value
+    const res = await getProductDetail(productId)
+    const p = res.data.product
+    if (!p) { items.value = []; return }
+    let price = p.price
+    let specs = ''
+    if (skuId && res.data.skuMatrix) {
+      const found = Object.entries(res.data.skuMatrix).find(([, s]) => s.id === skuId)
+      if (found) {
+        const [key, sku] = found
+        price = sku.price != null ? sku.price : price
+        specs = sku.specs || key
+      }
+    }
+    items.value = [{
+      cart: { id: 0, quantity: qty },
+      product: p,
+      image: getFirstImage(p.images),
+      price,
+      specs
+    }]
+  } catch (e) {
+    console.error('加载直购商品失败', e)
+  }
+}
+
+async function loadAddresses() {
+  try {
+    const res = await getAddressList()
+    addresses.value = res.data || []
+    const dft = addresses.value.find(a => a.isDefault)
+    selectedAddressId.value = dft?.id || addresses.value[0]?.id || null
+  } catch { /* handled by interceptor */ }
+}
+
+async function loadItems() {
+  try {
+    const res = await getCartList()
+    const cartItems = (res.data || []).filter(ci => ci.checked === 1)
+    if (!cartItems.length) return
+
+    const productIds = [...new Set(cartItems.map(i => i.productId))]
+    const pRes = await getProductBatch(productIds)
+    const productMap = {}
+    if (pRes.data) pRes.data.forEach(p => { productMap[p.id] = p })
+
+    items.value = cartItems.map(ci => {
+      const product = productMap[ci.productId] || {}
+      return {
+        cart: ci,
+        product,
+        image: getFirstImage(product.images),
+        price: product.price || 0,
+        specs: ci.skuSpecs || ''
+      }
+    })
+  } catch (e) {
+    console.error('加载结算商品失败', e)
+  }
+}
+
+function getFirstImage(images) {
+  if (!images) return ''
+  try {
+    const arr = typeof images === 'string' ? JSON.parse(images) : images
+    return arr[0] || ''
+  } catch { return '' }
+}
+
+async function saveAddress() {
+  const [province, city, district] = regionPath.value || []
+  if (!newAddr.receiverName || !newAddr.phone || !province || !newAddr.detail) {
+    ElMessage.warning('请填写完整地址信息')
+    return
+  }
+  savingAddr.value = true
+  try {
+    await addAddress({
+      receiverName: newAddr.receiverName,
+      phone: newAddr.phone,
+      province: province || '',
+      city: city || '',
+      district: district || '',
+      detail: newAddr.detail,
+      isDefault: newAddr.isDefault ? 1 : 0
+    })
+    showAddAddress.value = false
+    ElMessage.success('地址已添加')
+    await loadAddresses()
+    Object.assign(newAddr, { receiverName: '', phone: '', province: '', city: '', district: '', detail: '', isDefault: false })
+    regionPath.value = []
+  } catch { /* handled by interceptor */ }
+  finally { savingAddr.value = false }
+}
+
+async function submitOrder() {
+  if (!selectedAddressId.value) { ElMessage.warning('请选择收货地址'); return }
+  if (!items.value.length) { ElMessage.warning('没有待结算的商品'); return }
+
+  submitting.value = true
+  try {
+    const payload = buyParams.value
+      ? { addressId: selectedAddressId.value, directItems: [{ productId: buyParams.value.productId, skuId: buyParams.value.skuId, quantity: buyParams.value.qty }] }
+      : { addressId: selectedAddressId.value, cartItemIds: items.value.map(i => i.cart.id) }
+    const res = await createOrder(payload)
+    ElMessage.success('下单成功')
+    cartStore.refreshCount()
+    router.push({ name: 'orderDetail', params: { id: res.data.id } })
+  } catch { /* handled by interceptor */ }
+  finally { submitting.value = false }
+}
+
+function onImgError(e) {
+  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect fill="%23f5f5f5" width="80" height="80"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="10">无图</text></svg>'
+}
+</script>
+
+<style scoped>
+.checkout-page { max-width: 1200px; margin: 0 auto; }
+.page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
+
+.section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+
+/* 地址 */
+.address-list { display: grid; gap: 10px; }
+.addr-card { display: flex; gap: 12px; border: 2px solid #f0f0f0; border-radius: 8px; padding: 14px; cursor: pointer; transition: border-color .2s; }
+.addr-card:hover, .addr-card.active { border-color: #ff5000; }
+.addr-radio { width: 20px; height: 20px; border: 2px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.address-list .addr-card.active .addr-radio { border-color: #ff5000; }
+.radio-dot { width: 10px; height: 10px; background: #ff5000; border-radius: 50%; }
+.addr-contact { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 4px; }
+.addr-text { font-size: 13px; color: #666; }
+.add-addr-btn { margin-top: 10px; }
+
+/* 商品 */
+.item-list { display: flex; flex-direction: column; gap: 12px; }
+.checkout-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+.item-img { width: 72px; height: 72px; border-radius: 4px; overflow: hidden; cursor: pointer; background: #fafafa; flex-shrink: 0; }
+.item-img img { width: 100%; height: 100%; object-fit: cover; }
+.item-info { flex: 1; min-width: 0; }
+.item-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.item-name:hover { color: #ff5000; }
+.item-spec { font-size: 12px; color: #999; }
+.item-price, .item-qty, .item-subtotal { width: 90px; text-align: center; font-size: 14px; }
+.item-price { color: #333; }
+.item-subtotal { color: #ff5000; font-weight: 600; }
+
+/* 底部 */
+.checkout-footer { background: #fff; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.footer-summary { font-size: 14px; color: #666; }
+.footer-summary b { color: #ff5000; }
+.footer-total { font-size: 24px; font-weight: 700; color: #ff5000; }
+.submit-btn { background: #ff5000; border-color: #ff5000; padding: 12px 48px; font-size: 16px; }
+
+.region-row { display: flex; gap: 8px; }
+.region-input { flex: 1; }
+</style>
