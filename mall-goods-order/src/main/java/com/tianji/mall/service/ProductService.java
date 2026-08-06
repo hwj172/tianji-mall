@@ -92,7 +92,8 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return page(new Page<>(page, size), wrapper);
     }
 
-    @Cacheable(value = "product", key = "#id")
+    // NOTE: 不用 @Cacheable — GenericJackson2JsonRedisSerializer 反序列化丢失类型（LinkedHashMap）
+    // 导致调用方 ClassCastException（与 getProductPage 同源）。商品量小，直接查库。
     public Product getProductById(Long id) {
         Product product = getById(id);
         if (product == null || product.getStatus() == 0) {
