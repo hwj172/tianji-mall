@@ -43,6 +43,10 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
     private String alipayPublicKey;
 
     public PayResponse createPayment(Long userId, Long orderId) {
+        return createPayment(userId, orderId, null);
+    }
+
+    public PayResponse createPayment(Long userId, Long orderId, String returnUrl) {
         // 1. 通过 Feign 获取订单信息（事务外）
         R<OrderDTO> orderResult = orderFeignClient.getOrder(orderId);
         if (orderResult == null || orderResult.getCode() != 200 || orderResult.getData() == null) {
@@ -63,6 +67,10 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
         // 3. 调用支付宝生成支付页面（事务外，防止连接泄露）
         AlipayTradePagePayRequest request = new AlipayTradePagePayRequest();
         request.setNotifyUrl(notifyUrl);
+        // 同步跳转：支付成功后浏览器自动跳回前端（可选，前端传 origin + 目标路由）
+        if (returnUrl != null && !returnUrl.isBlank()) {
+            request.setReturnUrl(returnUrl);
+        }
         request.setBizContent("{" +
                 "\"out_trade_no\":\"" + paymentNo + "\"," +
                 "\"total_amount\":" + order.getTotalAmount() + "," +

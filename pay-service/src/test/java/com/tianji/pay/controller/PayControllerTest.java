@@ -46,7 +46,7 @@ class PayControllerTest {
     @Test
     void shouldCreatePayment() throws Exception {
         PayResponse resp = new PayResponse("<form>alipay form</form>", "PAY202407160001");
-        when(payService.createPayment(1L, 10L)).thenReturn(resp);
+        when(payService.createPayment(1L, 10L, null)).thenReturn(resp);
 
         mockMvc.perform(post("/api/pay/create")
                         .param("orderId", "10")
@@ -55,6 +55,20 @@ class PayControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.payForm").value("<form>alipay form</form>"))
                 .andExpect(jsonPath("$.data.paymentNo").value("PAY202407160001"));
+    }
+
+    @Test
+    void shouldCreatePaymentWithReturnUrl() throws Exception {
+        // 回归测试：前端支付时带 returnUrl → 支付宝支付后浏览器自动跳回前端
+        PayResponse resp = new PayResponse("<form>alipay form</form>", "PAY202407160001");
+        when(payService.createPayment(1L, 10L, "http://localhost:5173/order/list")).thenReturn(resp);
+
+        mockMvc.perform(post("/api/pay/create")
+                        .param("orderId", "10")
+                        .param("returnUrl", "http://localhost:5173/order/list")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
     }
 
     // ==================== POST /api/pay/notify ====================

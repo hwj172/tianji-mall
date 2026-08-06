@@ -28,9 +28,10 @@ public class PayController {
 
     @PostMapping("/create")
     public R<PayResponse> create(@RequestHeader("Authorization") String authHeader,
-                                 @RequestParam("orderId") @NotNull @Min(1) Long orderId) {
+                                 @RequestParam("orderId") @NotNull @Min(1) Long orderId,
+                                 @RequestParam(value = "returnUrl", required = false) String returnUrl) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(payService.createPayment(userId, orderId));
+        return R.ok(payService.createPayment(userId, orderId, returnUrl));
     }
 
     @PostMapping("/notify")
