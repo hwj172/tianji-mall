@@ -135,6 +135,10 @@ spring:
           uri: lb://mall-goods-order
           predicates:
             - Path=/api/upload/**
+        - id: mall-uploads
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/uploads/**
         - id: pay-service
           uri: lb://pay-service
           predicates:

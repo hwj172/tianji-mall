@@ -33,18 +33,32 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     /** 商家路径前缀，需要 seller 或 admin 角色 */
     private static final String SELLER_PATH_PREFIX = "/api/seller/";
 
-    /** 不需要鉴权的公开路径 */
+    /** 不需要鉴权的公开路径（前缀匹配） */
     private static final List<String> PUBLIC_PATHS = List.of(
             "/api/user/login",
             "/api/user/register",
-            "/api/product",
+            "/api/product",       // 商品浏览/详情公开；/history 由 PROTECTED_SUFFIXES 排除
             "/api/region",
-            "/api/shop",
-            "/api/group-buy",
+            "/api/shop",          // 店铺详情公开；register/following/follow 受保护
+            "/api/group-buy",     // 拼团列表/详情公开；start/join/my 受保护
             "/api/home",
             "/api/review/product",
-            "/api/product/search/hot",
             "/api/pay/notify"
+    );
+
+    /** 命中公开前缀但仍需 JWT 的精确子路径（避免 /api/shop/register 与 /api/user/register 后缀冲突） */
+    private static final List<String> PROTECTED_PATHS = List.of(
+            "/api/product/history",   // 浏览足迹
+            "/api/shop/register",     // 注册开店
+            "/api/shop/following"     // 我的关注
+    );
+
+    /** 命中公开前缀且以此结尾也需 JWT（覆盖动态 id 路径，如 /api/shop/{id}/follow） */
+    private static final List<String> PROTECTED_SUFFIXES = List.of(
+            "/follow",   // /api/shop/{id}/follow 关注/取关
+            "/start",    // /api/group-buy/start 开团
+            "/join",     // /api/group-buy/join/{id} 参团
+            "/my"        // /api/group-buy/my 我的拼团
     );
 
     /** 内部服务调用路径，通过 X-Internal-Token 请求头鉴权 */
@@ -146,7 +160,13 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
     }
 
     private boolean isPublicPath(String path) {
-        return PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+        boolean prefixMatch = PUBLIC_PATHS.stream().anyMatch(path::startsWith);
+        if (!prefixMatch) {
+            return false;
+        }
+        // 命中公开前缀但属于需要登录的子路径 → 不算公开（网关返回 401 而非透传后端 400）
+        boolean protectedExact = PROTECTED_PATHS.stream().anyMatch(path::startsWith);
+        return !protectedExact && PROTECTED_SUFFIXES.stream().noneMatch(path::endsWith);
     }
 
     private boolean isInternalPath(String path) {
