@@ -170,6 +170,21 @@ class AiChatServiceTest {
     }
 
     @Test
+    @SuppressWarnings("unchecked")
+    void shouldTellModelAboutProductCardCapability() throws Exception {
+        // 回归：用户问"能不能发图片"时，AI 应知道调用工具返回商品后前端会渲染含图片的
+        // 商品卡片，而不是回答"我没有能力发送图片"（链路已验证，缺的是模型认知）
+        Method method = AiChatService.class.getDeclaredMethod("getSystemPrompt", List.class);
+        method.setAccessible(true);
+
+        String prompt = (String) method.invoke(aiChatService, List.of());
+
+        assertThat(prompt).contains("商品卡片");
+        assertThat(prompt).contains("图片");
+        assertThat(prompt).contains("search_products");
+    }
+
+    @Test
     void shouldInjectRagProductsIntoSystemPrompt() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("getSystemPrompt", List.class);
         method.setAccessible(true);
@@ -224,14 +239,14 @@ class AiChatServiceTest {
     @SuppressWarnings("unchecked")
     void shouldExecuteToolSuccessfully() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("executeTool",
-                String.class, Map.class, Long.class);
+                String.class, Map.class, Long.class, List.class);
         method.setAccessible(true);
 
         Map<String, Object> toolResult = Map.of("success", true, "data", Map.of("id", 1, "name", "商品"));
         when(mcpFeignClient.executeTool(any())).thenReturn(toolResult);
 
         String result = (String) method.invoke(aiChatService, "search_products",
-                Map.of("keyword", "手机"), 1L);
+                Map.of("keyword", "手机"), 1L, List.of());
 
         assertThat(result).contains("id");
     }
@@ -240,14 +255,14 @@ class AiChatServiceTest {
     @SuppressWarnings("unchecked")
     void shouldExecuteToolReturnErrorWhenNotSuccess() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("executeTool",
-                String.class, Map.class, Long.class);
+                String.class, Map.class, Long.class, List.class);
         method.setAccessible(true);
 
         Map<String, Object> toolResult = Map.of("success", false, "error", "商品不存在");
         when(mcpFeignClient.executeTool(any())).thenReturn(toolResult);
 
         String result = (String) method.invoke(aiChatService, "get_product",
-                Map.of("productId", 999L), 1L);
+                Map.of("productId", 999L), 1L, List.of());
 
         assertThat(result).contains("工具执行失败");
         assertThat(result).contains("商品不存在");
@@ -257,14 +272,14 @@ class AiChatServiceTest {
     @SuppressWarnings("unchecked")
     void shouldExecuteToolCatchFeignException() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("executeTool",
-                String.class, Map.class, Long.class);
+                String.class, Map.class, Long.class, List.class);
         method.setAccessible(true);
 
         when(mcpFeignClient.executeTool(any()))
                 .thenThrow(new RuntimeException("下游服务不可用"));
 
         String result = (String) method.invoke(aiChatService, "search_products",
-                Map.of("keyword", "手机"), 1L);
+                Map.of("keyword", "手机"), 1L, List.of());
 
         assertThat(result).contains("工具调用异常");
     }
@@ -343,14 +358,14 @@ class AiChatServiceTest {
     @SuppressWarnings("unchecked")
     void shouldReturnFallbackWhenResponseIsNull() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
-                List.class, Long.class);
+                List.class, Long.class, List.class);
         method.setAccessible(true);
 
         when(restTemplate.postForEntity(anyString(), any(), any(), (Class<?>) any()))
                 .thenReturn(null);
 
         String result = (String) method.invoke(aiChatService,
-                List.of(Map.of("role", "user", "content", "你好")), 1L);
+                List.of(Map.of("role", "user", "content", "你好")), 1L, List.of());
 
         assertThat(result).isEqualTo("抱歉，AI 服务暂时不可用，请稍后再试。");
     }
@@ -359,7 +374,7 @@ class AiChatServiceTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void shouldReturnFallbackWhenChoicesEmpty() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
-                List.class, Long.class);
+                List.class, Long.class, List.class);
         method.setAccessible(true);
 
         org.springframework.http.ResponseEntity responseEntity =
@@ -368,7 +383,7 @@ class AiChatServiceTest {
                 .thenReturn(responseEntity);
 
         String result = (String) method.invoke(aiChatService,
-                List.of(Map.of("role", "user", "content", "你好")), 1L);
+                List.of(Map.of("role", "user", "content", "你好")), 1L, List.of());
 
         assertThat(result).isEqualTo("抱歉，我暂时无法回复，请稍后再试。");
     }
@@ -377,7 +392,7 @@ class AiChatServiceTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void shouldReturnFallbackWhenMessageIsNull() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
-                List.class, Long.class);
+                List.class, Long.class, List.class);
         method.setAccessible(true);
 
         // choices[0].message = null
@@ -389,7 +404,7 @@ class AiChatServiceTest {
                 .thenReturn(responseEntity);
 
         String result = (String) method.invoke(aiChatService,
-                List.of(Map.of("role", "user", "content", "你好")), 1L);
+                List.of(Map.of("role", "user", "content", "你好")), 1L, List.of());
 
         assertThat(result).isEqualTo("抱歉，我暂时无法回复，请稍后再试。");
     }
@@ -398,7 +413,7 @@ class AiChatServiceTest {
     @SuppressWarnings({"unchecked", "rawtypes"})
     void shouldReturnFallbackWhenContentIsNull() throws Exception {
         Method method = AiChatService.class.getDeclaredMethod("callDeepSeekWithTools",
-                List.class, Long.class);
+                List.class, Long.class, List.class);
         method.setAccessible(true);
 
         // choices[0].message.content = null, no tool_calls
@@ -413,7 +428,7 @@ class AiChatServiceTest {
                 .thenReturn(responseEntity);
 
         String result = (String) method.invoke(aiChatService,
-                List.of(Map.of("role", "user", "content", "你好")), 1L);
+                List.of(Map.of("role", "user", "content", "你好")), 1L, List.of());
 
         assertThat(result).isEqualTo("抱歉，我暂时无法回复，请稍后再试。");
     }

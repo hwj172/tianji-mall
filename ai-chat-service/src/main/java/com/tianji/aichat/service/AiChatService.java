@@ -50,7 +50,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
     }
 
     /**
-     * 处理用户对话消息，返回 AI 回复
+     * 处理用户对话消息，返回 AI 回复（含推荐商品列表）
      */
     @Transactional
     public ChatResponse chat(Long userId, String sessionId, String message) {
@@ -72,11 +72,19 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
         // 3. RAG 预检索（失败降级为空列表，fallback 到工具调用）
         List<ProductDTO> ragProducts = searchProductsByRag(message);
 
+        // 3.5 收集推荐商品（RAG 命中 + 工具调用命中，按 id 去重）
+        List<Map<String, Object>> products = new ArrayList<>();
+        if (ragProducts != null) {
+            for (ProductDTO p : ragProducts) {
+                products.add(productToMap(p));
+            }
+        }
+
         // 4. 构建 messages（system prompt 含 RAG 上下文 + 历史 + 当前消息）
         List<Map<String, Object>> messages = buildMessages(history, ragProducts);
 
-        // 5. 调用 DeepSeek（含工具调用循环）
-        String reply = callDeepSeekWithTools(messages, userId);
+        // 5. 调用 DeepSeek（含工具调用循环，工具命中的商品追加到 products）
+        String reply = callDeepSeekWithTools(messages, userId, products);
 
         // 6. 保存 assistant 回复
         AiConversation assistantMsg = new AiConversation();
@@ -86,7 +94,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
         assistantMsg.setContent(reply);
         save(assistantMsg);
 
-        return new ChatResponse(sessionId, reply, null);
+        return new ChatResponse(sessionId, reply, dedupeProducts(products));
     }
 
     /**
@@ -179,7 +187,8 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
     /**
      * 调用 DeepSeek API，自动处理工具调用循环
      */
-    private String callDeepSeekWithTools(List<Map<String, Object>> messages, Long userId) {
+    private String callDeepSeekWithTools(List<Map<String, Object>> messages, Long userId,
+                                         List<Map<String, Object>> products) {
         List<Map<String, Object>> conversation = new ArrayList<>(messages);
 
         for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -240,7 +249,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
                 if (input == null) input = Collections.emptyMap();
 
                 log.info("执行工具: tool={}, input={}", toolName, input);
-                String toolResult = executeTool(toolName, input, userId);
+                String toolResult = executeTool(toolName, input, userId, products);
 
                 // 3. 将 tool 结果消息加入对话
                 Map<String, Object> toolMsg = new LinkedHashMap<>();
@@ -289,7 +298,8 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
     /**
      * 通过 Feign 调用 mcp-server 执行工具
      */
-    private String executeTool(String toolName, Map<String, Object> input, Long userId) {
+    private String executeTool(String toolName, Map<String, Object> input, Long userId,
+                               List<Map<String, Object>> products) {
         try {
             Map<String, Object> request = new LinkedHashMap<>();
             request.put("tool", toolName);
@@ -299,6 +309,10 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
             Map<String, Object> result = mcpFeignClient.executeTool(request);
             if (result != null && Boolean.TRUE.equals(result.get("success"))) {
                 Object data = result.get("data");
+                // 工具命中商品时，收集进推荐列表（供前端渲染卡片）
+                if ("search_products".equals(toolName) || "get_product".equals(toolName)) {
+                    collectToolProducts(data, products);
+                }
                 return data != null ? objectMapper.writeValueAsString(data) : "操作成功";
             }
             return "工具执行失败: " + (result != null ? result.get("error") : "未知错误");
@@ -306,6 +320,67 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
             log.error("工具调用异常: tool={}", toolName, e);
             return "工具调用异常: " + e.getMessage();
         }
+    }
+
+    /**
+     * 从工具返回的数据中提取商品列表，追加到推荐列表（按 id 去重交给 dedupeProducts）
+     */
+    @SuppressWarnings("unchecked")
+    private void collectToolProducts(Object data, List<Map<String, Object>> products) {
+        try {
+            if (data == null) return;
+            List<Object> items = new ArrayList<>();
+            if (data instanceof Map) {
+                Object records = ((Map<String, Object>) data).get("records");
+                if (records instanceof List) {
+                    items.addAll((List<Object>) records);
+                } else {
+                    items.add(data); // get_product 返回单个商品 Map
+                }
+            } else if (data instanceof List) {
+                items.addAll((List<Object>) data);
+            }
+            for (Object item : items) {
+                if (!(item instanceof Map)) continue;
+                Map<String, Object> m = (Map<String, Object>) item;
+                Map<String, Object> p = new LinkedHashMap<>();
+                p.put("id", m.get("id"));
+                p.put("name", m.get("name"));
+                p.put("price", m.get("price"));
+                p.put("images", m.get("images"));
+                p.put("description", m.get("description"));
+                if (p.get("id") != null) {
+                    products.add(p);
+                }
+            }
+        } catch (Exception e) {
+            log.warn("解析工具商品数据失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 按 id 去重推荐商品列表
+     */
+    private List<Map<String, Object>> dedupeProducts(List<Map<String, Object>> products) {
+        if (products == null || products.isEmpty()) return products;
+        Map<Object, Map<String, Object>> byId = new LinkedHashMap<>();
+        for (Map<String, Object> p : products) {
+            byId.putIfAbsent(p.get("id"), p);
+        }
+        return new ArrayList<>(byId.values());
+    }
+
+    /**
+     * 将 RAG 命中的商品转为前端卡片所需的 Map
+     */
+    private Map<String, Object> productToMap(ProductDTO p) {
+        Map<String, Object> map = new LinkedHashMap<>();
+        map.put("id", p.getId());
+        map.put("name", p.getName());
+        map.put("price", p.getPrice());
+        map.put("images", p.getImages());
+        map.put("description", p.getDescription());
+        return map;
     }
 
     private String getSystemPrompt(List<ProductDTO> ragProducts) {
@@ -324,6 +399,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
                 3. 不要凭空猜测商品信息（价格、名称、库存），一切以实际数据为准
                 4. 用户下单前，先确认收货地址和购物车内容。不要跳过确认直接下单
                 5. 用热情、专业的中文回复。基于真实数据简要说明推荐理由
+                6. 【商品卡片能力】当你调用 search_products 或 get_product 工具返回商品后，系统会自动在对话中为用户展示该商品的信息卡片（含商品图片、名称、价格、简介）。当用户想看商品图片、外观、或问"能不能发图片"时，回答"我可以为您展示商品卡片（含图片）"，然后立即调用 search_products 或 get_product 返回相关商品。绝不要说自己"无法发送图片"——你的能力是展示商品卡片，卡片会包含商品图片。
                 """;
 
         if (ragProducts == null || ragProducts.isEmpty()) {
