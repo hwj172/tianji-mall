@@ -40,6 +40,13 @@
             <artifactId>spring-web</artifactId>
         </dependency>
 
+        <!-- Spring WebMVC（NoResourceFoundException 处理 404；provided 不传递，避免污染 gateway 的 WebFlux 环境） -->
+        <dependency>
+            <groupId>org.springframework</groupId>
+            <artifactId>spring-webmvc</artifactId>
+            <scope>provided</scope>
+        </dependency>
+
         <!-- Feign Core（FeignRetryer / FeignErrorDecoder） -->
         <dependency>
             <groupId>io.github.openfeign</groupId>

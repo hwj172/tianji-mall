@@ -4,9 +4,13 @@ import com.tianji.common.result.R;
 import jakarta.servlet.http.HttpServletRequest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.List;
 
@@ -113,5 +117,48 @@ class GlobalExceptionHandlerTest {
 
         assertThat(result.getCode()).isEqualTo(500);
         assertThat(result.getMessage()).isEqualTo("系统内部错误，请稍后重试");
+    }
+
+    @Test
+    void shouldHandleNoResourceFoundAs404() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/api/region/nonexistent");
+
+        NoResourceFoundException ex = new NoResourceFoundException(HttpMethod.GET, "/api/region/nonexistent");
+
+        R<Void> result = handler.handleNoResourceFound(ex, request);
+
+        assertThat(result.getCode()).isEqualTo(404);
+        assertThat(result.getMessage()).isEqualTo("请求路径不存在");
+    }
+
+    @Test
+    void shouldHandleMethodNotSupportedAs405() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn("POST");
+        when(request.getRequestURI()).thenReturn("/api/home");
+
+        HttpRequestMethodNotSupportedException ex = new HttpRequestMethodNotSupportedException("POST");
+
+        R<Void> result = handler.handleMethodNotSupported(ex, request);
+
+        assertThat(result.getCode()).isEqualTo(405);
+        assertThat(result.getMessage()).isEqualTo("请求方法不支持");
+    }
+
+    @Test
+    void shouldHandleTypeMismatchAs400() {
+        HttpServletRequest request = mock(HttpServletRequest.class);
+        when(request.getMethod()).thenReturn("GET");
+        when(request.getRequestURI()).thenReturn("/api/product/abc");
+
+        MethodArgumentTypeMismatchException ex =
+                new MethodArgumentTypeMismatchException("abc", Long.class, "id", null, null);
+
+        R<Void> result = handler.handleTypeMismatch(ex, request);
+
+        assertThat(result.getCode()).isEqualTo(400);
+        assertThat(result.getMessage()).isEqualTo("请求参数类型错误");
     }
 }
