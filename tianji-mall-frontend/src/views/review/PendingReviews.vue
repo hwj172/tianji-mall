@@ -5,7 +5,7 @@
     <div class="review-list" v-if="items.length">
       <div class="review-card" v-for="item in items" :key="item.orderId + '_' + item.productId">
         <div class="rc-img" @click="$router.push(`/product/${item.productId}`)">
-          <img :src="item.productImage" style="width:80px;height:80px;object-fit:cover;display:block" @error="onImgError" />
+          <img :src="item.productImage" loading="lazy" decoding="async" style="width:80px;height:80px;object-fit:cover;display:block" @error="onImgError" />
         </div>
         <div class="rc-info">
           <router-link :to="`/product/${item.productId}`" class="rc-name">{{ item.productName }}</router-link>

@@ -71,6 +71,11 @@ const sortOptions = [
 
 const products = ref([])
 const hotKeywords = ref([])
+
+// 热门词模块级缓存（10 分钟 TTL）：避免每次进入列表页都重新拉取
+let hotKeywordsCache = null
+let hotKeywordsCacheTime = 0
+const HOT_KEYWORDS_TTL = 10 * 60 * 1000
 const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
@@ -134,9 +139,20 @@ async function loadProducts() {
 }
 
 async function loadHotKeywords() {
+  // URL 带 keyword 时热词条已隐藏，跳过拉取
+  if (route.query.keyword) return
+  const now = Date.now()
+  if (hotKeywordsCache && now - hotKeywordsCacheTime < HOT_KEYWORDS_TTL) {
+    hotKeywords.value = hotKeywordsCache
+    return
+  }
   try {
     const res = await getHotKeywords()
-    if (res.data) hotKeywords.value = res.data.slice(0, 10)
+    if (res.data) {
+      hotKeywordsCache = res.data.slice(0, 10)
+      hotKeywordsCacheTime = Date.now()
+      hotKeywords.value = hotKeywordsCache
+    }
   } catch { /* hot keywords are optional */ }
 }
 

@@ -37,9 +37,28 @@ export function checkCartItem(data) {
   return request.put('/cart/check', data)
 }
 
-// 商品批量查询
-export function getProductBatch(ids) {
-  return request.post('/product/batch', ids)
+// 商品批量查询（模块级 Map 缓存：session 内同一批商品只拉一次，跨页面复用）
+const productBatchCache = new Map()
+
+export async function getProductBatch(ids) {
+  const list = Array.isArray(ids) ? ids : []
+  const misses = []
+  for (const id of list) {
+    if (id == null) continue
+    if (!productBatchCache.has(id)) misses.push(id)
+  }
+  if (misses.length) {
+    const res = await request.post('/product/batch', misses)
+    if (res.data && Array.isArray(res.data)) {
+      res.data.forEach(p => { if (p && p.id != null) productBatchCache.set(p.id, p) })
+    }
+    // 未返回的商品（已下架/删除）标记为不存在，避免每次重复请求
+    misses.forEach(id => { if (!productBatchCache.has(id)) productBatchCache.set(id, null) })
+    return res
+  }
+  // 全部命中缓存，无需请求
+  const data = list.map(id => productBatchCache.get(id)).filter(Boolean)
+  return { code: 200, data }
 }
 
 // 地址

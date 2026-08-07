@@ -53,7 +53,7 @@
       <h3 class="section-title">🛍 商品信息</h3>
       <div class="item-list">
         <div class="od-item" v-for="(item, idx) in detail.items" :key="idx">
-          <img :src="getItemImage(item.productId)" class="od-item-img" @error="onImgError" style="width:72px;height:72px;object-fit:cover" />
+          <img :src="getItemImage(item.productId)" class="od-item-img" loading="lazy" decoding="async" @error="onImgError" style="width:72px;height:72px;object-fit:cover" />
           <div class="od-item-info">
             <router-link :to="`/product/${item.productId}`" class="od-item-name">{{ item.productName }}</router-link>
             <span class="od-item-spec" v-if="item.skuSpecs">{{ item.skuSpecs }}</span>
@@ -151,25 +151,19 @@ async function loadDetail() {
       detail.address = res.data.address
       detail.items = res.data.items || []
 
-      // 加载商品图片
+      // 并行加载商品图片 + 物流（各自 best-effort，互不阻塞）
       const productIds = [...new Set(detail.items.map(i => i.productId))]
       if (productIds.length) {
-        try {
-          const pRes = await getProductBatch(productIds)
-          if (pRes.data) {
-            pRes.data.forEach(p => {
-              productImages.value[p.id] = getFirstImage(p.images)
-            })
-          }
-        } catch { /* best-effort */ }
-      }
-
-      // 已发货 → 加载物流
-      if (order.value.status >= 3) {
-        try {
-          const lRes = await getOrderLogistics(order.value.id)
-          logistics.value = lRes.data || []
-        } catch { /* best-effort */ }
+        const [pRes, lRes] = await Promise.all([
+          getProductBatch(productIds).catch(() => null),
+          order.value.status >= 3 ? getOrderLogistics(order.value.id).catch(() => null) : Promise.resolve(null)
+        ])
+        if (pRes?.data) {
+          pRes.data.forEach(p => {
+            productImages.value[p.id] = getFirstImage(p.images)
+          })
+        }
+        if (lRes?.data) logistics.value = lRes.data || []
       }
     }
   } catch (e) {

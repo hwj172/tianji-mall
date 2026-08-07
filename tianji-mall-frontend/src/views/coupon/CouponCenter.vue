@@ -75,9 +75,7 @@ const myLoading = ref(true)
 const statusMap = { UNUSED: '未使用', USED: '已使用', EXPIRED: '已过期' }
 
 onMounted(async () => {
-  await loadCenter()
-  await loadMy()
-  loadUnclaimedCount()
+  await Promise.all([loadCenter(), loadMy(), loadUnclaimedCount()])
 })
 
 async function loadUnclaimedCount() {

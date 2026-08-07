@@ -12,7 +12,7 @@
         <div class="cart-item" v-for="item in cartItems" :key="item.cart.id" :class="{ invalid: item.invalid }">
           <el-checkbox v-model="item.checked" @change="onItemCheck(item)" :disabled="item.invalid" class="item-check" />
           <div class="item-image" @click="!item.invalid && $router.push(`/product/${item.product.id}`)">
-            <img :src="item.image" :alt="item.product.name || '商品已失效'" @error="onImgError" />
+            <img :src="item.image" :alt="item.product.name || '商品已失效'" loading="lazy" decoding="async" @error="onImgError" />
           </div>
           <div class="item-info">
             <router-link v-if="!item.invalid" :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
@@ -85,6 +85,8 @@ async function loadCart() {
   try {
     const res = await getCartList()
     const items = res.data || []
+    // 同步角标缓存（本地计算，避免再次全量拉取购物车）
+    cartStore.setList(items)
     if (!items.length) return
 
     // 批量查商品数据
@@ -129,26 +131,26 @@ function updateSelectAllState() {
 async function onSelectAll(val) {
   cartItems.value.forEach(i => { i.checked = val })
   isIndeterminate.value = false
-  // 批量更新后端
-  for (const item of cartItems.value) {
-    try { await checkCartItem({ cartItemId: item.cart.id, checked: val ? 1 : 0 }) }
-    catch { /* best-effort */ }
-  }
-  cartStore.refreshCount()
+  // 批量更新后端（并行请求）
+  await Promise.all(cartItems.value.map(item =>
+    checkCartItem({ cartItemId: item.cart.id, checked: val ? 1 : 0 }).catch(() => {})
+  ))
+  cartStore.setList(cartItems.value.map(i => i.cart))
 }
 
 async function onItemCheck(item) {
   updateSelectAllState()
   try {
     await checkCartItem({ cartItemId: item.cart.id, checked: item.checked ? 1 : 0 })
-    cartStore.refreshCount()
+    // 勾选不影响数量，缓存角标本地同步即可（不发请求）
+    cartStore.setList(cartItems.value.map(i => i.cart))
   } catch { /* 回滚由用户手动处理 */ }
 }
 
 async function onQtyChange(item) {
   try {
     await updateCartItem(item.cart.id, { quantity: item.cart.quantity })
-    cartStore.refreshCount()
+    cartStore.setList(cartItems.value.map(i => i.cart))
   } catch (e) {
     ElMessage.error('更新数量失败')
   }
@@ -160,7 +162,7 @@ async function removeItem(item) {
     await deleteCartItem(item.cart.id)
     cartItems.value = cartItems.value.filter(i => i.cart.id !== item.cart.id)
     updateSelectAllState()
-    cartStore.refreshCount()
+    cartStore.setList(cartItems.value.map(i => i.cart))
     ElMessage.success('已删除')
   } catch { /* 取消 */ }
 }
@@ -170,13 +172,11 @@ async function removeChecked() {
   if (!checked.length) return
   try {
     await ElMessageBox.confirm(`确定要删除选中的 ${checked.length} 件商品吗？`, '提示', { type: 'warning' })
-    for (const item of checked) {
-      try { await deleteCartItem(item.cart.id) }
-      catch { /* continue */ }
-    }
+    // 并行删除
+    await Promise.all(checked.map(item => deleteCartItem(item.cart.id).catch(() => {})))
     cartItems.value = cartItems.value.filter(i => !i.checked)
     updateSelectAllState()
-    cartStore.refreshCount()
+    cartStore.setList(cartItems.value.map(i => i.cart))
     ElMessage.success('已删除')
   } catch { /* 取消 */ }
 }

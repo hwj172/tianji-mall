@@ -3,7 +3,7 @@
     <template v-if="activity">
       <!-- 活动信息 -->
       <div class="gb-header">
-        <img :src="productImage" class="gb-img" @error="onImgError" />
+        <img :src="productImage" class="gb-img" loading="lazy" decoding="async" @error="onImgError" />
         <div class="gb-info">
           <h2>{{ productName }}</h2>
           <div class="gb-price">¥{{ fmtPrice(productPrice) }}</div>

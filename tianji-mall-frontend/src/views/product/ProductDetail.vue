@@ -148,7 +148,7 @@
           </div>
           <div class="review-content" v-if="r.content">{{ r.content }}</div>
           <div class="review-images" v-if="reviewImages(r).length">
-            <img v-for="(img, i) in reviewImages(r)" :key="i" :src="img" class="review-img" />
+            <img v-for="(img, i) in reviewImages(r)" :key="i" :src="img" class="review-img" loading="lazy" decoding="async" />
           </div>
         </div>
         <div class="review-load-more" v-if="reviewTotal > reviews.length">
@@ -237,7 +237,12 @@ const canBuy = computed(() => {
   return currentStock.value > 0
 })
 
-onMounted(() => { loadDetail(); loadReviews() })
+onMounted(() => {
+  // 详情/评价/收藏状态三路并行；loadFavoriteStatus 用 route.params.id，不依赖详情返回
+  loadDetail()
+  loadReviews()
+  loadFavoriteStatus(route.params.id)
+})
 onUnmounted(stopCountdown)
 
 // 秒杀窗口变化时启停倒计时
@@ -259,7 +264,6 @@ async function loadDetail() {
       skuMatrix.value = res.data.skuMatrix || null
       preselectFirstSku()
     }
-    await loadFavoriteStatus()
   } catch (e) {
     console.error('加载商品详情失败', e)
   } finally {
@@ -300,7 +304,8 @@ async function addToCart() {
       skuId: currentSkuInfo.value?.skuId || null,
       quantity: quantity.value
     })
-    cartStore.refreshCount()
+    // 加购后端做 (productId, skuId) 去重合并，本地无法精确计算，强制重新拉取保证角标准确
+    cartStore.refreshCount(true)
     ElMessage.success('已加入购物车')
   } catch { /* interceptor 处理错误 */ }
 }
@@ -332,13 +337,13 @@ async function toggleFav() {
   }
 }
 
-// 加载商品时同步收藏状态（老用户重访时按钮状态正确）
-async function loadFavoriteStatus() {
-  if (!product.value?.id) return
+// 加载商品时同步收藏状态（老用户重访时按钮状态正确）；productId 由调用方传入，可并行执行
+async function loadFavoriteStatus(productId) {
+  if (!productId) return
   try {
     const res = await getFavorites()
     const list = res.data || []
-    isFavorite.value = list.some(f => f.productId === product.value.id)
+    isFavorite.value = list.some(f => f.productId === productId)
   } catch { /* ignore */ }
 }
 

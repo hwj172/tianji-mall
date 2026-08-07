@@ -24,7 +24,7 @@
             </div>
           </div>
         </div>
-        <el-button text type="primary" @click="showAddAddress = true" class="add-addr-btn">
+        <el-button text type="primary" @click="openAddAddress" class="add-addr-btn">
           + 添加新地址
         </el-button>
       </div>
@@ -35,7 +35,7 @@
         <div class="item-list">
           <div class="checkout-item" v-for="item in items" :key="buyParams ? item.product.id : item.cart.id">
             <div class="item-img" @click="$router.push(`/product/${item.product.id}`)">
-              <img :src="item.image" :alt="item.product.name" @error="onImgError" />
+              <img :src="item.image" :alt="item.product.name" loading="lazy" decoding="async" @error="onImgError" />
             </div>
             <div class="item-info">
               <router-link :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
@@ -108,6 +108,11 @@
   </div>
 </template>
 
+<script>
+// 地区树懒加载缓存（模块级）：session 内首次拉取后复用，仅在打开「添加地址」弹窗时触发
+let regionTreePromise = null
+</script>
+
 <script setup>
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
@@ -177,23 +182,34 @@ async function loadCoupons() {
   } catch { /* ignore */ }
 }
 
+// 懒加载地区树：打开弹窗时才拉取，模块级 Promise 缓存复用（失败重置下次可重试）
+function loadRegionTree() {
+  if (!regionTreePromise) {
+    regionTreePromise = getRegionTree()
+      .then(res => { regionTree.value = res.data || [] })
+      .catch(err => {
+        regionTreePromise = null
+        return null
+      })
+  }
+  return regionTreePromise
+}
+
+function openAddAddress() {
+  showAddAddress.value = true
+  loadRegionTree()
+}
+
 onMounted(async () => {
   loading.value = true
   try {
-    await Promise.all([loadAddresses(), loadRegionTree(), loadCoupons()])
+    await Promise.all([loadAddresses(), loadCoupons()])
     if (buyParams.value) await loadBuyItem()
     else await loadItems()
   } finally {
     loading.value = false
   }
 })
-
-async function loadRegionTree() {
-  try {
-    const res = await getRegionTree()
-    regionTree.value = res.data || []
-  } catch { /* ignore */ }
-}
 
 async function loadBuyItem() {
   try {
@@ -304,7 +320,8 @@ async function submitOrder() {
       : { addressId: selectedAddressId.value, cartItemIds: items.value.map(i => i.cart.id), couponId: selectedCouponId.value || undefined }
     const res = await createOrder(payload)
     ElMessage.success('下单成功')
-    cartStore.refreshCount()
+    // 下单消耗了购物车商品，本地缓存已过期，强制重新拉取保证角标准确
+    cartStore.refreshCount(true)
     router.push({ name: 'orderDetail', params: { id: res.data.id } })
   } catch { /* handled by interceptor */ }
   finally { submitting.value = false }

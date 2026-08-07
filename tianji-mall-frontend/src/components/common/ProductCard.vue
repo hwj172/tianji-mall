@@ -1,7 +1,7 @@
 <template>
   <div class="product-card" @click="$router.push(`/product/${product.id}`)">
     <div class="product-image">
-      <img :src="firstImage" :alt="product.name" @error="onImageError" />
+      <img :src="firstImage" :alt="product.name" loading="lazy" decoding="async" @error="onImageError" />
       <span v-if="showOriginalPrice && discountPercent != null" class="discount-badge">-{{ discountPercent }}%</span>
     </div>
     <div class="product-info">

@@ -130,19 +130,48 @@ function categoryIcon(name) {
 const personalRecommend = ref([])
 const personalAlsoBuy = ref([])
 
+// 首页数据 sessionStorage 缓存（5 分钟 TTL），避免每次回首页全量拉取
+const HOME_CACHE_KEY = 'home_data_cache'
+const HOME_CACHE_TTL = 5 * 60 * 1000
+
+function applyHomeData(data) {
+  Object.assign(homeData, {
+    banners: data.banners || [],
+    hotProducts: data.hotProducts || [],
+    recommend: data.recommend || { guessYouLike: [], hotSales: [], buyAfterBuy: [] }
+  })
+  categories.value = data.categories || []
+  // 首页接口已返回推荐数据（RecommendResponse），直接复用，不再单独请求
+  personalRecommend.value = homeData.recommend.guessYouLike || []
+  personalAlsoBuy.value = homeData.recommend.buyAfterBuy || []
+}
+
+// 读缓存（JSON 容错：解析失败/结构异常/过期均视为无缓存）
+function readHomeCache() {
+  try {
+    const raw = sessionStorage.getItem(HOME_CACHE_KEY)
+    if (!raw) return null
+    const parsed = JSON.parse(raw)
+    if (!parsed || typeof parsed !== 'object' || !parsed.ts || !parsed.data) return null
+    if (Date.now() - parsed.ts > HOME_CACHE_TTL) return null
+    return parsed.data
+  } catch { return null }
+}
+
 onMounted(async () => {
+  const cached = readHomeCache()
+  if (cached) {
+    applyHomeData(cached)
+    loading.value = false
+    return
+  }
   try {
     const res = await getHomeData()
     if (res.data) {
-      Object.assign(homeData, {
-        banners: res.data.banners || [],
-        hotProducts: res.data.hotProducts || [],
-        recommend: res.data.recommend || { guessYouLike: [], hotSales: [], buyAfterBuy: [] }
-      })
-      categories.value = res.data.categories || []
-      // 首页接口已返回推荐数据（RecommendResponse），直接复用，不再单独请求
-      personalRecommend.value = homeData.recommend.guessYouLike || []
-      personalAlsoBuy.value = homeData.recommend.buyAfterBuy || []
+      applyHomeData(res.data)
+      try {
+        sessionStorage.setItem(HOME_CACHE_KEY, JSON.stringify({ ts: Date.now(), data: res.data }))
+      } catch { /* storage 满/禁用时忽略 */ }
     }
   } catch (e) {
     console.error('首页数据加载失败', e)
