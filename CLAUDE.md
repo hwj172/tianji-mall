@@ -85,6 +85,31 @@ tianji-mall (父 POM)
 
 **模块间调用**：Nacos 注册发现 + OpenFeign。ai-chat-service 通过 Feign 调用 mcp-server 的 REST 工具端点，mcp-server 通过 Feign 调用 mall-goods-order 内部端点（`X-Internal-Token` 请求头鉴权）。
 
+## 前端架构（tianji-mall-frontend，独立 Vue3 项目）
+
+**目录结构**：`views/`（页面：home/product/order/cart/user/seller/admin/chat/groupbuy/coupon/refund/review/notification/favorite/history/seckill/auth）、`components/common/`（公共组件）、`utils/`（工具）、`composables/`（组合式函数）、`stores/`（Pinia：user/cart）、`layouts/`（DefaultLayout/AdminLayout/SellerLayout）、`api/`（Axios 封装 + 接口）。
+
+**公共组件**：`ProductCard.vue`（商品卡，images JSON 解析/原价折扣/懒加载）、`ProductGridSkeleton.vue`（网格骨架屏，props cols）、`EmptyState.vue`（空态，封装 el-empty + 操作按钮 slot）、`HomeBanner.vue`（首页轮播，渐变叠加 + 自定义指示器）。
+
+**utils / composables**（新增重复逻辑必须下沉复用，禁止页面手写副本）：
+- `utils/format.js` — `fmtPrice(n)` 金额两位小数（全站统一，禁止直接 `{{ price }}`）
+- `utils/image.js` — `getFirstImage(images)`、`imageOnError(e, size)`（SVG 占位）
+- `utils/date.js` — `fmtTime(t, {dateOnly})`（兼容 LocalDateTime 数组与 ISO）
+- `utils/order.js` — `ORDER_STATUS_MAP`、`orderStatusText/Tag`
+- `utils/discount.js` — `formatDiscount(d)`（0.9→"9折"）
+- `composables/useProductBatch.js` — 商品批量回填（FavoriteList/BrowsingHistory）
+- `composables/usePagedList.js` — 加载更多分页（MyReviews/PendingReviews）
+
+**主题**：品牌橙 `#ff5000`。`global.css` 用 `--el-color-primary-*` 覆盖 Element 主色，全站 primary 按钮统一橙色。
+
+**验证方式**：前端**无单测框架**，改动后用 `cd tianji-mall-frontend && npm run build`（必须 `✓ built`）+ 浏览器视觉确认（dev 5173，proxy `/api`、`/uploads` → VM gateway `192.168.150.11:8080`）。
+
+**前端关键约定**：
+- 金额统一 `fmtPrice`、时间统一 `fmtTime`；空态用 `EmptyState`；列表 loading 用 `ProductGridSkeleton`
+- **开店角色链路**：`POST /api/shop/register` 成功后 DB 角色提升为 seller，但 **JWT 的 role claim 不刷新**（网关 `X-User-Role` 按 JWT 鉴权）→ 前端必须提示并**强制重新登录**签发新 token，否则商家中心返回 403
+- **AI 客服历史**：走后端 `getChatHistory(sessionId)`；localStorage 只存 sessionId 字符串（读取需兼容旧对象格式 `{sessionId, messages}`）
+- 顶栏入口：logo/🏠 回首页、🏪 商家中心（`isSeller` 显示）、🛒 购物车、🤖 AI导购、用户下拉
+
 ## 常用命令
 
 ```bash
@@ -117,7 +142,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：529 (Common 28 + Gateway 39 + User 37 + Mall-Goods-Order 385 + Pay 15 + MCP 6 + AI-Chat 19)，7 个模块全覆盖。**
+**当前测试总数：626 (Common 39 + Gateway 42 + User 37 + Mall-Goods-Order 407 + Pay 27 + MCP 34 + AI-Chat 40)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -190,6 +215,7 @@ mvn package -DskipTests
 
 ## 关键约定
 
+- **异常映射**（tianji-common `GlobalExceptionHandler`）：`NoResourceFoundException`→404、`HttpRequestMethodNotSupportedException`→405、`MethodArgumentTypeMismatchException`→400（原先统一 500）。类级 `@ConditionalOnClass(name="org.springframework.web.servlet.DispatcherServlet")` 仅 Servlet 服务生效（gateway WebFlux 不注册）。tianji-common 加 `spring-webmvc` **provided** scope——编译/测试可见，不传递依赖避免污染 gateway
 - `tianji-common` 是纯 jar 库，不要在它的 pom.xml 中加 spring-boot-maven-plugin
 - Gateway 使用 WebFlux（spring-cloud-starter-gateway），**不能**引入 spring-boot-starter-web
 - 所有业务服务继承父 POM 的依赖版本，不在子模块中写 `<version>`
