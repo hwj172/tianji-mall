@@ -1,5 +1,5 @@
 <template>
-  <div class="seller-dashboard">
+  <div class="seller-dashboard" v-loading="loading">
     <h2>商家看板</h2>
 
     <!-- 店铺信息 -->
@@ -51,12 +51,14 @@ import { getSellerDashboard, getSellerShop, updateSellerShop } from '@/api'
 
 const shop = ref(null)
 const dashboard = reactive({ productCount: 0 })
+const loading = ref(false)
 const saving = ref(false)
 
 const editVisible = ref(false)
 const editForm = reactive({ name: '', logo: '', description: '' })
 
 onMounted(async () => {
+  loading.value = true
   try {
     const res = await getSellerDashboard()
     if (res.data) {
@@ -65,6 +67,8 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('加载商家看板失败', e)
+  } finally {
+    loading.value = false
   }
 })
 

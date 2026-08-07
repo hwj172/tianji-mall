@@ -1,5 +1,5 @@
 <template>
-  <div class="notification-page">
+  <div class="notification-page" v-loading="loading">
     <div class="np-header">
       <h2 class="page-title">消息通知</h2>
       <el-button type="primary" size="small" @click="handleMarkAllRead" :disabled="!hasUnread">全部已读</el-button>
@@ -43,8 +43,11 @@
 
 <script setup>
 import { ref, computed, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getNotifications, markRead, markAllRead, getUnreadCount } from '@/api'
+
+const router = useRouter()
 
 const notifications = ref([])
 const loading = ref(false)
@@ -85,11 +88,17 @@ async function loadData() {
 }
 
 async function handleClick(n) {
-  if (n.isRead) return
-  try {
-    await markRead(n.id)
-    n.isRead = true
-  } catch { /* ignore */ }
+  // 未读先标已读
+  if (!n.isRead) {
+    try {
+      await markRead(n.id)
+      n.isRead = true
+    } catch { /* ignore */ }
+  }
+  // 关联订单则跳转到订单详情
+  if (n.relatedOrderId) {
+    router.push({ name: 'orderDetail', params: { id: n.relatedOrderId } })
+  }
 }
 
 async function handleMarkAllRead() {

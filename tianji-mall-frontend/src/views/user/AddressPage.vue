@@ -1,5 +1,5 @@
 <template>
-  <div class="address-page">
+  <div class="address-page" v-loading="loading">
     <div class="ap-header">
       <h2>收货地址</h2>
       <el-button type="primary" @click="openDialog()">新增地址</el-button>

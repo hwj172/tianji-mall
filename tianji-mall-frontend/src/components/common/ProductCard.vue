@@ -17,6 +17,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import { fmtPrice } from '@/utils/format'
 
 const props = defineProps({
   product: { type: Object, required: true },
@@ -34,7 +35,7 @@ const firstImage = computed(() => {
 })
 
 // 价格统一保留两位小数
-const priceDisplay = computed(() => (Number(props.product.price) || 0).toFixed(2))
+const priceDisplay = computed(() => fmtPrice(props.product.price))
 
 // 原价字段存在时划线显示 + 折扣角标（列表接口目前不返回该字段，防御式：有才渲染）
 const originalPrice = computed(() => {
@@ -42,7 +43,7 @@ const originalPrice = computed(() => {
   return v != null ? Number(v) : null
 })
 const originalPriceDisplay = computed(() =>
-  originalPrice.value != null ? originalPrice.value.toFixed(2) : ''
+  originalPrice.value != null ? fmtPrice(originalPrice.value) : ''
 )
 const discountPercent = computed(() => {
   const p = Number(props.product.price) || 0

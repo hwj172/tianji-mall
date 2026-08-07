@@ -1,5 +1,5 @@
 <template>
-  <div class="coupon-page">
+  <div class="coupon-page" v-loading="centerLoading || myLoading">
     <el-tabs v-model="activeTab">
       <el-tab-pane name="center">
         <template #label>

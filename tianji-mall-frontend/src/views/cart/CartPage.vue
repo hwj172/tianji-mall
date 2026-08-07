@@ -1,5 +1,5 @@
 <template>
-  <div class="cart-page">
+  <div class="cart-page" v-loading="loading">
     <h2 class="page-title">购物车</h2>
 
     <!-- 购物车列表 -->
@@ -19,11 +19,11 @@
             <span v-else class="item-name invalid-name">商品已失效</span>
             <span class="item-sku" v-if="item.specs">{{ item.specs }}</span>
           </div>
-          <div class="item-price">¥{{ item.invalid ? '—' : item.price }}</div>
+          <div class="item-price">¥{{ item.invalid ? '—' : fmtPrice(item.price) }}</div>
           <div class="item-qty">
             <el-input-number v-model="item.cart.quantity" :min="1" :max="item.product.stock" size="small" @change="onQtyChange(item)" :disabled="item.invalid" />
           </div>
-          <div class="item-subtotal">¥{{ item.invalid ? '—' : (item.price * item.cart.quantity).toFixed(2) }}</div>
+          <div class="item-subtotal">¥{{ item.invalid ? '—' : fmtPrice(item.price * item.cart.quantity) }}</div>
           <el-button text type="danger" @click="removeItem(item)" class="item-del">删除</el-button>
         </div>
       </div>
@@ -36,7 +36,7 @@
         </div>
         <div class="footer-right">
           <span class="total-label">已选 <b>{{ checkedCount }}</b> 件，合计：</span>
-          <span class="total-price">¥{{ totalPrice }}</span>
+          <span class="total-price">¥{{ fmtPrice(totalPrice) }}</span>
           <el-button type="primary" size="large" :disabled="!checkedCount" @click="goCheckout" class="checkout-btn">
             去结算{{ checkedCount ? ` (${checkedCount})` : '' }}
           </el-button>
@@ -56,6 +56,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCartList, updateCartItem, deleteCartItem, checkCartItem, getProductBatch } from '@/api'
 import { useCartStore } from '@/stores/cart'
+import { fmtPrice } from '@/utils/format'
 
 const router = useRouter()
 const cartStore = useCartStore()

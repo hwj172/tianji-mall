@@ -13,7 +13,7 @@
       <el-table-column prop="orderNo" label="订单号" width="180" show-overflow-tooltip />
       <el-table-column prop="userId" label="用户ID" width="80" />
       <el-table-column label="金额" width="100">
-        <template #default="{ row }">¥{{ row.totalAmount }}</template>
+        <template #default="{ row }">¥{{ fmtPrice(row.totalAmount) }}</template>
       </el-table-column>
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
@@ -48,6 +48,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminOrders, completeOrder } from '@/api'
+import { fmtPrice } from '@/utils/format'
 
 const orders = ref([])
 const total = ref(0)

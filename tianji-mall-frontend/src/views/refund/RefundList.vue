@@ -1,5 +1,5 @@
 <template>
-  <div class="refund-page">
+  <div class="refund-page" v-loading="loading">
     <h2 class="page-title">退款/售后</h2>
 
     <!-- 退款列表 -->
@@ -13,7 +13,7 @@
           <span class="rc-time">{{ fmtTime(r.createdAt) }}</span>
         </div>
         <div class="rc-body">
-          <div class="rc-amount">¥{{ r.amount }}</div>
+          <div class="rc-amount">¥{{ fmtPrice(r.amount) }}</div>
           <div class="rc-actions" @click.stop>
             <!-- 退货退款 + 已寄回 + 卖家/管理员：确认收货 -->
             <el-button
@@ -50,7 +50,7 @@
         <el-descriptions :column="2" border>
           <el-descriptions-item label="退款ID">{{ detailRefund.id }}</el-descriptions-item>
           <el-descriptions-item label="关联订单">{{ detailRefund.orderId }}</el-descriptions-item>
-          <el-descriptions-item label="退款金额">¥{{ detailRefund.amount }}</el-descriptions-item>
+          <el-descriptions-item label="退款金额">¥{{ fmtPrice(detailRefund.amount) }}</el-descriptions-item>
           <el-descriptions-item label="退款类型">
             <el-tag :type="typeTag(detailRefund.refundType)" size="small">{{ typeText(detailRefund.refundType) }}</el-tag>
           </el-descriptions-item>
@@ -85,6 +85,7 @@ import { ref, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyRefunds, getRefundDetail, receiveRefund } from '@/api'
 import { useUserStore } from '@/stores/user'
+import { fmtPrice } from '@/utils/format'
 
 const userStore = useUserStore()
 

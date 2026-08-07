@@ -17,7 +17,7 @@
       <el-table-column prop="id" label="ID" width="60" />
       <el-table-column prop="name" label="商品名称" show-overflow-tooltip />
       <el-table-column prop="price" label="价格" width="100">
-        <template #default="{ row }">¥{{ row.price }}</template>
+        <template #default="{ row }">¥{{ fmtPrice(row.price) }}</template>
       </el-table-column>
       <el-table-column prop="stock" label="库存" width="80" />
       <el-table-column prop="sales" label="销量" width="80" />
@@ -67,6 +67,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getSellerProducts, createSellerProduct, updateSellerProduct, deleteSellerProduct } from '@/api'
+import { fmtPrice } from '@/utils/format'
 
 const products = ref([])
 const total = ref(0)

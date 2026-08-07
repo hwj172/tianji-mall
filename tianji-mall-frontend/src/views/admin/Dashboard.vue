@@ -1,5 +1,5 @@
 <template>
-  <div class="admin-dashboard">
+  <div class="admin-dashboard" v-loading="loading">
     <h2 class="page-title">数据看板</h2>
 
     <!-- 概览卡片 -->
@@ -88,13 +88,17 @@ import { ref, onMounted } from 'vue'
 import { getAdminDashboard } from '@/api'
 
 const dashboard = ref({})
+const loading = ref(false)
 
 onMounted(async () => {
+  loading.value = true
   try {
     const res = await getAdminDashboard()
     if (res.data) dashboard.value = res.data
   } catch (e) {
     console.error('加载看板数据失败', e)
+  } finally {
+    loading.value = false
   }
 })
 

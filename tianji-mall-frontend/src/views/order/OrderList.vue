@@ -1,5 +1,5 @@
 <template>
-  <div class="order-list-page">
+  <div class="order-list-page" v-loading="loading">
     <h2 class="page-title">我的订单</h2>
 
     <!-- 状态 Tab -->
@@ -21,7 +21,7 @@
         </div>
         <div class="oc-body">
           <div class="oc-info">
-            <span class="oc-amount">¥{{ order.totalAmount }}</span>
+            <span class="oc-amount">¥{{ fmtPrice(order.totalAmount) }}</span>
             <span class="oc-pay">{{ order.payType === 1 ? '支付宝' : '—' }}</span>
           </div>
           <div class="oc-actions" @click.stop>
@@ -56,6 +56,7 @@ import { useRouter, useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderList, cancelOrder, createPay, receiveOrder } from '@/api'
 import { submitPayForm } from '@/utils/pay'
+import { fmtPrice } from '@/utils/format'
 
 const router = useRouter()
 const route = useRoute()

@@ -6,7 +6,7 @@
         <img :src="productImage" class="gb-img" @error="onImgError" />
         <div class="gb-info">
           <h2>{{ productName }}</h2>
-          <div class="gb-price">¥{{ productPrice }}</div>
+          <div class="gb-price">¥{{ fmtPrice(productPrice) }}</div>
           <div class="gb-time">{{ fmtTime(activity.startTime) }} ~ {{ fmtTime(activity.endTime) }} · {{ activity.expireHours }}h 内成团</div>
         </div>
         <el-button type="primary" @click="openStartDialog" class="gb-start-btn">我要开团</el-button>
@@ -84,6 +84,7 @@ import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getGroupBuyDetail, startGroupBuy, joinGroupBuy, getAddressList, getProductDetail } from '@/api'
+import { fmtPrice } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()

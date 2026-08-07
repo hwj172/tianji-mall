@@ -1,5 +1,5 @@
 <template>
-  <div class="reviews-page">
+  <div class="reviews-page" v-loading="loading">
     <h2>待评价商品</h2>
 
     <div class="review-list" v-if="items.length">

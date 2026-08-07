@@ -1,5 +1,5 @@
 <template>
-  <div class="checkout-page">
+  <div class="checkout-page" v-loading="loading">
     <h2 class="page-title">确认订单</h2>
 
     <div class="checkout-main" v-if="items.length">
@@ -41,9 +41,9 @@
               <router-link :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
               <span class="item-spec" v-if="item.specs">{{ item.specs }}</span>
             </div>
-            <div class="item-price">¥{{ item.price }}</div>
+            <div class="item-price">¥{{ fmtPrice(item.price) }}</div>
             <div class="item-qty">×{{ item.cart.quantity }}</div>
-            <div class="item-subtotal">¥{{ (item.price * item.cart.quantity).toFixed(2) }}</div>
+            <div class="item-subtotal">¥{{ fmtPrice(item.price * item.cart.quantity) }}</div>
           </div>
         </div>
       </div>
@@ -58,9 +58,9 @@
             @click="selectedCouponId = selectedCouponId === c.userCouponId ? null : c.userCouponId"
           >
             <div class="co-name">{{ c.name }}</div>
-            <div class="co-value" v-if="c.discountType === 'FIXED'">减 ¥{{ c.discountValue }}</div>
+            <div class="co-value" v-if="c.discountType === 'FIXED'">减 ¥{{ fmtPrice(c.discountValue) }}</div>
             <div class="co-value" v-else>{{ c.discountValue * 10 }}折</div>
-            <div class="co-cond" v-if="c.minOrderAmount > 0">满 ¥{{ c.minOrderAmount }}</div>
+            <div class="co-cond" v-if="c.minOrderAmount > 0">满 ¥{{ fmtPrice(c.minOrderAmount) }}</div>
           </div>
         </div>
       </div>
@@ -69,9 +69,9 @@
       <div class="checkout-footer">
         <div class="footer-summary">
           <span>共 <b>{{ totalCount }}</b> 件，合计：</span>
-          <span v-if="couponDiscount > 0" class="footer-original">¥{{ totalPrice }}</span>
-          <span class="footer-total">¥{{ payPrice }}</span>
-          <span v-if="couponDiscount > 0" class="footer-coupon">已优惠 ¥{{ couponDiscount.toFixed(2) }}</span>
+          <span v-if="couponDiscount > 0" class="footer-original">¥{{ fmtPrice(totalPrice) }}</span>
+          <span class="footer-total">¥{{ fmtPrice(payPrice) }}</span>
+          <span v-if="couponDiscount > 0" class="footer-coupon">已优惠 ¥{{ fmtPrice(couponDiscount) }}</span>
         </div>
         <el-button type="primary" size="large" @click="submitOrder" :loading="submitting" class="submit-btn">
           提交订单
@@ -114,6 +114,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree, getMyCoupons } from '@/api'
 import { useCartStore } from '@/stores/cart'
+import { fmtPrice } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()

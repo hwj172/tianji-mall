@@ -1,5 +1,6 @@
 <template>
-  <div class="order-detail-page" v-if="order">
+  <div class="order-detail-page" v-loading="loading">
+    <div v-if="order">
     <!-- 状态横幅 -->
     <div class="status-bar" :class="'status-' + order.status">
       <div class="status-icon">{{ statusInfo.icon }}</div>
@@ -57,9 +58,9 @@
             <router-link :to="`/product/${item.productId}`" class="od-item-name">{{ item.productName }}</router-link>
             <span class="od-item-spec" v-if="item.skuSpecs">{{ item.skuSpecs }}</span>
           </div>
-          <div class="od-item-price">¥{{ item.price }}</div>
+          <div class="od-item-price">¥{{ fmtPrice(item.price) }}</div>
           <div class="od-item-qty">×{{ item.quantity }}</div>
-          <div class="od-item-subtotal">¥{{ (item.price * item.quantity).toFixed(2) }}</div>
+          <div class="od-item-subtotal">¥{{ fmtPrice(item.price * item.quantity) }}</div>
         </div>
       </div>
     </div>
@@ -72,12 +73,12 @@
         <div class="summary-row"><span>创建时间</span><span>{{ formatTime(order.createTime) }}</span></div>
         <div class="summary-row"><span>订单状态</span><el-tag :type="statusTagType" size="small">{{ statusText }}</el-tag></div>
         <div class="summary-row"><span>支付方式</span><span>{{ order.payType === 1 ? '支付宝' : '—' }}</span></div>
-        <div class="summary-row total-row"><span>订单总额</span><b class="total-amount">¥{{ order.totalAmount }}</b></div>
+        <div class="summary-row total-row"><span>订单总额</span><b class="total-amount">¥{{ fmtPrice(order.totalAmount) }}</b></div>
       </div>
     </div>
-  </div>
+    </div>
 
-  <el-empty v-else-if="!loading" description="订单不存在" />
+    <el-empty v-else-if="!loading" description="订单不存在" />
 
   <!-- 申请退款 Dialog -->
   <el-dialog v-model="refundVisible" title="申请退款" width="420px">
@@ -97,6 +98,7 @@
       <el-button type="danger" @click="handleRefund" :loading="refunding">提交退款申请</el-button>
     </template>
   </el-dialog>
+  </div>
 </template>
 
 <script setup>
@@ -105,6 +107,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderDetail, getProductBatch, getOrderLogistics, createPay, cancelOrder, receiveOrder, requestRefund } from '@/api'
 import { submitPayForm } from '@/utils/pay'
+import { fmtPrice } from '@/utils/format'
 
 const route = useRoute()
 const router = useRouter()

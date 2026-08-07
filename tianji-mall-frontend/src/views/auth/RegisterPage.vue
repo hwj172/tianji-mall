@@ -1,5 +1,9 @@
 <template>
   <div class="auth-page">
+    <div class="auth-brand">
+      <span class="ab-logo">天机商城</span>
+      <span class="ab-slogan">加入天机 · 开启专属好物</span>
+    </div>
     <el-card class="auth-card" shadow="always">
       <h2>注册</h2>
       <el-form ref="formRef" :model="form" :rules="rules" label-position="top" @submit.prevent="handleRegister">
@@ -48,9 +52,13 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-.auth-page { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; }
-.auth-card { width: 400px; }
-.auth-card h2 { text-align: center; margin-bottom: 24px; }
+.auth-page { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #fff7f0, #ffe8d6); padding: 24px; }
+.auth-brand { text-align: center; margin-bottom: 24px; }
+.ab-logo { display: block; font-size: 42px; font-weight: 800; color: #ff5000; letter-spacing: 3px; }
+.ab-slogan { display: block; margin-top: 6px; font-size: 13px; color: #c06a2e; letter-spacing: 5px; }
+.auth-card { width: 400px; border-radius: 12px; overflow: hidden; border-top: 4px solid #ff5000; }
+.auth-card h2 { text-align: center; margin-bottom: 24px; color: #ff5000; }
 .auth-switch { text-align: center; margin-top: 16px; }
-.auth-switch a { color: #409eff; }
+.auth-switch a { color: #ff5000; }
+.auth-card :deep(.el-button--primary) { background: #ff5000; border-color: #ff5000; }
 </style>

@@ -68,7 +68,7 @@
 
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminUsers, updateUserStatus, updateUserRole } from '@/api'
 
 const users = ref([])
@@ -113,6 +113,8 @@ async function loadData() {
 
 async function handleStatus(row) {
   const newStatus = row.status === 1 ? 0 : 1
+  const action = newStatus === 1 ? '启用' : '禁用'
+  try { await ElMessageBox.confirm(`确定${action}用户「${row.username}」？`, '提示', { type: 'warning' }) } catch { return }
   try {
     await updateUserStatus(row.id, newStatus)
     ElMessage.success(newStatus === 1 ? '已启用' : '已禁用')
@@ -122,6 +124,7 @@ async function handleStatus(row) {
 
 async function handleRole(row, role) {
   if (role === row.role) return
+  try { await ElMessageBox.confirm(`确定将用户「${row.username}」的角色改为「${roleMap[role]}」？`, '提示', { type: 'warning' }) } catch { return }
   try {
     await updateUserRole(row.id, role)
     ElMessage.success(`角色已更新为「${roleMap[role]}」`)
