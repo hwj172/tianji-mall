@@ -25,6 +25,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -189,7 +190,7 @@ class OrderServiceTest {
     void shouldCancelOrder() {
         Order order = buildOrder(1L, 100L, 1);
         when(orderMapper.selectById(1L)).thenReturn(order);
-        when(orderMapper.updateById(order)).thenReturn(1);
+        when(orderMapper.updateStatusIfPending(1L, 5)).thenReturn(1);
         // 订单内有 1 个商品需要恢复库存
         OrderItem item = buildOrderItem(1L, 1L, 1L, 2);
         when(orderItemMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(item));
@@ -197,6 +198,34 @@ class OrderServiceTest {
 
         assertThat(order.getStatus()).isEqualTo(5); // 已取消
         verify(productService).restoreStock(1L, 2);
+    }
+
+    @Test
+    void shouldNotRestoreStockWhenConcurrentCancelAlreadySucceeded() {
+        // CAS affected=0：订单已被并发路径（超时/另一取消）取消，恢复库存/优惠券必须不再执行
+        Order order = buildOrder(1L, 100L, 1);
+        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.updateStatusIfPending(1L, 5)).thenReturn(0);
+
+        assertThatThrownBy(() -> orderService.cancelOrder(100L, 1L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("仅待付款订单可取消");
+
+        verify(productService, never()).restoreStock(anyLong(), anyInt());
+        verify(skuService, never()).restoreStock(anyLong(), anyLong(), anyInt());
+    }
+
+    @Test
+    void shouldNotRestoreStockWhenTimeoutCancelLostRace() {
+        // 超时取消与用户取消并发，CAS 失败时静默返回，不重复恢复库存
+        Order order = buildOrder(1L, 100L, 1);
+        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.updateStatusIfPending(1L, 5)).thenReturn(0);
+
+        orderService.cancelOrderByTimeout(1L);
+
+        verify(productService, never()).restoreStock(anyLong(), anyInt());
+        verify(skuService, never()).restoreStock(anyLong(), anyLong(), anyInt());
     }
 
     @Test
@@ -530,7 +559,7 @@ class OrderServiceTest {
     void shouldCancelOrderWithSkuAndRestoreSkuStock() {
         Order order = buildOrder(1L, 100L, 1);
         when(orderMapper.selectById(1L)).thenReturn(order);
-        when(orderMapper.updateById(order)).thenReturn(1);
+        when(orderMapper.updateStatusIfPending(1L, 5)).thenReturn(1);
         OrderItem item = buildOrderItem(1L, 1L, 1L, 2);
         item.setSkuId(10L);
         when(orderItemMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(item));

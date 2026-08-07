@@ -50,7 +50,9 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
      */
     @Transactional
     public Refund requestRefund(Long userId, Long orderId, RefundRequest req) {
-        Order order = orderMapper.selectById(orderId);
+        // SELECT ... FOR UPDATE 对订单行加排他锁：并发申请退款时串行化，
+        // 后到的事务在该行锁上等待，前一个事务提交后再执行防重检查，可看到已插入的退款记录，从而阻止双插入
+        Order order = orderMapper.selectByIdForUpdate(orderId);
         if (order == null || !order.getUserId().equals(userId)) {
             throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }

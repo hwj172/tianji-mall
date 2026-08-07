@@ -39,8 +39,8 @@ class RecommendServiceTest {
     @BeforeEach
     void setUp() {
         recommendService = new RecommendService(
-                productMapper, orderMapper, orderItemMapper,
-                favoriteMapper, reviewMapper, similarityMapper);
+                productMapper, orderMapper, orderItemMapper, similarityMapper,
+                new HotSalesCacheService(productMapper, favoriteMapper, reviewMapper));
         p1 = buildProduct(1L, "iPhone", 1L, 5000);
         p2 = buildProduct(2L, "保护壳", 1L, 3000);
         p3 = buildProduct(3L, "MacBook", 2L, 4000);

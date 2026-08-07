@@ -20,6 +20,12 @@ import org.springframework.test.context.ActiveProfiles;
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -161,6 +167,47 @@ class RefundServiceIntegrationTest {
                 buildRefundRequest("第二次申请", "REFUND_ONLY", orderItemId, null)))
                 .isInstanceOf(BizException.class)
                 .hasMessageContaining("提交");
+    }
+
+    @Test
+    void shouldOnlyAllowOneConcurrentRefund() throws Exception {
+        // 并发竞态：两个线程同时对同一订单申请退款，SELECT ... FOR UPDATE 串行化，
+        // 后到事务在防重检查时能看到先到事务已插入的退款，从而只有一条退款记录落库
+        RefundRequest req = buildRefundRequest("并发申请", "REFUND_ONLY", orderItemId, null);
+
+        ExecutorService pool = Executors.newFixedThreadPool(2);
+        CountDownLatch start = new CountDownLatch(1);
+        AtomicInteger success = new AtomicInteger();
+        AtomicInteger duplicate = new AtomicInteger();
+        try {
+            Future<?>[] futures = new Future<?>[2];
+            for (int i = 0; i < 2; i++) {
+                futures[i] = pool.submit(() -> {
+                    start.await();
+                    try {
+                        refundService.requestRefund(userId, orderId, req);
+                        success.incrementAndGet();
+                    } catch (BizException e) {
+                        if (e.getMessage().contains("提交")) {
+                            duplicate.incrementAndGet();
+                        }
+                    }
+                    return null;
+                });
+            }
+            start.countDown();
+            for (Future<?> f : futures) {
+                f.get(15, TimeUnit.SECONDS);
+            }
+        } finally {
+            pool.shutdownNow();
+        }
+
+        assertThat(success.get()).isEqualTo(1);
+        assertThat(duplicate.get()).isEqualTo(1);
+        Long refundCount = refundMapper.selectCount(
+                new LambdaQueryWrapper<Refund>().eq(Refund::getOrderId, orderId));
+        assertThat(refundCount).isEqualTo(1);
     }
 
     // ==================== returnShip + confirmReceive ====================

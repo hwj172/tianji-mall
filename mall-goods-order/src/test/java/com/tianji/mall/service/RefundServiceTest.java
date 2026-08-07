@@ -61,7 +61,7 @@ class RefundServiceTest {
     @Test
     void shouldRequestPerItemRefund() {
         Order order = buildOrder(1L, 100L, 2);
-        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.selectByIdForUpdate(1L)).thenReturn(order);
         when(refundMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
         OrderItem item = new OrderItem();
@@ -98,7 +98,7 @@ class RefundServiceTest {
     @Test
     void shouldRequestReturnRefund() {
         Order order = buildOrder(1L, 100L, 3); // SHIPPED
-        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.selectByIdForUpdate(1L)).thenReturn(order);
         when(refundMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
         OrderItem item = new OrderItem();
@@ -128,7 +128,7 @@ class RefundServiceTest {
 
     @Test
     void shouldThrowWhenOrderNotFound() {
-        when(orderMapper.selectById(999L)).thenReturn(null);
+        when(orderMapper.selectByIdForUpdate(999L)).thenReturn(null);
 
         RefundRequest req = new RefundRequest();
         req.setReason("reason");
@@ -142,7 +142,7 @@ class RefundServiceTest {
     @Test
     void shouldThrowWhenOrderNotBelongsToUser() {
         Order order = buildOrder(1L, 999L, 2);
-        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.selectByIdForUpdate(1L)).thenReturn(order);
 
         RefundRequest req = new RefundRequest();
         req.setReason("reason");
@@ -156,7 +156,7 @@ class RefundServiceTest {
     @Test
     void shouldThrowWhenOrderIsPending() {
         Order order = buildOrder(1L, 100L, 1);
-        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.selectByIdForUpdate(1L)).thenReturn(order);
 
         RefundRequest req = new RefundRequest();
         req.setReason("reason");
@@ -170,7 +170,7 @@ class RefundServiceTest {
     @Test
     void shouldThrowWhenRefundAlreadyExists() {
         Order order = buildOrder(1L, 100L, 2);
-        when(orderMapper.selectById(1L)).thenReturn(order);
+        when(orderMapper.selectByIdForUpdate(1L)).thenReturn(order);
         when(refundMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
 
         RefundRequest req = new RefundRequest();

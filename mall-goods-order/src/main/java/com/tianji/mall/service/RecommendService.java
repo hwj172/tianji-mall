@@ -2,22 +2,17 @@ package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.tianji.mall.dto.RecommendResponse;
-import com.tianji.mall.entity.Favorite;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductSimilarity;
-import com.tianji.mall.entity.Review;
-import com.tianji.mall.mapper.FavoriteMapper;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
 import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.mapper.ProductSimilarityMapper;
-import com.tianji.mall.mapper.ReviewMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.CacheEvict;
-import org.springframework.cache.annotation.Cacheable;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Service;
@@ -41,12 +36,10 @@ public class RecommendService {
     private final ProductMapper productMapper;
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
-    private final FavoriteMapper favoriteMapper;
-    private final ReviewMapper reviewMapper;
     private final ProductSimilarityMapper similarityMapper;
+    private final HotSalesCacheService hotSalesCacheService;
 
     private static final int DEFAULT_COUNT = 10;
-    private static final int TOP_N = 50;
 
     /**
      * 对外推荐入口。
@@ -67,25 +60,9 @@ public class RecommendService {
 
     // ==================== 热销榜单 ====================
 
-    @Cacheable(value = "recommend", key = "'hot_sales'")
-    public List<RecommendResponse.RecommendItem> computeHotSales() {
-        List<Product> products = productMapper.selectList(
-                new LambdaQueryWrapper<Product>().eq(Product::getStatus, 1));
-        return products.stream()
-                .map(p -> {
-                    double score = p.getSales() * 0.5
-                            + countFavorites(p.getId()) * 0.3
-                            + countReviews(p.getId()) * 0.2;
-                    return new RecommendResponse.RecommendItem(
-                            p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "", p.getImages());
-                })
-                .sorted((a, b) -> Long.compare(b.getSales(), a.getSales()))
-                .limit(TOP_N)
-                .collect(Collectors.toList());
-    }
-
     public List<RecommendResponse.RecommendItem> getHotSales(int count) {
-        List<RecommendResponse.RecommendItem> all = computeHotSales();
+        // 通过独立 Bean 的 Spring 代理调用，@Cacheable 才会生效（本类 this 自调用会绕过代理导致缓存失效）
+        List<RecommendResponse.RecommendItem> all = hotSalesCacheService.computeHotSales();
         return all.size() > count ? all.subList(0, count) : all;
     }
 
@@ -256,15 +233,5 @@ public class RecommendService {
     private String getProductName(Long productId) {
         Product p = productMapper.selectById(productId);
         return p != null ? p.getName() : "商品";
-    }
-
-    private Long countFavorites(Long productId) {
-        return favoriteMapper.selectCount(
-                new LambdaQueryWrapper<Favorite>().eq(Favorite::getProductId, productId));
-    }
-
-    private Long countReviews(Long productId) {
-        return reviewMapper.selectCount(
-                new LambdaQueryWrapper<Review>().eq(Review::getProductId, productId));
     }
 }

@@ -109,8 +109,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 .toArray(RLock[]::new);
         RLock multiLock = redissonClient.getMultiLock(lockArray);
 
+        boolean locked = false;
         try {
-            if (!multiLock.tryLock(3, 10, TimeUnit.SECONDS)) {
+            locked = multiLock.tryLock(3, 10, TimeUnit.SECONDS);
+            if (!locked) {
                 throw new BizException(BizErrorCode.SYSTEM_BUSY);
             }
 
@@ -246,7 +248,10 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             Thread.currentThread().interrupt();
             throw new BizException(BizErrorCode.SYSTEM_BUSY);
         } finally {
-            multiLock.unlock();
+            // 仅在持有锁时 unlock，避免对未持有的锁调用 unlock 抛 IllegalMonitorStateException 掩盖原始异常
+            if (locked) {
+                multiLock.unlock();
+            }
         }
     }
 
@@ -290,12 +295,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         if (order == null || !order.getUserId().equals(userId)) {
             throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
         }
-        if (order.getStatus() != 1) {
+        // 原子 CAS：仅当仍为待付款(status=1)时才取消。
+        // 并发用户取消 + 超时取消时只有一个路径 CAS 成功，避免库存/优惠券被双重恢复
+        int affected = baseMapper.updateStatusIfPending(orderId, 5);
+        if (affected == 0) {
             throw new BizException(BizErrorCode.ORDER_CANNOT_CANCEL);
         }
-
         order.setStatus(5); // 已取消
-        updateById(order);
 
         // 原子恢复库存
         List<OrderItem> items = orderItemMapper.selectList(
@@ -419,11 +425,16 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     @Transactional
     public void cancelOrderByTimeout(Long orderId) {
         Order order = getById(orderId);
-        if (order == null || order.getStatus() != 1) {
-            return; // 不在待付款状态，无需处理
+        if (order == null) {
+            return; // 订单不存在，无需处理
+        }
+        // 原子 CAS：仅当仍为待付款(status=1)时才取消。
+        // 与用户取消并发时只有一个路径 CAS 成功，失败路径直接返回，不重复恢复库存/优惠券
+        int affected = baseMapper.updateStatusIfPending(orderId, 5);
+        if (affected == 0) {
+            return; // 已被并发路径取消，无需处理
         }
         order.setStatus(5); // 已取消
-        updateById(order);
 
         // 恢复库存
         List<OrderItem> items = orderItemMapper.selectList(

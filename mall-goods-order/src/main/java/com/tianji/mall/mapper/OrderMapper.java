@@ -5,6 +5,7 @@ import com.tianji.mall.entity.Order;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -31,4 +32,17 @@ public interface OrderMapper extends BaseMapper<Order> {
 
     @Select("SELECT status, COUNT(*) AS cnt FROM `order` WHERE user_id = #{userId} GROUP BY status")
     List<Map<String, Object>> selectOrderStats(@Param("userId") Long userId);
+
+    /**
+     * 原子 CAS：仅当订单仍为待付款(status=1)时才更新到目标状态。
+     * 返回 affected rows，=0 说明订单已被并发路径取消/状态已变更，调用方不得重复恢复库存/优惠券。
+     */
+    @Update("UPDATE `order` SET status = #{targetStatus} WHERE id = #{id} AND status = 1")
+    int updateStatusIfPending(@Param("id") Long id, @Param("targetStatus") Integer targetStatus);
+
+    /**
+     * 对订单行加排他锁（须在事务内调用），用于退款防重检查等并发控制。
+     */
+    @Select("SELECT * FROM `order` WHERE id = #{id} FOR UPDATE")
+    Order selectByIdForUpdate(@Param("id") Long id);
 }
