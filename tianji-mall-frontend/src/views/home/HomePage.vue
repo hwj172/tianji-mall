@@ -8,11 +8,12 @@
           v-for="cat in categories.slice(0, 10)"
           :key="cat.id"
           class="category-item"
+          :class="{ active: activeCategory === cat.id }"
           @mouseenter="activeCategory = cat.id"
           @mouseleave="activeCategory = null"
           @click="$router.push({ name: 'productList', query: { categoryId: cat.id } })"
         >
-          <span>{{ cat.name }}</span>
+          <span>{{ categoryIcon(cat.name) }} {{ cat.name }}</span>
           <el-icon><ArrowRight /></el-icon>
         </div>
       </div>
@@ -84,6 +85,26 @@ const homeData = reactive({
 })
 const categories = ref([])
 const activeCategory = ref(null)
+const CATEGORY_ICONS = [
+  { keyword: '手机', icon: '📱' },
+  { keyword: '电脑', icon: '💻' },
+  { keyword: '办公', icon: '💻' },
+  { keyword: '服饰', icon: '👕' },
+  { keyword: '鞋', icon: '👟' },
+  { keyword: '智能', icon: '⌚' },
+  { keyword: '家电', icon: '🏠' },
+  { keyword: '家居', icon: '🛋️' },
+  { keyword: '运动', icon: '⚽' },
+  { keyword: '美妆', icon: '💄' },
+  { keyword: '食品', icon: '🍎' },
+  { keyword: '图书', icon: '📚' },
+  { keyword: '玩具', icon: '🧸' },
+]
+
+function categoryIcon(name) {
+  const hit = CATEGORY_ICONS.find(i => name.includes(i.keyword))
+  return hit ? hit.icon : '📦'
+}
 const personalRecommend = ref([])
 const personalAlsoBuy = ref([])
 
@@ -111,9 +132,14 @@ onMounted(async () => {
 .home-page { max-width: 1200px; margin: 0 auto; }
 .home-hero { display: flex; gap: 12px; margin-bottom: 20px; }
 .category-sidebar { width: 200px; background: #fff; border-radius: 8px; padding: 4px 0; flex-shrink: 0; }
-.category-title { padding: 10px 16px; font-weight: 600; font-size: 14px; color: #ff5000; }
-.category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; cursor: pointer; }
-.category-item:hover { color: #ff5000; background: #fff5f0; }
+.category-title { position: relative; padding: 10px 16px; font-weight: 600; font-size: 14px; color: #ff5000; }
+.category-title::after {
+  content: '';
+  position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px;
+  background: linear-gradient(90deg, #ff5000, #ff7a3d); border-radius: 1px;
+}
+.category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; cursor: pointer; transition: background .15s; }
+.category-item:hover, .category-item.active { color: #ff5000; background: #fff5f0; font-weight: 600; }
 .hero-banner { flex: 1; }
 .hero-sidebar { width: 200px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .hero-user { background: #fff; border-radius: 8px; padding: 16px; text-align: center; }
