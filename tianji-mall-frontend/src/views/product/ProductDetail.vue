@@ -5,7 +5,7 @@
       <!-- 左：图片 -->
       <div class="detail-gallery">
         <div class="main-image" @click="openViewer" title="点击查看大图">
-          <img :src="currentImage" :alt="product.name" @error="onImageError" />
+          <img :src="currentImage" :alt="product.name" @error="imageOnError($event, 400)" />
         </div>
         <div class="thumb-list" v-if="imageList.length > 1">
           <img
@@ -144,7 +144,7 @@
             <span class="review-avatar">👤</span>
             <span class="review-username">{{ r.username }}</span>
             <el-rate :model-value="r.rating" disabled size="small" allow-half />
-            <span class="review-time">{{ fmtReviewTime(r.createTime) }}</span>
+            <span class="review-time">{{ fmtTime(r.createTime, { dateOnly: true }) }}</span>
           </div>
           <div class="review-content" v-if="r.content">{{ r.content }}</div>
           <div class="review-images" v-if="reviewImages(r).length">
@@ -169,6 +169,8 @@ import { Star, StarFilled } from '@element-plus/icons-vue'
 import { getProductDetail, getProductReviews, toggleFavorite, getFavorites } from '@/api'
 import { addToCart as apiAddToCart } from '@/api'
 import { useCartStore } from '@/stores/cart'
+import { fmtTime } from '@/utils/date'
+import { imageOnError } from '@/utils/image'
 
 const route = useRoute()
 const router = useRouter()
@@ -388,12 +390,6 @@ async function loadMoreReviews() {
   }
 }
 
-function fmtReviewTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleDateString('zh-CN')
-}
-
 function formatPrice(n) {
   if (n == null || n === '') return '0.00'
   const num = Number(n)
@@ -459,10 +455,6 @@ function preselectFirstSku() {
       return
     }
   }
-}
-
-function onImageError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect fill="%23f5f5f5" width="400" height="400"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="16">暂无图片</text></svg>'
 }
 
 function onThumbError(e) {

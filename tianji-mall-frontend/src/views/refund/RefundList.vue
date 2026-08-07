@@ -86,6 +86,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getMyRefunds, getRefundDetail, receiveRefund } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { fmtPrice } from '@/utils/format'
+import { fmtTime } from '@/utils/date'
 
 const userStore = useUserStore()
 
@@ -154,11 +155,6 @@ async function handleReceive(r) {
   } catch { /* handle by interceptor */ }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

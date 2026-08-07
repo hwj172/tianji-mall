@@ -12,7 +12,7 @@
         <div class="cart-item" v-for="item in cartItems" :key="item.cart.id" :class="{ invalid: item.invalid }">
           <el-checkbox v-model="item.checked" @change="onItemCheck(item)" :disabled="item.invalid" class="item-check" />
           <div class="item-image" @click="!item.invalid && $router.push(`/product/${item.product.id}`)">
-            <img :src="item.image" :alt="item.product.name || '商品已失效'" loading="lazy" decoding="async" @error="onImgError" />
+            <img :src="item.image" :alt="item.product.name || '商品已失效'" loading="lazy" decoding="async" @error="imageOnError($event, 80)" />
           </div>
           <div class="item-info">
             <router-link v-if="!item.invalid" :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
@@ -57,6 +57,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCartList, updateCartItem, deleteCartItem, checkCartItem, getProductBatch } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
+import { getFirstImage, imageOnError } from '@/utils/image'
 
 const router = useRouter()
 const cartStore = useCartStore()
@@ -111,14 +112,6 @@ async function loadCart() {
   } finally {
     loading.value = false
   }
-}
-
-function getFirstImage(images) {
-  if (!images) return ''
-  try {
-    const arr = typeof images === 'string' ? JSON.parse(images) : images
-    return arr[0] || ''
-  } catch { return '' }
 }
 
 function updateSelectAllState() {
@@ -185,9 +178,6 @@ function goCheckout() {
   router.push({ name: 'checkout' })
 }
 
-function onImgError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect fill="%23f5f5f5" width="80" height="80"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="10">无图</text></svg>'
-}
 </script>
 
 <style scoped>

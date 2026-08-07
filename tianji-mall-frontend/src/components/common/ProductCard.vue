@@ -1,7 +1,7 @@
 <template>
   <div class="product-card" @click="$router.push(`/product/${product.id}`)">
     <div class="product-image">
-      <img :src="firstImage" :alt="product.name" loading="lazy" decoding="async" @error="onImageError" />
+      <img :src="firstImage" :alt="product.name" loading="lazy" decoding="async" @error="imageOnError($event, 200)" />
       <span v-if="showOriginalPrice && discountPercent != null" class="discount-badge">-{{ discountPercent }}%</span>
     </div>
     <div class="product-info">
@@ -18,21 +18,14 @@
 <script setup>
 import { computed } from 'vue'
 import { fmtPrice } from '@/utils/format'
+import { getFirstImage, imageOnError } from '@/utils/image'
 
 const props = defineProps({
   product: { type: Object, required: true },
   showOriginalPrice: { type: Boolean, default: false }
 })
 
-const firstImage = computed(() => {
-  if (!props.product.images) return ''
-  try {
-    const imgs = typeof props.product.images === 'string'
-      ? JSON.parse(props.product.images)
-      : props.product.images
-    return imgs[0] || ''
-  } catch { return '' }
-})
+const firstImage = computed(() => getFirstImage(props.product.images))
 
 // 价格统一保留两位小数
 const priceDisplay = computed(() => fmtPrice(props.product.price))
@@ -53,10 +46,6 @@ const discountPercent = computed(() => {
   }
   return null
 })
-
-function onImageError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200"><rect fill="%23f5f5f5" width="200" height="200"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="14">暂无图片</text></svg>'
-}
 
 function formatSales(n) {
   if (n >= 10000) return (n / 10000).toFixed(1) + '万'

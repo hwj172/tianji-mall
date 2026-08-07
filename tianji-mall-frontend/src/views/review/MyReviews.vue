@@ -22,6 +22,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getMyReviews } from '@/api'
+import { fmtTime } from '@/utils/date'
 
 const reviews = ref([])
 const loading = ref(false)
@@ -57,11 +58,6 @@ async function loadMore() {
   finally { loadingMore.value = false }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

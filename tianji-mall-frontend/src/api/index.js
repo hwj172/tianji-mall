@@ -92,9 +92,6 @@ export function getUserCenter() {
 export function updateProfile(data) {
   return request.put('/user/profile', data)
 }
-export function updatePassword(data) {
-  return request.put('/user/password', data)
-}
 export function uploadAvatar(file) {
   const fd = new FormData()
   fd.append('file', file)
@@ -142,47 +139,9 @@ export function deleteAdminProduct(id) {
   return request.delete(`/admin/product/${id}`)
 }
 
-// SKU
-export function getSkus(productId) {
-  return request.get(`/admin/product/${productId}/sku`)
-}
-
-export function createSku(productId, data) {
-  return request.post(`/admin/product/${productId}/sku`, data)
-}
-
-export function updateSku(productId, id, data) {
-  return request.put(`/admin/product/${productId}/sku/${id}`, data)
-}
-
-export function deleteSku(productId, id) {
-  return request.delete(`/admin/product/${productId}/sku/${id}`)
-}
-
-// 属性
-export function getAttributes(productId) {
-  return request.get(`/admin/product/${productId}/attribute`)
-}
-
-export function createAttribute(productId, data) {
-  return request.post(`/admin/product/${productId}/attribute`, data)
-}
-
-export function updateAttribute(productId, id, data) {
-  return request.put(`/admin/product/${productId}/attribute/${id}`, data)
-}
-
-export function deleteAttribute(productId, id) {
-  return request.delete(`/admin/product/${productId}/attribute/${id}`)
-}
-
 // 订单管理
 export function getAdminOrders(params) {
   return request.get('/admin/order', { params })
-}
-
-export function shipOrder(id, data) {
-  return request.put(`/admin/order/${id}/ship`, data)
 }
 
 export function completeOrder(id) {
@@ -230,41 +189,6 @@ export function updateShopStatus(id, status) {
 
 export function deleteShop(id) {
   return request.delete(`/admin/shop/${id}`)
-}
-
-// Banner
-export function getAdminBanners() {
-  return request.get('/admin/banner')
-}
-
-export function createBanner(data) {
-  return request.post('/admin/banner', data)
-}
-
-export function updateBanner(id, data) {
-  return request.put(`/admin/banner/${id}`, data)
-}
-
-export function deleteBanner(id) {
-  return request.delete(`/admin/banner/${id}`)
-}
-
-// 秒杀
-export function setSeckill(productId, data) {
-  return request.post(`/admin/product/${productId}/seckill`, data)
-}
-
-export function clearSeckill(productId) {
-  return request.delete(`/admin/product/${productId}/seckill`)
-}
-
-// 拼团
-export function createGroupBuy(data) {
-  return request.post('/admin/group-buy', data)
-}
-
-export function updateGroupBuy(id, data) {
-  return request.put(`/admin/group-buy/${id}`, data)
 }
 
 // ========== 商家中心 ==========
@@ -362,10 +286,6 @@ export function joinGroupBuy(groupId, data) {
   return request.post(`/group-buy/join/${groupId}`, data)
 }
 
-export function getMyGroupBuys() {
-  return request.get('/group-buy/my')
-}
-
 // ========== 店铺 ==========
 export function getShopDetail(id, params) {
   return request.get(`/shop/${id}`, { params })
@@ -373,10 +293,6 @@ export function getShopDetail(id, params) {
 
 export function followShop(id) {
   return request.post(`/shop/${id}/follow`)
-}
-
-export function registerShop(data) {
-  return request.post('/shop/register', data)
 }
 
 // ========== AI 导购 ==========
@@ -395,10 +311,6 @@ export function cancelOrder(id) {
 
 export function receiveOrder(id) {
   return request.put(`/order/${id}/receive`)
-}
-
-export function refundOrder(id, data) {
-  return request.post(`/order/${id}/refund`, data)
 }
 
 export function getOrderLogistics(id) {
@@ -489,7 +401,3 @@ export function uploadImage(data) {
   })
 }
 
-// ========== 店铺补充 ==========
-export function getFollowingShops() {
-  return request.get('/shop/following')
-}

@@ -46,6 +46,7 @@ import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getNotifications, markRead, markAllRead, getUnreadCount } from '@/api'
+import { fmtTime } from '@/utils/date'
 
 const router = useRouter()
 
@@ -110,11 +111,6 @@ async function handleMarkAllRead() {
   } catch { /* ignore */ }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

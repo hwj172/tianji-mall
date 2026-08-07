@@ -26,7 +26,7 @@
       <el-timeline>
         <el-timeline-item
           v-for="t in logistics" :key="t.id"
-          :timestamp="formatTime(t.trackTime)"
+          :timestamp="fmtTime(t.trackTime)"
           placement="top"
         >
           <p>{{ t.description }}</p>
@@ -53,7 +53,7 @@
       <h3 class="section-title">🛍 商品信息</h3>
       <div class="item-list">
         <div class="od-item" v-for="(item, idx) in detail.items" :key="idx">
-          <img :src="getItemImage(item.productId)" class="od-item-img" loading="lazy" decoding="async" @error="onImgError" style="width:72px;height:72px;object-fit:cover" />
+          <img :src="getItemImage(item.productId)" class="od-item-img" loading="lazy" decoding="async" @error="imageOnError($event, 72)" style="width:72px;height:72px;object-fit:cover" />
           <div class="od-item-info">
             <router-link :to="`/product/${item.productId}`" class="od-item-name">{{ item.productName }}</router-link>
             <span class="od-item-spec" v-if="item.skuSpecs">{{ item.skuSpecs }}</span>
@@ -70,7 +70,7 @@
       <h3 class="section-title">📋 订单信息</h3>
       <div class="summary-grid">
         <div class="summary-row"><span>订单编号</span><b>{{ order.orderNo }}</b></div>
-        <div class="summary-row"><span>创建时间</span><span>{{ formatTime(order.createTime) }}</span></div>
+        <div class="summary-row"><span>创建时间</span><span>{{ fmtTime(order.createTime) }}</span></div>
         <div class="summary-row"><span>订单状态</span><el-tag :type="statusTagType" size="small">{{ statusText }}</el-tag></div>
         <div class="summary-row"><span>支付方式</span><span>{{ order.payType === 1 ? '支付宝' : '—' }}</span></div>
         <div class="summary-row total-row"><span>订单总额</span><b class="total-amount">¥{{ fmtPrice(order.totalAmount) }}</b></div>
@@ -103,14 +103,16 @@
 
 <script setup>
 import { ref, reactive, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderDetail, getProductBatch, getOrderLogistics, createPay, cancelOrder, receiveOrder, requestRefund } from '@/api'
 import { submitPayForm } from '@/utils/pay'
 import { fmtPrice } from '@/utils/format'
+import { fmtTime } from '@/utils/date'
+import { getFirstImage, imageOnError } from '@/utils/image'
+import { orderStatusText, orderStatusTag } from '@/utils/order'
 
 const route = useRoute()
-const router = useRouter()
 
 const order = ref(null)
 const detail = reactive({ address: null, items: [] })
@@ -134,11 +136,8 @@ const statusMap = {
 }
 
 const statusInfo = computed(() => statusMap[order.value?.status] || statusMap[1])
-const statusText = computed(() => statusMap[order.value?.status]?.title || '未知')
-const statusTagType = computed(() => {
-  const m = { 1: 'warning', 2: '', 3: '', 4: 'success', 5: 'info' }
-  return m[order.value?.status] || ''
-})
+const statusText = computed(() => orderStatusText(order.value?.status))
+const statusTagType = computed(() => orderStatusTag(order.value?.status))
 
 onMounted(() => loadDetail())
 
@@ -175,14 +174,6 @@ async function loadDetail() {
 
 function getItemImage(productId) {
   return productImages.value[productId] || ''
-}
-
-function getFirstImage(images) {
-  if (!images) return ''
-  try {
-    const arr = typeof images === 'string' ? JSON.parse(images) : images
-    return arr[0] || ''
-  } catch { return '' }
 }
 
 async function goPay() {
@@ -253,15 +244,6 @@ async function confirmReceive() {
   finally { receiving.value = false }
 }
 
-function formatTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
-
-function onImgError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 72 72"><rect fill="%23f5f5f5" width="72" height="72"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="10">无图</text></svg>'
-}
 </script>
 
 <style scoped>

@@ -13,7 +13,7 @@
       </el-table-column>
       <el-table-column label="面值" width="100">
         <template #default="{ row }">
-          {{ row.discountType === 'FIXED' ? `¥${row.discountValue}` : `${row.discountValue * 10}折` }}
+          {{ row.discountType === 'FIXED' ? `¥${row.discountValue}` : formatDiscount(row.discountValue) }}
         </template>
       </el-table-column>
       <el-table-column label="最低消费" width="100">
@@ -77,6 +77,8 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminCoupons, createCoupon, updateCoupon, deleteCoupon, getAdminCategories } from '@/api'
+import { fmtTime } from '@/utils/date'
+import { formatDiscount } from '@/utils/discount'
 
 const coupons = ref([])
 const loading = ref(false)
@@ -164,11 +166,6 @@ async function handleDelete(row) {
   } catch { /* handle by interceptor */ }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

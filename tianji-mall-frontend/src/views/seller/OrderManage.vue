@@ -11,7 +11,7 @@
       </el-table-column>
       <el-table-column label="状态" width="90">
         <template #default="{ row }">
-          <el-tag :type="statusTag(row.status)" size="small">{{ statusMap[row.status] || '未知' }}</el-tag>
+          <el-tag :type="orderStatusTag(row.status)" size="small">{{ orderStatusText(row.status) }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="时间" width="170">
@@ -54,6 +54,8 @@ import { ref, reactive, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getSellerOrders, sellerShipOrder } from '@/api'
 import { fmtPrice } from '@/utils/format'
+import { fmtTime } from '@/utils/date'
+import { orderStatusText, orderStatusTag } from '@/utils/order'
 
 const orders = ref([])
 const total = ref(0)
@@ -62,16 +64,9 @@ const shipping = ref(false)
 
 const query = reactive({ page: 1, size: 20 })
 
-const statusMap = { 1: '待付款', 2: '已付款', 3: '已发货', 4: '已完成', 5: '已取消' }
-
 const shipVisible = ref(false)
 const shipTarget = ref(null)
 const shipForm = reactive({ trackingCompany: '', trackingNumber: '' })
-
-function statusTag(s) {
-  const m = { 1: 'warning', 2: '', 3: '', 4: 'success', 5: 'info' }
-  return m[s] || ''
-}
 
 onMounted(() => loadData())
 
@@ -109,11 +104,6 @@ async function handleShip() {
   finally { shipping.value = false }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

@@ -16,8 +16,8 @@
       <div class="order-card" v-for="order in orders" :key="order.id" @click="$router.push(`/order/${order.id}`)">
         <div class="oc-header">
           <span class="oc-no">订单号：{{ order.orderNo }}</span>
-          <el-tag :type="statusTag(order.status)" size="small">{{ statusText(order.status) }}</el-tag>
-          <span class="oc-time">{{ formatTime(order.createTime) }}</span>
+          <el-tag :type="orderStatusTag(order.status)" size="small">{{ orderStatusText(order.status) }}</el-tag>
+          <span class="oc-time">{{ fmtTime(order.createTime) }}</span>
         </div>
         <div class="oc-body">
           <div class="oc-info">
@@ -57,6 +57,8 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getOrderList, cancelOrder, createPay, receiveOrder } from '@/api'
 import { submitPayForm } from '@/utils/pay'
 import { fmtPrice } from '@/utils/format'
+import { fmtTime } from '@/utils/date'
+import { orderStatusText, orderStatusTag } from '@/utils/order'
 
 const router = useRouter()
 const route = useRoute()
@@ -77,14 +79,6 @@ const tabs = [
   { key: '4', label: '待评价' },
   { key: '5', label: '已取消' }
 ]
-
-const statusMap = { 1: '待付款', 2: '已付款', 3: '已发货', 4: '已完成', 5: '已取消' }
-
-function statusText(s) { return statusMap[s] || '未知' }
-function statusTag(s) {
-  const m = { 1: 'warning', 2: '', 3: '', 4: 'success', 5: 'info' }
-  return m[s] || ''
-}
 
 function switchTab(key) {
   activeTab.value = key
@@ -139,11 +133,6 @@ async function handleReceive(order) {
   } catch { /* handle by interceptor */ }
 }
 
-function formatTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

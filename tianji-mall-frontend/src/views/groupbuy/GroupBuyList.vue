@@ -14,7 +14,7 @@
           </div>
         </div>
         <div class="gb-meta">
-          <span>{{ fmtTime(a.startTime) }} ~ {{ fmtTime(a.endTime) }}</span>
+          <span>{{ fmtTime(a.startTime, { dateOnly: true }) }} ~ {{ fmtTime(a.endTime, { dateOnly: true }) }}</span>
           <el-button size="small" type="primary" @click="$router.push(`/groupbuy/${a.id}`)">去参团</el-button>
         </div>
       </div>
@@ -26,6 +26,8 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { getGroupBuyList } from '@/api'
+import { fmtTime } from '@/utils/date'
+import { formatDiscount } from '@/utils/discount'
 
 const activities = ref([])
 const loading = ref(false)
@@ -46,16 +48,6 @@ function parseTiers(tiers) {
   try { return typeof tiers === 'string' ? JSON.parse(tiers) : tiers } catch { return [] }
 }
 
-// discount: 0.9 = 9折（与 GroupBuyDetail.formatDiscount 一致）
-function formatDiscount(d) {
-  return (Number(d) * 10) + '折'
-}
-
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleDateString('zh-CN')
-}
 </script>
 
 <style scoped>

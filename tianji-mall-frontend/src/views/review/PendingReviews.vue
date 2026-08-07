@@ -5,7 +5,7 @@
     <div class="review-list" v-if="items.length">
       <div class="review-card" v-for="item in items" :key="item.orderId + '_' + item.productId">
         <div class="rc-img" @click="$router.push(`/product/${item.productId}`)">
-          <img :src="item.productImage" loading="lazy" decoding="async" style="width:80px;height:80px;object-fit:cover;display:block" @error="onImgError" />
+          <img :src="item.productImage" loading="lazy" decoding="async" style="width:80px;height:80px;object-fit:cover;display:block" @error="imageOnError($event, 80)" />
         </div>
         <div class="rc-info">
           <router-link :to="`/product/${item.productId}`" class="rc-name">{{ item.productName }}</router-link>
@@ -53,6 +53,7 @@ import { ref, reactive, onMounted } from 'vue'
 import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getPendingReviews, createReview, uploadImage } from '@/api'
+import { imageOnError } from '@/utils/image'
 
 const items = ref([])
 const loading = ref(false)
@@ -134,9 +135,6 @@ async function handleSubmit() {
   finally { submitting.value = false }
 }
 
-function onImgError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect fill="%23f5f5f5" width="80" height="80"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="10">无图</text></svg>'
-}
 </script>
 
 <style scoped>

@@ -14,7 +14,7 @@
                   <span class="cc-symbol">¥</span>{{ c.discountValue }}
                 </template>
                 <template v-else>
-                  {{ c.discountValue * 10 }}<span class="cc-symbol">折</span>
+                  {{ formatDiscount(c.discountValue).replace('折', '') }}<span class="cc-symbol">折</span>
                 </template>
               </div>
               <div class="cc-type">{{ c.discountType === 'FIXED' ? '满减券' : '折扣券' }}</div>
@@ -22,7 +22,7 @@
             <div class="cc-right">
               <div class="cc-name">{{ c.name }}</div>
               <div class="cc-cond" v-if="c.minOrderAmount > 0">满 ¥{{ c.minOrderAmount }} 可用</div>
-              <div class="cc-time">{{ fmtTime(c.endTime) }} 前可用</div>
+              <div class="cc-time">{{ fmtTime(c.endTime, { dateOnly: true }) }} 前可用</div>
             </div>
             <div class="cc-action">
               <el-tag v-if="c.expiringSoon" size="small" type="warning">即将过期</el-tag>
@@ -43,7 +43,7 @@
                   <span class="cc-symbol">¥</span>{{ item.discountValue }}
                 </template>
                 <template v-else>
-                  {{ (item.discountValue || 0) * 10 }}<span class="cc-symbol">折</span>
+                  {{ formatDiscount(item.discountValue).replace('折', '') }}<span class="cc-symbol">折</span>
                 </template>
               </div>
               <div class="cc-type">{{ statusMap[item.status] || item.status }}</div>
@@ -51,7 +51,7 @@
             <div class="cc-right">
               <div class="cc-name">{{ item.name }}</div>
               <div class="cc-cond" v-if="item.minOrderAmount > 0">满 ¥{{ item.minOrderAmount }} 可用</div>
-              <div class="cc-time">{{ fmtTime(item.endTime) }} 到期</div>
+              <div class="cc-time">{{ fmtTime(item.endTime, { dateOnly: true }) }} 到期</div>
             </div>
           </div>
         </div>
@@ -65,6 +65,8 @@
 import { ref, onMounted } from 'vue'
 import { ElMessage } from 'element-plus'
 import { getCouponCenter, claimCoupon, getMyCoupons, getCouponCount } from '@/api'
+import { fmtTime } from '@/utils/date'
+import { formatDiscount } from '@/utils/discount'
 
 const activeTab = ref('center')
 const coupons = ref([])
@@ -116,11 +118,6 @@ async function handleClaim(c) {
   finally { c.claiming = false }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleDateString('zh-CN')
-}
 </script>
 
 <style scoped>

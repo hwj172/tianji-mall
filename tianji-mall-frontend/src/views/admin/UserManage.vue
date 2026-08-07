@@ -70,6 +70,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAdminUsers, updateUserStatus, updateUserRole } from '@/api'
+import { fmtTime } from '@/utils/date'
 
 const users = ref([])
 const total = ref(0)
@@ -132,11 +133,6 @@ async function handleRole(row, role) {
   } catch { /* handle by interceptor */ }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN')
-}
 </script>
 
 <style scoped>

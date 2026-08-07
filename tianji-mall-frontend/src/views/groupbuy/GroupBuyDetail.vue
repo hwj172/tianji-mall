@@ -3,7 +3,7 @@
     <template v-if="activity">
       <!-- 活动信息 -->
       <div class="gb-header">
-        <img :src="productImage" class="gb-img" loading="lazy" decoding="async" @error="onImgError" />
+        <img :src="productImage" class="gb-img" loading="lazy" decoding="async" @error="imageOnError($event, 120)" />
         <div class="gb-info">
           <h2>{{ productName }}</h2>
           <div class="gb-price">¥{{ fmtPrice(productPrice) }}</div>
@@ -85,6 +85,9 @@ import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getGroupBuyDetail, startGroupBuy, joinGroupBuy, getAddressList, getProductDetail } from '@/api'
 import { fmtPrice } from '@/utils/format'
+import { fmtTime } from '@/utils/date'
+import { getFirstImage, imageOnError } from '@/utils/image'
+import { formatDiscount } from '@/utils/discount'
 
 const route = useRoute()
 const router = useRouter()
@@ -149,19 +152,6 @@ function parseTiers(t) {
   try { return typeof t === 'string' ? JSON.parse(t) : t } catch { return [] }
 }
 
-// discount: 0.9 = 9折
-function formatDiscount(d) {
-  return (Number(d) * 10) + '折'
-}
-
-function getFirstImage(images) {
-  if (!images) return ''
-  try {
-    const arr = typeof images === 'string' ? JSON.parse(images) : images
-    return arr[0] || ''
-  } catch { return '' }
-}
-
 function openStartDialog() {
   if (!addresses.value.length) { ElMessage.warning('请先添加收货地址'); return }
   startAddressId.value = addresses.value[0]?.id || null
@@ -208,15 +198,6 @@ async function handleJoin() {
   finally { submitting.value = false }
 }
 
-function fmtTime(t) {
-  if (!t) return ''
-  if (Array.isArray(t)) t = t[0] + 'T' + t[1]
-  return new Date(t).toLocaleString('zh-CN', { month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' })
-}
-
-function onImgError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120"><rect fill="%23f5f5f5" width="120" height="120"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="12">无图</text></svg>'
-}
 </script>
 
 <style scoped>

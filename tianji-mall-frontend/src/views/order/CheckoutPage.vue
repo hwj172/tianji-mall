@@ -35,7 +35,7 @@
         <div class="item-list">
           <div class="checkout-item" v-for="item in items" :key="buyParams ? item.product.id : item.cart.id">
             <div class="item-img" @click="$router.push(`/product/${item.product.id}`)">
-              <img :src="item.image" :alt="item.product.name" loading="lazy" decoding="async" @error="onImgError" />
+              <img :src="item.image" :alt="item.product.name" loading="lazy" decoding="async" @error="imageOnError($event, 80)" />
             </div>
             <div class="item-info">
               <router-link :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
@@ -59,7 +59,7 @@
           >
             <div class="co-name">{{ c.name }}</div>
             <div class="co-value" v-if="c.discountType === 'FIXED'">减 ¥{{ fmtPrice(c.discountValue) }}</div>
-            <div class="co-value" v-else>{{ c.discountValue * 10 }}折</div>
+            <div class="co-value" v-else>{{ formatDiscount(c.discountValue) }}</div>
             <div class="co-cond" v-if="c.minOrderAmount > 0">满 ¥{{ fmtPrice(c.minOrderAmount) }}</div>
           </div>
         </div>
@@ -120,6 +120,8 @@ import { ElMessage } from 'element-plus'
 import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree, getMyCoupons } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
+import { getFirstImage, imageOnError } from '@/utils/image'
+import { formatDiscount } from '@/utils/discount'
 
 const route = useRoute()
 const router = useRouter()
@@ -275,14 +277,6 @@ async function loadItems() {
   }
 }
 
-function getFirstImage(images) {
-  if (!images) return ''
-  try {
-    const arr = typeof images === 'string' ? JSON.parse(images) : images
-    return arr[0] || ''
-  } catch { return '' }
-}
-
 async function saveAddress() {
   const [province, city, district] = regionPath.value || []
   if (!newAddr.receiverName || !newAddr.phone || !province || !newAddr.detail) {
@@ -327,9 +321,6 @@ async function submitOrder() {
   finally { submitting.value = false }
 }
 
-function onImgError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 80 80"><rect fill="%23f5f5f5" width="80" height="80"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="10">无图</text></svg>'
-}
 </script>
 
 <style scoped>

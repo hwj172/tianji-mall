@@ -15,7 +15,17 @@ a {
   color: inherit;
 }
 
-/* Element Plus 覆盖 */
+/* Element Plus 覆盖：品牌橙主题变量（覆盖默认蓝） */
+:root {
+  --el-color-primary: #ff5000;
+  --el-color-primary-light-3: #ff7a3d;
+  --el-color-primary-light-5: #ffa475;
+  --el-color-primary-light-7: #ffceb3;
+  --el-color-primary-light-8: #ffe0cf;
+  --el-color-primary-light-9: #fff2ec;
+  --el-color-primary-dark-2: #e64a00;
+}
+
 .el-header {
   --el-header-padding: 0;
 }
