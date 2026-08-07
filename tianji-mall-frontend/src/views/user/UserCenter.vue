@@ -70,6 +70,19 @@
         <el-button type="primary" @click="saveProfile" :loading="savingProfile">保存</el-button>
       </template>
     </el-dialog>
+
+    <!-- 注册开店 Dialog -->
+    <el-dialog v-model="registerShopVisible" title="注册开店" width="460px">
+      <el-form ref="shopFormRef" :model="shopForm" :rules="shopRules" label-width="70px">
+        <el-form-item label="店铺名" prop="name"><el-input v-model="shopForm.name" maxlength="32" placeholder="给店铺起个名字" /></el-form-item>
+        <el-form-item label="Logo" prop="logo"><el-input v-model="shopForm.logo" placeholder="Logo 图片 URL（可选）" /></el-form-item>
+        <el-form-item label="简介" prop="description"><el-input v-model="shopForm.description" type="textarea" :rows="2" placeholder="店铺简介（可选）" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="registerShopVisible = false">取消</el-button>
+        <el-button type="primary" :loading="registeringShop" @click="submitRegisterShop">开店</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -79,9 +92,9 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   CreditCard, Box, Van, Stamp,
-  ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close
+  ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close, Shop
 } from '@element-plus/icons-vue'
-import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar } from '@/api'
+import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar, registerShop } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -144,6 +157,7 @@ const quickGroups = computed(() => [
   {
     title: '账户',
     items: [
+      ...(userStore.isSeller ? [] : [{ label: '注册开店', icon: Shop, action: openRegisterShop }]),
       { label: '编辑资料', icon: User, action: openEditDialog },
       { label: '退出登录', icon: Close, action: handleLogout, danger: true }
     ]
@@ -175,6 +189,39 @@ function handleLogout() {
   ElMessageBox.confirm('确定退出登录？', '提示', { type: 'warning' }).then(() => {
     userStore.logout()   // 清 Pinia 状态 + localStorage + 跳登录页
   }).catch(() => {})
+}
+
+// ========== 注册开店 ==========
+
+const registerShopVisible = ref(false)
+const registeringShop = ref(false)
+const shopFormRef = ref(null)
+const shopForm = ref({ name: '', logo: '', description: '' })
+const shopRules = {
+  name: [{ required: true, message: '请输入店铺名', trigger: 'blur' }]
+}
+
+function openRegisterShop() {
+  shopForm.value = { name: '', logo: '', description: '' }
+  registerShopVisible.value = true
+}
+
+async function submitRegisterShop() {
+  if (shopFormRef.value) {
+    try { await shopFormRef.value.validate() } catch { return }
+  }
+  registeringShop.value = true
+  try {
+    await registerShop({
+      name: shopForm.value.name,
+      logo: shopForm.value.logo || null,
+      description: shopForm.value.description || null
+    })
+    ElMessage.success('开店成功！')
+    registerShopVisible.value = false
+    await userStore.fetchUserInfo()   // 刷新角色 → 顶栏出现商家中心
+  } catch { /* handle by interceptor */ }
+  finally { registeringShop.value = false }
 }
 
 // ========== 编辑资料 ==========

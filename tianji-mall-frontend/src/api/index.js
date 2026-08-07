@@ -295,6 +295,10 @@ export function followShop(id) {
   return request.post(`/shop/${id}/follow`)
 }
 
+export function registerShop(data) {
+  return request.post('/shop/register', data)
+}
+
 // ========== AI 导购 ==========
 export function sendChatMessage(data) {
   return request.post('/chat/send', data)
