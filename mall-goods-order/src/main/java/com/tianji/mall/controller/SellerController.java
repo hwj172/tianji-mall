@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
+import com.tianji.mall.annotation.AuditLog;
 import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.dto.ShopUpdateRequest;
 import com.tianji.mall.entity.Order;
@@ -42,6 +43,7 @@ public class SellerController {
     }
 
     @PutMapping("/shop")
+    @AuditLog(action = "update_shop_info", targetType = "shop")
     public R<Void> updateShop(@RequestHeader("Authorization") String authHeader,
                                @Valid @RequestBody ShopUpdateRequest req) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
@@ -65,6 +67,7 @@ public class SellerController {
     }
 
     @PostMapping("/product")
+    @AuditLog(action = "create_product", targetType = "product")
     public R<Void> createProduct(@RequestHeader("Authorization") String authHeader,
                                   @RequestBody @Valid Product product) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
@@ -75,6 +78,7 @@ public class SellerController {
     }
 
     @PutMapping("/product/{id}")
+    @AuditLog(action = "update_product", targetType = "product", targetArg = 1)
     public R<Void> updateProduct(@RequestHeader("Authorization") String authHeader,
                                   @PathVariable("id") Long id,
                                   @RequestBody @Valid Product product) {
@@ -91,6 +95,7 @@ public class SellerController {
     }
 
     @DeleteMapping("/product/{id}")
+    @AuditLog(action = "delete_product", targetType = "product", targetArg = 1)
     public R<Void> deleteProduct(@RequestHeader("Authorization") String authHeader,
                                   @PathVariable("id") Long id) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
@@ -116,6 +121,7 @@ public class SellerController {
     }
 
     @PutMapping("/order/{id}/ship")
+    @AuditLog(action = "ship_order", targetType = "order", targetArg = 1)
     public R<Void> shipOrder(@RequestHeader("Authorization") String authHeader,
                               @PathVariable("id") Long id,
                               @RequestBody @Valid ShipRequest body) {

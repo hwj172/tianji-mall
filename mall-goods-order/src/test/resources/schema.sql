@@ -299,3 +299,15 @@ CREATE TABLE IF NOT EXISTS search_log (
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     KEY idx_time (create_time)
 );
+
+CREATE TABLE IF NOT EXISTS operation_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    operator_id BIGINT,
+    operator_role VARCHAR(16),
+    action VARCHAR(64),
+    target_type VARCHAR(32),
+    target_id BIGINT,
+    detail VARCHAR(512),
+    ip VARCHAR(64),
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);

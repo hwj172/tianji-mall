@@ -3,6 +3,7 @@ package com.tianji.mall.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
+import com.tianji.mall.annotation.AuditLog;
 import com.tianji.mall.annotation.RequireAdmin;
 import com.tianji.mall.dto.CategoryTreeResponse;
 import com.tianji.mall.dto.DashboardResponse;
@@ -58,6 +59,7 @@ public class AdminController {
     }
 
     @PutMapping("/shop/{id}/status")
+    @AuditLog(action = "update_shop_status", targetType = "shop", targetArg = 0)
     public R<Void> updateShopStatus(@PathVariable("id") Long id,
                                      @RequestParam("status") Integer status) {
         com.tianji.mall.entity.Shop shop = shopService.getById(id);
@@ -70,6 +72,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/shop/{id}")
+    @AuditLog(action = "delete_shop", targetType = "shop", targetArg = 0)
     public R<Void> deleteShop(@PathVariable("id") Long id) {
         com.tianji.mall.entity.Shop shop = shopService.getById(id);
         if (shop == null) {
@@ -118,6 +121,7 @@ public class AdminController {
     }
 
     @PostMapping("/product")
+    @AuditLog(action = "create_product", targetType = "product")
     public R<Void> createProduct(@RequestBody @Valid AdminProductRequest body) {
         productService.createProduct(
                 body.getName(),
@@ -130,6 +134,7 @@ public class AdminController {
     }
 
     @PutMapping("/product/{id}")
+    @AuditLog(action = "update_product", targetType = "product", targetArg = 0)
     public R<Void> updateProduct(@PathVariable("id") Long id, @RequestBody @Valid AdminProductRequest body) {
         productService.updateProduct(id,
                 body.getName(),
@@ -143,6 +148,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/product/{id}")
+    @AuditLog(action = "delete_product", targetType = "product", targetArg = 0)
     public R<Void> deleteProduct(@PathVariable("id") Long id) {
         productService.deleteProduct(id);
         return R.ok();
@@ -173,17 +179,20 @@ public class AdminController {
     }
 
     @PostMapping("/coupon")
+    @AuditLog(action = "create_coupon", targetType = "coupon")
     public R<Coupon> createCoupon(@Valid @RequestBody CouponRequest req) {
         return R.ok(couponService.create(req));
     }
 
     @PutMapping("/coupon/{id}")
+    @AuditLog(action = "update_coupon", targetType = "coupon", targetArg = 0)
     public R<Void> updateCoupon(@PathVariable("id") Long id, @Valid @RequestBody CouponRequest req) {
         couponService.update(id, req);
         return R.ok();
     }
 
     @DeleteMapping("/coupon/{id}")
+    @AuditLog(action = "delete_coupon", targetType = "coupon", targetArg = 0)
     public R<Void> deleteCoupon(@PathVariable("id") Long id) {
         couponService.disable(id);
         return R.ok();
@@ -257,12 +266,14 @@ public class AdminController {
     // ==================== 秒杀管理 ====================
 
     @PostMapping("/product/{id}/seckill")
+    @AuditLog(action = "set_seckill", targetType = "product", targetArg = 0)
     public R<Void> setSeckill(@PathVariable("id") Long id, @Valid @RequestBody SeckillSetRequest req) {
         seckillService.setSeckill(id, req.getPrice(), req.getStock(), req.getStartTime(), req.getEndTime());
         return R.ok();
     }
 
     @DeleteMapping("/product/{id}/seckill")
+    @AuditLog(action = "clear_seckill", targetType = "product", targetArg = 0)
     public R<Void> clearSeckill(@PathVariable("id") Long id) {
         seckillService.clearSeckill(id);
         return R.ok();
@@ -271,11 +282,13 @@ public class AdminController {
     // ==================== 拼团管理 ====================
 
     @PostMapping("/group-buy")
+    @AuditLog(action = "create_group_buy", targetType = "group_buy")
     public R<GroupBuy> createGroupBuy(@Valid @RequestBody GroupBuyActivityRequest req) {
         return R.ok(groupBuyService.createActivity(req));
     }
 
     @PutMapping("/group-buy/{id}")
+    @AuditLog(action = "update_group_buy", targetType = "group_buy", targetArg = 0)
     public R<Void> updateGroupBuy(@PathVariable("id") Long id, @Valid @RequestBody GroupBuyActivityRequest req) {
         groupBuyService.updateActivity(id, req);
         return R.ok();
@@ -293,12 +306,14 @@ public class AdminController {
     }
 
     @PutMapping("/user/{id}/status")
+    @AuditLog(action = "update_user_status", targetType = "user", targetArg = 0)
     public R<Void> updateUserStatus(@PathVariable("id") Long id,
                                      @RequestParam("status") Integer status) {
         return userFeignClient.updateUserStatus(id, status);
     }
 
     @PutMapping("/user/{id}/role")
+    @AuditLog(action = "update_user_role", targetType = "user", targetArg = 0)
     public R<Void> updateUserRole(@PathVariable("id") Long id,
                                    @RequestParam("role") String role) {
         return userFeignClient.updateUserRole(id, role);
@@ -314,6 +329,7 @@ public class AdminController {
     }
 
     @PostMapping("/banner")
+    @AuditLog(action = "create_banner", targetType = "banner")
     public R<Void> createBanner(@RequestBody @Valid BannerRequest body) {
         Banner banner = new Banner();
         banner.setTitle(body.getTitle());
@@ -326,6 +342,7 @@ public class AdminController {
     }
 
     @PutMapping("/banner/{id}")
+    @AuditLog(action = "update_banner", targetType = "banner", targetArg = 0)
     public R<Void> updateBanner(@PathVariable("id") Long id, @RequestBody @Valid BannerRequest body) {
         Banner banner = bannerService.getById(id);
         if (banner == null) {
@@ -341,6 +358,7 @@ public class AdminController {
     }
 
     @DeleteMapping("/banner/{id}")
+    @AuditLog(action = "delete_banner", targetType = "banner", targetArg = 0)
     public R<Void> deleteBanner(@PathVariable("id") Long id) {
         bannerService.removeById(id);
         return R.ok();

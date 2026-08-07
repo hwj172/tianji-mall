@@ -62,6 +62,7 @@ CREATE TABLE IF NOT EXISTS `product` (
   PRIMARY KEY (`id`),
   KEY `idx_category_id` (`category_id`),
   KEY `idx_status` (`status`),
+  KEY `idx_shop_status` (`shop_id`, `status`),
   FULLTEXT INDEX `ft_name_desc` (`name`, `description`) WITH PARSER ngram
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='商品表';
 
@@ -113,7 +114,9 @@ CREATE TABLE IF NOT EXISTS `order` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_order_no` (`order_no`),
   KEY `idx_user_id` (`user_id`),
-  KEY `idx_status` (`status`)
+  KEY `idx_status` (`status`),
+  KEY `idx_user_status` (`user_id`, `status`),
+  KEY `idx_status_time` (`status`, `create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单表';
 
 -- 7. 订单明细表
@@ -129,7 +132,8 @@ CREATE TABLE IF NOT EXISTS `order_item` (
   `create_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time`  DATETIME      NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
-  KEY `idx_order_id` (`order_id`)
+  KEY `idx_order_id` (`order_id`),
+  KEY `idx_product_id` (`product_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='订单明细表';
 
 -- 8. 退款表
@@ -440,5 +444,22 @@ CREATE TABLE IF NOT EXISTS `search_log` (
   `user_id`     BIGINT       DEFAULT NULL COMMENT '用户 ID（未登录为 NULL）',
   `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '搜索时间',
   PRIMARY KEY (`id`),
-  KEY `idx_time` (`create_time`)
+  KEY `idx_time` (`create_time`),
+  KEY `idx_keyword` (`keyword`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='搜索日志表';
+
+-- 操作审计日志表
+CREATE TABLE IF NOT EXISTS `operation_log` (
+  `id`            BIGINT       NOT NULL AUTO_INCREMENT COMMENT '日志ID',
+  `operator_id`   BIGINT       DEFAULT NULL COMMENT '操作人ID',
+  `operator_role` VARCHAR(16)  DEFAULT NULL COMMENT '操作人角色',
+  `action`        VARCHAR(64)  NOT NULL COMMENT '操作动作',
+  `target_type`   VARCHAR(32)  DEFAULT NULL COMMENT '对象类型',
+  `target_id`     BIGINT       DEFAULT NULL COMMENT '对象ID',
+  `detail`        VARCHAR(512) DEFAULT NULL COMMENT '详情',
+  `ip`            VARCHAR(64)  DEFAULT NULL COMMENT '操作IP',
+  `create_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_operator` (`operator_id`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作审计日志';
