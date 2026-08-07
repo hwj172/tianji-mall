@@ -27,6 +27,7 @@ public class OrderEventConsumer implements RocketMQListener<OrderEvent> {
     private final OrderItemMapper orderItemMapper;
     private final ProductService productService;
     private final CouponService couponService;
+    private final MqConsumedGuard mqConsumedGuard;
 
     @Override
     public void onMessage(OrderEvent event) {
@@ -34,16 +35,29 @@ public class OrderEventConsumer implements RocketMQListener<OrderEvent> {
                 event.getOrderId(), event.getOrderNo(),
                 event.getEventType(), event.getTotalAmount());
 
-        switch (event.getEventType()) {
-            case "CREATED" -> log.info("订单已创建: orderId={}, orderNo={}, userId={}, amount={}",
-                    event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
-            case "PAID" -> handlePaid(event);
-            case "CANCELLED" -> {
-                log.info("订单已取消: orderId={}, orderNo={}, userId={}, amount={}",
+        // 幂等去重：重复消息（重投/重放）直接跳过，避免销量/优惠券被重复处理
+        if (!mqConsumedGuard.isFirstConsumption(event.getOrderId(), event.getEventType())) {
+            log.info("重复事件已跳过(幂等去重): orderId={}, eventType={}",
+                    event.getOrderId(), event.getEventType());
+            return;
+        }
+
+        try {
+            switch (event.getEventType()) {
+                case "CREATED" -> log.info("订单已创建: orderId={}, orderNo={}, userId={}, amount={}",
                         event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
-                couponService.restoreCoupon(event.getOrderId());
+                case "PAID" -> handlePaid(event);
+                case "CANCELLED" -> {
+                    log.info("订单已取消: orderId={}, orderNo={}, userId={}, amount={}",
+                            event.getOrderId(), event.getOrderNo(), event.getUserId(), event.getTotalAmount());
+                    couponService.restoreCoupon(event.getOrderId());
+                }
+                default -> log.warn("未知事件类型: {}", event.getEventType());
             }
-            default -> log.warn("未知事件类型: {}", event.getEventType());
+        } catch (RuntimeException e) {
+            // 处理失败释放占用，允许 RocketMQ 重投重试（避免重投被幂等键永久跳过）
+            mqConsumedGuard.release(event.getOrderId(), event.getEventType());
+            throw e;
         }
     }
 

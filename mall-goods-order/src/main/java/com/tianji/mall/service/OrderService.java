@@ -1,5 +1,7 @@
 package com.tianji.mall.service;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.common.exception.BizErrorCode;
@@ -51,6 +53,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final SeckillService seckillService;
     private final ProductMapper productMapper;
 
+    @SentinelResource(value = "createOrder", blockHandler = "createOrderBlockHandler")
     @Transactional
     public Order createOrder(Long userId, OrderCreateRequest req) {
         // 1. 校验地址
@@ -253,6 +256,14 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 multiLock.unlock();
             }
         }
+    }
+
+    /**
+     * Sentinel 限流熔断时触发：抛系统繁忙异常，由全局异常处理器统一返回。
+     */
+    public Order createOrderBlockHandler(Long userId, OrderCreateRequest req, BlockException ex) {
+        log.warn("createOrder 被 Sentinel 限流: userId={}", userId);
+        throw new BizException(BizErrorCode.SYSTEM_BUSY);
     }
 
     /** 订单行：购物车结算与立即购买直购的统一中间结构 */

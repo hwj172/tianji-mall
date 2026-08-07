@@ -30,6 +30,12 @@ public interface OrderMapper extends BaseMapper<Order> {
     @Select("SELECT status, COUNT(*) as cnt FROM `order` GROUP BY status")
     List<Map<String, Object>> selectStatusDistribution();
 
+    /**
+     * 查询超时未付款（status=1 且创建时间早于 cutoff）的订单 ID，供定时兜底扫描取消。
+     */
+    @Select("SELECT id FROM `order` WHERE status = 1 AND create_time < #{cutoff}")
+    List<Long> selectExpiredPendingOrderIds(@Param("cutoff") LocalDateTime cutoff);
+
     @Select("SELECT status, COUNT(*) AS cnt FROM `order` WHERE user_id = #{userId} GROUP BY status")
     List<Map<String, Object>> selectOrderStats(@Param("userId") Long userId);
 

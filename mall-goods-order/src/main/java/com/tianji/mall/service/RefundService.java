@@ -1,5 +1,7 @@
 package com.tianji.mall.service;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
@@ -48,6 +50,7 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     /**
      * 申请退款（按商品），支持仅退款和退货退款。
      */
+    @SentinelResource(value = "requestRefund", blockHandler = "requestRefundBlockHandler")
     @Transactional
     public Refund requestRefund(Long userId, Long orderId, RefundRequest req) {
         // SELECT ... FOR UPDATE 对订单行加排他锁：并发申请退款时串行化，
@@ -131,6 +134,14 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
         log.info("用户 {} 申请退款: orderId={}, refundId={}, type={}, amount={}",
                 userId, orderId, refund.getId(), refundType, totalRefund);
         return refund;
+    }
+
+    /**
+     * Sentinel 限流熔断时触发：抛系统繁忙异常，由全局异常处理器统一返回。
+     */
+    public Refund requestRefundBlockHandler(Long userId, Long orderId, RefundRequest req, BlockException ex) {
+        log.warn("requestRefund 被 Sentinel 限流: userId={}, orderId={}", userId, orderId);
+        throw new BizException(BizErrorCode.SYSTEM_BUSY);
     }
 
     /**

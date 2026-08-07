@@ -2,6 +2,7 @@ package com.tianji.mall.consumer;
 
 import com.tianji.mall.dto.OrderEvent;
 import com.tianji.mall.service.NotificationService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -20,8 +21,17 @@ class NotificationConsumerTest {
     @Mock
     private NotificationService notificationService;
 
+    @Mock
+    private MqConsumedGuard mqConsumedGuard;
+
     @InjectMocks
     private NotificationConsumer notificationConsumer;
+
+    @BeforeEach
+    void setUp() {
+        // 默认首次消费（放行）；具体去重场景在测试内覆盖
+        when(mqConsumedGuard.isFirstConsumption(anyLong(), anyString())).thenReturn(true);
+    }
 
     @Test
     void shouldCreateNotificationForShippedEvent() {
@@ -53,6 +63,18 @@ class NotificationConsumerTest {
 
         notificationConsumer.onMessage(event);
 
+        verify(notificationService, never()).createNotification(anyLong(), anyString(), anyString(), anyString(), anyLong());
+    }
+
+    @Test
+    void shouldSkipDuplicateEvent() {
+        // 重投消息：幂等键已存在 → 跳过，不重复生成通知
+        OrderEvent event = buildEvent("SHIPPED");
+        when(mqConsumedGuard.isFirstConsumption(100L, "SHIPPED")).thenReturn(false);
+
+        notificationConsumer.onMessage(event);
+
+        verify(mqConsumedGuard).isFirstConsumption(100L, "SHIPPED");
         verify(notificationService, never()).createNotification(anyLong(), anyString(), anyString(), anyString(), anyLong());
     }
 

@@ -6,6 +6,7 @@ import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.service.CouponService;
 import com.tianji.mall.service.ProductService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -38,8 +40,17 @@ class OrderEventConsumerTest {
     @Mock
     private CouponService couponService;
 
+    @Mock
+    private MqConsumedGuard mqConsumedGuard;
+
     @InjectMocks
     private OrderEventConsumer consumer;
+
+    @BeforeEach
+    void setUp() {
+        // 默认首次消费（放行）；具体去重场景在测试内覆盖
+        when(mqConsumedGuard.isFirstConsumption(anyLong(), anyString())).thenReturn(true);
+    }
 
     @Test
     void shouldHandleCreatedEvent() {
@@ -122,5 +133,30 @@ class OrderEventConsumerTest {
         OrderEvent event = new OrderEvent(1L, 100L, "ORD001", BigDecimal.valueOf(1000), "UNKNOWN", LocalDateTime.now());
 
         assertThatCode(() -> consumer.onMessage(event)).doesNotThrowAnyException();
+    }
+
+    @Test
+    void shouldSkipDuplicatePaidEvent() {
+        // 重复事件（重投/重放）：幂等键已存在 → 跳过，不更新销量
+        OrderEvent event = new OrderEvent(1L, 100L, "ORD001", BigDecimal.valueOf(1000), "PAID", LocalDateTime.now());
+        when(mqConsumedGuard.isFirstConsumption(1L, "PAID")).thenReturn(false);
+
+        consumer.onMessage(event);
+
+        verify(mqConsumedGuard).isFirstConsumption(1L, "PAID");
+        verify(productService, never()).incrementSales(anyLong(), anyInt());
+    }
+
+    @Test
+    void shouldReleaseClaimWhenProcessingFails() {
+        // 处理失败需释放幂等键，使 RocketMQ 重投的消息可再次处理
+        OrderEvent event = new OrderEvent(1L, 100L, "ORD001", BigDecimal.valueOf(1000), "PAID", LocalDateTime.now());
+        when(orderItemMapper.selectList(any())).thenThrow(new RuntimeException("DB down"));
+
+        assertThatThrownBy(() -> consumer.onMessage(event))
+                .isInstanceOf(RuntimeException.class)
+                .hasMessage("DB down");
+
+        verify(mqConsumedGuard).release(1L, "PAID");
     }
 }
