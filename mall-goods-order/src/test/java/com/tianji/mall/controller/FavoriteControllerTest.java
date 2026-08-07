@@ -1,5 +1,6 @@
 package com.tianji.mall.controller;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.entity.Favorite;
@@ -109,22 +110,30 @@ class FavoriteControllerTest {
         f.setId(1L);
         f.setUserId(100L);
         f.setProductId(10L);
-        when(favoriteService.listByUser(100L)).thenReturn(List.of(f));
+        Page<Favorite> page = new Page<>(1, 20);
+        page.setRecords(List.of(f));
+        page.setTotal(1);
+        when(favoriteService.listByUser(100L, 1, 20)).thenReturn(page);
 
         mockMvc.perform(get("/api/favorite/list")
                         .header("Authorization", "Bearer token123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data[0].productId").value(10));
+                .andExpect(jsonPath("$.data.records[0].productId").value(10))
+                .andExpect(jsonPath("$.data.total").value(1));
     }
 
     @Test
     void shouldReturnEmptyList() throws Exception {
         when(jwtUtil.getUserId("token123")).thenReturn(100L);
-        when(favoriteService.listByUser(100L)).thenReturn(List.of());
+        Page<Favorite> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        when(favoriteService.listByUser(100L, 1, 20)).thenReturn(page);
 
         mockMvc.perform(get("/api/favorite/list")
                         .header("Authorization", "Bearer token123"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data").isEmpty());
+                .andExpect(jsonPath("$.data.records").isEmpty())
+                .andExpect(jsonPath("$.data.total").value(0));
     }
 }

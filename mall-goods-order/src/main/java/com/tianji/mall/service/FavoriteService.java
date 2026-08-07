@@ -1,6 +1,7 @@
 package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.mall.entity.Favorite;
 import com.tianji.mall.mapper.FavoriteMapper;
@@ -9,7 +10,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -33,9 +33,15 @@ public class FavoriteService extends ServiceImpl<FavoriteMapper, Favorite> {
         return Map.of("favorited", true, "productId", productId);
     }
 
-    public List<Favorite> listByUser(Long userId) {
-        return list(new LambdaQueryWrapper<Favorite>()
+    public Page<Favorite> listByUser(Long userId, int page, int size) {
+        return page(new Page<>(page, size), new LambdaQueryWrapper<Favorite>()
                 .eq(Favorite::getUserId, userId)
                 .orderByDesc(Favorite::getCreateTime));
+    }
+
+    public boolean isFavorited(Long userId, Long productId) {
+        return count(new LambdaQueryWrapper<Favorite>()
+                .eq(Favorite::getUserId, userId)
+                .eq(Favorite::getProductId, productId)) > 0;
     }
 }

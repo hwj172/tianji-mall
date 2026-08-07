@@ -6,6 +6,7 @@ import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.dto.RecommendResponse;
 import com.tianji.mall.service.DashboardService;
+import com.tianji.mall.service.FavoriteService;
 import com.tianji.mall.service.ProductService;
 import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.SeckillService;
@@ -77,6 +78,9 @@ class ProductControllerTest {
     private BrowsingHistoryService browsingHistoryService;
 
     @MockBean
+    private FavoriteService favoriteService;
+
+    @MockBean
     private com.tianji.mall.service.ShopService shopService;
 
     // ==================== GET /api/product/list ====================
@@ -119,7 +123,22 @@ class ProductControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.product.name").value("iPhone"))
-                .andExpect(jsonPath("$.data.product.price").value(6999));
+                .andExpect(jsonPath("$.data.product.price").value(6999))
+                .andExpect(jsonPath("$.data.favorited").value(false));
+    }
+
+    @Test
+    void shouldGetProductDetailWithFavoriteStatus() throws Exception {
+        Product product = buildProduct(1L, "iPhone", 6999);
+        when(jwtUtil.getUserId("test-token")).thenReturn(1L);
+        when(productService.getProductDetail(1L))
+                .thenReturn(Map.of("product", product, "skus", List.of(), "attributes", List.of()));
+        when(favoriteService.isFavorited(1L, 1L)).thenReturn(true);
+
+        mockMvc.perform(get("/api/product/1")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.favorited").value(true));
     }
 
     @Test
@@ -209,12 +228,17 @@ class ProductControllerTest {
     @Test
     void shouldGetBrowsingHistory() throws Exception {
         when(jwtUtil.getUserId("test-token")).thenReturn(1L);
-        when(browsingHistoryService.getHistory(1L)).thenReturn(List.of());
+        Page<BrowsingHistory> page = new Page<>(1, 20);
+        page.setRecords(List.of());
+        page.setTotal(0);
+        when(browsingHistoryService.getHistory(1L, 1, 20)).thenReturn(page);
 
         mockMvc.perform(get("/api/product/history")
                         .header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.code").value(200));
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data.total").value(0))
+                .andExpect(jsonPath("$.data.records").isEmpty());
     }
 
     @Test

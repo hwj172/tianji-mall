@@ -1,6 +1,7 @@
 package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.mall.entity.BrowsingHistory;
 import com.tianji.mall.mapper.BrowsingHistoryMapper;
@@ -46,11 +47,10 @@ public class BrowsingHistoryService extends ServiceImpl<BrowsingHistoryMapper, B
         }
     }
 
-    public List<BrowsingHistory> getHistory(Long userId) {
-        return list(new LambdaQueryWrapper<BrowsingHistory>()
+    public Page<BrowsingHistory> getHistory(Long userId, int page, int size) {
+        return page(new Page<>(page, size), new LambdaQueryWrapper<BrowsingHistory>()
                 .eq(BrowsingHistory::getUserId, userId)
-                .orderByDesc(BrowsingHistory::getCreateTime)
-                .last("LIMIT " + MAX_HISTORY));
+                .orderByDesc(BrowsingHistory::getCreateTime));
     }
 
     public void clearHistory(Long userId) {

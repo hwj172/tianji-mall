@@ -1,5 +1,6 @@
 package com.tianji.mall.service;
 
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.mall.entity.BrowsingHistory;
 import com.tianji.mall.mapper.BrowsingHistoryMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,14 +49,19 @@ class BrowsingHistoryServiceTest {
     }
 
     @Test
-    void shouldGetHistoryLimitedTo50() {
-        when(browsingHistoryMapper.selectList(any()))
-                .thenReturn(List.of());
+    void shouldGetHistoryPaged() {
+        when(browsingHistoryMapper.selectPage(any(), any())).thenAnswer(inv -> {
+            Page<BrowsingHistory> p = inv.getArgument(0);
+            p.setRecords(List.of());
+            p.setTotal(0);
+            return p;
+        });
 
-        List<BrowsingHistory> result = browsingHistoryService.getHistory(1L);
+        Page<BrowsingHistory> result = browsingHistoryService.getHistory(1L, 1, 20);
 
-        assertThat(result).isEmpty();
-        verify(browsingHistoryMapper).selectList(any());
+        assertThat(result.getRecords()).isEmpty();
+        assertThat(result.getTotal()).isZero();
+        verify(browsingHistoryMapper).selectPage(any(), any());
     }
 
     @Test

@@ -7,6 +7,7 @@ import com.tianji.mall.dto.RecommendResponse;
 import com.tianji.mall.entity.BrowsingHistory;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.service.BrowsingHistoryService;
+import com.tianji.mall.service.FavoriteService;
 import com.tianji.mall.service.ProductService;
 import com.tianji.mall.service.RecommendService;
 import com.tianji.mall.service.SeckillService;
@@ -14,6 +15,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +28,7 @@ public class ProductController {
     private final RecommendService recommendService;
     private final SeckillService seckillService;
     private final BrowsingHistoryService browsingHistoryService;
+    private final FavoriteService favoriteService;
     private final JwtUtil jwtUtil;
 
     @GetMapping("/list")
@@ -43,12 +46,16 @@ public class ProductController {
     @GetMapping("/{id}")
     public R<Map<String, Object>> detail(@PathVariable("id") Long id,
                                           @RequestHeader(value = "Authorization", required = false) String authHeader) {
-        // 记录浏览足迹（JWT 可选，未登录跳过）
+        // 记录浏览足迹 + 收藏状态（JWT 可选，未登录跳过）
+        boolean favorited = false;
         if (authHeader != null && authHeader.startsWith("Bearer ")) {
             Long userId = jwtUtil.getUserId(authHeader.substring(7));
             browsingHistoryService.recordView(userId, id);
+            favorited = favoriteService.isFavorited(userId, id);
         }
-        return R.ok(productService.getProductDetail(id));
+        Map<String, Object> result = new HashMap<>(productService.getProductDetail(id));
+        result.put("favorited", favorited);
+        return R.ok(result);
     }
 
     @PostMapping("/batch")
@@ -99,9 +106,11 @@ public class ProductController {
     // ===== 浏览足迹 =====
 
     @GetMapping("/history")
-    public R<List<BrowsingHistory>> history(@RequestHeader("Authorization") String authHeader) {
+    public R<Page<BrowsingHistory>> history(@RequestHeader("Authorization") String authHeader,
+                                            @RequestParam(defaultValue = "1") int page,
+                                            @RequestParam(defaultValue = "20") int size) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(browsingHistoryService.getHistory(userId));
+        return R.ok(browsingHistoryService.getHistory(userId, page, size));
     }
 
     @DeleteMapping("/history")

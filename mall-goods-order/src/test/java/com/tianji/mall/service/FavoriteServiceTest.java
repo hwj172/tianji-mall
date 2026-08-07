@@ -1,6 +1,7 @@
 package com.tianji.mall.service;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.mall.entity.Favorite;
 import com.tianji.mall.mapper.FavoriteMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -67,21 +68,49 @@ class FavoriteServiceTest {
         f1.setId(1L);
         f1.setUserId(100L);
         f1.setProductId(10L);
-        when(favoriteMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(f1));
+        when(favoriteMapper.selectPage(any(), any())).thenAnswer(inv -> {
+            Page<Favorite> p = inv.getArgument(0);
+            p.setRecords(List.of(f1));
+            p.setTotal(1);
+            return p;
+        });
 
-        List<Favorite> result = favoriteService.listByUser(100L);
+        Page<Favorite> result = favoriteService.listByUser(100L, 1, 20);
 
-        assertThat(result).hasSize(1);
-        assertThat(result.get(0).getProductId()).isEqualTo(10L);
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getProductId()).isEqualTo(10L);
+        assertThat(result.getTotal()).isEqualTo(1);
     }
 
     @Test
     void shouldReturnEmptyListWhenNoFavorites() {
-        when(favoriteMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+        when(favoriteMapper.selectPage(any(), any())).thenAnswer(inv -> {
+            Page<Favorite> p = inv.getArgument(0);
+            p.setRecords(List.of());
+            p.setTotal(0);
+            return p;
+        });
 
-        List<Favorite> result = favoriteService.listByUser(999L);
+        Page<Favorite> result = favoriteService.listByUser(999L, 1, 20);
 
-        assertThat(result).isEmpty();
+        assertThat(result.getRecords()).isEmpty();
+        assertThat(result.getTotal()).isZero();
+    }
+
+    @Test
+    void shouldReturnFavoritedTrueWhenFavoriteExists() {
+        when(favoriteMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+
+        assertThat(favoriteService.isFavorited(100L, 1L)).isTrue();
+        verify(favoriteMapper).selectCount(any(LambdaQueryWrapper.class));
+    }
+
+    @Test
+    void shouldReturnFavoritedFalseWhenNotFavorite() {
+        when(favoriteMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
+
+        assertThat(favoriteService.isFavorited(100L, 1L)).isFalse();
+        verify(favoriteMapper).selectCount(any(LambdaQueryWrapper.class));
     }
 
     @Test
