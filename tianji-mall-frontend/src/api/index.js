@@ -392,11 +392,6 @@ export function createPay(params) {
 }
 
 
-// ========== 推荐 ==========
-export function getProductRecommend(params) {
-  return request.get('/product/recommend', { params })
-}
-
 // ========== 浏览足迹 ==========
 export function getBrowsingHistory() {
   return request.get('/product/history')

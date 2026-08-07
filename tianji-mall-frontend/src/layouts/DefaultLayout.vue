@@ -10,10 +10,7 @@
           </el-input>
         </div>
         <div class="header-actions">
-          <router-link to="/" title="返回首页"><el-button text>🏠</el-button></router-link>
           <template v-if="userStore.isLoggedIn">
-            <router-link to="/user/center"><el-button text>👤 个人中心</el-button></router-link>
-            <router-link v-if="userStore.isSeller" to="/seller"><el-button text>🏪 商家中心</el-button></router-link>
             <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text>🛒 购物车</el-button></el-badge></router-link>
             <router-link to="/chat"><el-button text>🤖 AI导购</el-button></router-link>
             <el-dropdown>
@@ -36,14 +33,6 @@
         </div>
       </div>
     </header>
-    <!-- 二级导航 -->
-    <nav class="sub-nav" v-show="showSubNav">
-      <div class="sub-nav-inner">
-        <router-link to="/seckill">⚡ 限时秒杀</router-link>
-        <router-link to="/groupbuy">🎯 阶梯拼团</router-link>
-        <router-link to="/coupon/center">🎫 领券中心</router-link>
-      </div>
-    </nav>
     <main class="main">
       <router-view v-slot="{ Component }">
         <transition name="fade-slide" mode="out-in">
@@ -56,21 +45,17 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { ref, onMounted } from 'vue'
+import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
 
-const route = useRoute()
 const router = useRouter()
 const userStore = useUserStore()
 const cartStore = useCartStore()
 const keyword = ref('')
 
 onMounted(() => cartStore.refreshCount())
-
-// 只在首页显示二级导航
-const showSubNav = computed(() => route.path === '/')
 
 function search() {
   if (keyword.value.trim()) {
@@ -89,10 +74,6 @@ function search() {
 .search-btn { background: #ff5000; border-color: #ff5000; border-radius: 0 20px 20px 0; }
 .header-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
 .user-name { cursor: pointer; color: #666; }
-.sub-nav { background: #fff; border-bottom: 1px solid #eee; }
-.sub-nav-inner { max-width: 1200px; margin: 0 auto; display: flex; gap: 24px; padding: 8px 0; font-size: 13px; }
-.sub-nav-inner a { color: #333; }
-.sub-nav-inner a:hover { color: #ff5000; }
 .main { max-width: 1200px; margin: 12px auto; min-height: calc(100vh - 200px); }
 .footer { text-align: center; color: #999; padding: 24px; font-size: 12px; }
 </style>

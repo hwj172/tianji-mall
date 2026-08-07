@@ -7,7 +7,7 @@
           <div class="cp-icon">🤖</div>
           <h3>AI 智能导购</h3>
           <p>告诉我你想找什么，我来帮你推荐</p>
-          <div class="cp-hints">
+          <div v-if="hints.length" class="cp-hints">
             <el-tag v-for="h in hints" :key="h" @click="sendQuick(h)" class="hint-tag">{{ h }}</el-tag>
           </div>
         </div>
@@ -17,20 +17,11 @@
             <span v-if="msg.role === 'user'">👤</span>
             <span v-else>🤖</span>
           </div>
-          <div class="msg-bubble">
+          <div class="msg-bubble" :class="{ 'has-products': msg.products && msg.products.length }">
             <div class="msg-text">{{ msg.content }}</div>
             <!-- 推荐商品 -->
             <div class="msg-products" v-if="msg.products && msg.products.length">
-              <div class="rec-card" v-for="p in msg.products" :key="p.id" @click="$router.push(`/product/${p.id}`)">
-                <div class="rec-img">
-                  <el-image :src="getFirstImage(p.images)" fit="cover" @error="onImgError" />
-                </div>
-                <div class="rec-info">
-                  <span class="rec-name">{{ p.name }}</span>
-                  <span class="rec-desc">{{ p.description || '暂无简介' }}</span>
-                  <span class="rec-price">¥{{ p.price }}</span>
-                </div>
-              </div>
+              <ProductCard v-for="p in msg.products" :key="p.id" :product="p" />
             </div>
           </div>
         </div>
@@ -62,34 +53,38 @@
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
 import { Promotion } from '@element-plus/icons-vue'
-import { ElMessage } from 'element-plus'
-import { sendChatMessage } from '@/api'
+import ProductCard from '@/components/common/ProductCard.vue'
+import { sendChatMessage, getChatHistory, getHotKeywords } from '@/api'
 
 const messages = ref([])
 const inputText = ref('')
 const sending = ref(false)
 const sessionId = ref(null)
 const msgContainer = ref(null)
+const hints = ref([])
 
-const hints = ['推荐一款蓝牙耳机', '有什么好用的洗面奶', '200元以内的运动鞋', '适合送礼的商品']
-
-onMounted(() => {
-  // 尝试恢复上次会话
+onMounted(async () => {
+  // 恢复上次会话的 sessionId，历史走后端加载
   const saved = localStorage.getItem('chat_session')
   if (saved) {
+    sessionId.value = saved
     try {
-      const data = JSON.parse(saved)
-      sessionId.value = data.sessionId
-      if (data.messages) messages.value = data.messages
-    } catch { /* ignore */ }
+      const res = await getChatHistory(saved)
+      if (res.data && res.data.length) {
+        messages.value = res.data.map(c => ({ role: c.role, content: c.content }))
+      }
+    } catch { /* 历史加载失败则展示欢迎语 */ }
   }
+  loadHotKeywords()
+  await nextTick()
+  scrollBottom()
 })
 
-function saveSession() {
-  localStorage.setItem('chat_session', JSON.stringify({
-    sessionId: sessionId.value,
-    messages: messages.value.slice(-20) // 只保留最近20条
-  }))
+async function loadHotKeywords() {
+  try {
+    const res = await getHotKeywords()
+    if (res.data && res.data.length) hints.value = res.data.slice(0, 4)
+  } catch { /* 热词可选，失败不展示 */ }
 }
 
 async function sendMessage() {
@@ -103,6 +98,7 @@ async function sendMessage() {
     const res = await sendChatMessage({ sessionId: sessionId.value, message: text })
     if (res.data) {
       sessionId.value = res.data.sessionId
+      localStorage.setItem('chat_session', sessionId.value)
       messages.value.push({
         role: 'assistant',
         content: res.data.reply,
@@ -113,7 +109,6 @@ async function sendMessage() {
     messages.value.push({ role: 'assistant', content: '抱歉，服务暂时不可用，请稍后再试。' })
   } finally {
     sending.value = false
-    saveSession()
     await nextTick()
     scrollBottom()
   }
@@ -128,18 +123,6 @@ function scrollBottom() {
   if (msgContainer.value) {
     msgContainer.value.scrollTop = msgContainer.value.scrollHeight
   }
-}
-
-function getFirstImage(images) {
-  if (!images) return ''
-  try {
-    const arr = typeof images === 'string' ? JSON.parse(images) : images
-    return arr[0] || ''
-  } catch { return '' }
-}
-
-function onImgError(e) {
-  e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 60"><rect fill="%23f5f5f5" width="60" height="60"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="8">无图</text></svg>'
 }
 </script>
 
@@ -163,18 +146,11 @@ function onImgError(e) {
 .msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
 .msg-row.user .msg-bubble { background: #ff5000; color: #fff; border-bottom-right-radius: 4px; }
 .msg-row.assistant .msg-bubble { background: #f5f5f5; border-bottom-left-radius: 4px; }
+.msg-row.assistant .msg-bubble.has-products { max-width: 92%; }
 .typing { color: #999; font-style: italic; }
 
-/* 推荐商品 */
-.msg-products { display: flex; gap: 10px; margin-top: 10px; flex-wrap: wrap; }
-.rec-card { display: flex; gap: 10px; align-items: center; background: #fff; border: 1px solid #f0f0f0; border-radius: 8px; padding: 8px; cursor: pointer; transition: all .2s; width: 230px; }
-.rec-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,.1); border-color: #ff5000; }
-.rec-img { width: 64px; height: 64px; flex-shrink: 0; border-radius: 6px; overflow: hidden; }
-.rec-img .el-image { width: 100%; height: 100%; }
-.rec-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; }
-.rec-name { color: #333; font-size: 13px; font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rec-desc { color: #999; font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.rec-price { color: #ff5000; font-weight: 700; font-size: 14px; }
+/* 推荐商品（复用 ProductCard 竖卡，简单网格） */
+.msg-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
 
 /* 输入框 */
 .chat-input { padding: 16px; border-top: 1px solid #f0f0f0; }
