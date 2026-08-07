@@ -19,19 +19,29 @@
       </div>
       <HomeBanner :banners="homeData.banners" class="hero-banner" />
       <div class="hero-sidebar">
-        <div class="hero-user" v-if="!userStore.isLoggedIn">
+        <div class="hero-user">
           <div class="user-avatar">👤</div>
-          <div class="user-hi">Hi, 欢迎光临</div>
-          <el-button type="primary" size="small" round @click="$router.push('/login')">登录 / 注册</el-button>
-          <div class="user-tags"><span>新人福利</span><span>领券中心</span></div>
+          <div class="user-hi">{{ userStore.isLoggedIn ? `Hi, ${userStore.userInfo?.username}` : 'Hi, 欢迎光临' }}</div>
+          <el-button v-if="!userStore.isLoggedIn" class="user-login-btn" size="small" round @click="$router.push('/login')">登录 / 注册</el-button>
+          <div class="user-tags">
+            <template v-if="userStore.isLoggedIn">
+              <span @click="$router.push('/order/list')">我的订单</span>
+              <span @click="$router.push('/coupon/center')">领券中心</span>
+            </template>
+            <template v-else>
+              <span>新人福利</span>
+              <span @click="$router.push('/coupon/center')">领券中心</span>
+            </template>
+          </div>
         </div>
-        <div class="hero-user" v-else>
-          <div class="user-avatar">👤</div>
-          <div class="user-hi">Hi, {{ userStore.userInfo?.username }}</div>
-          <div class="user-tags"><span>我的订单</span><span>领券中心</span></div>
+        <div class="quick-grid">
+          <div class="quick-item" @click="$router.push('/seckill')"><div class="quick-icon">⚡</div><div class="quick-label">限时秒杀</div></div>
+          <div class="quick-item" @click="$router.push('/groupbuy')"><div class="quick-icon">🎯</div><div class="quick-label">阶梯拼团</div></div>
+          <div class="quick-item" @click="$router.push('/coupon/center')"><div class="quick-icon">🎫</div><div class="quick-label">领券中心</div></div>
+          <div class="quick-item" @click="$router.push('/chat')"><div class="quick-icon">🤖</div><div class="quick-label">AI 导购</div></div>
         </div>
         <div class="hero-notice">
-          <h4>公告</h4>
+          <h4>📢 公告</h4>
           <p>🆕 秒杀专区已上线</p>
           <p>🎉 阶梯拼团新玩法</p>
           <p>🤖 AI 导购帮你挑</p>
@@ -141,12 +151,27 @@ onMounted(async () => {
 .category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; cursor: pointer; transition: background .15s; }
 .category-item:hover, .category-item.active { color: #ff5000; background: #fff5f0; font-weight: 600; }
 .hero-banner { flex: 1; }
-.hero-sidebar { width: 200px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
-.hero-user { background: #fff; border-radius: 8px; padding: 16px; text-align: center; }
-.user-avatar { font-size: 36px; margin-bottom: 8px; }
-.user-hi { font-size: 13px; color: #666; margin-bottom: 10px; }
-.user-tags { display: flex; gap: 8px; margin-top: 10px; font-size: 12px; justify-content: center; }
-.user-tags span { background: #fff5f0; color: #ff5000; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+.hero-sidebar { width: 220px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
+.hero-user {
+  background: linear-gradient(135deg, #ff7a3d, #ff5000);
+  border-radius: 10px; padding: 14px; text-align: center; color: #fff;
+  box-shadow: 0 2px 8px rgba(255, 80, 0, .2);
+}
+.user-avatar { font-size: 32px; margin-bottom: 6px; }
+.user-hi { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
+.user-login-btn { border: 1px solid #fff; background: transparent; color: #fff; }
+.user-login-btn:hover { background: rgba(255, 255, 255, .15); color: #fff; }
+.user-tags { display: flex; gap: 8px; margin-top: 10px; font-size: 11px; justify-content: center; }
+.user-tags span { background: rgba(255, 255, 255, .18); color: #fff; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+.quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+.quick-item {
+  background: #fff; border-radius: 10px; padding: 10px 0; text-align: center;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, .05); cursor: pointer;
+  transition: transform .15s, box-shadow .15s;
+}
+.quick-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, .1); }
+.quick-icon { font-size: 20px; }
+.quick-label { font-size: 11px; color: #666; margin-top: 2px; }
 .hero-notice { background: #fff; border-radius: 8px; padding: 12px; flex: 1; }
 .hero-notice h4 { font-size: 13px; margin-bottom: 8px; color: #333; }
 .hero-notice p { font-size: 12px; color: #666; padding: 3px 0; }
