@@ -65,8 +65,13 @@ const hints = ref([])
 
 onMounted(async () => {
   // 恢复上次会话的 sessionId，历史走后端加载
-  const saved = localStorage.getItem('chat_session')
+  // 兼容旧格式残留：历史版本曾在 localStorage 存完整对象 {sessionId, messages}，此处只提取 sessionId
+  let saved = localStorage.getItem('chat_session')
   if (saved) {
+    try {
+      const parsed = JSON.parse(saved)
+      if (parsed && typeof parsed.sessionId === 'string') saved = parsed.sessionId
+    } catch { /* 纯字符串，直接使用 */ }
     sessionId.value = saved
     try {
       const res = await getChatHistory(saved)
