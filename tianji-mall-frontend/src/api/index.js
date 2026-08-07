@@ -393,6 +393,19 @@ export function getProductReviews(productId, params) {
   return request.get(`/review/product/${productId}`, { params })
 }
 
+// ========== 会员体系 ==========
+export function getMemberInfo() {
+  return request.get('/member/info')
+}
+
+export function signIn() {
+  return request.post('/member/sign')
+}
+
+export function getPointsLog(params) {
+  return request.get('/member/points-log', { params })
+}
+
 // ========== 地区 ==========
 export function getRegionTree() {
   return request.get('/region/tree')

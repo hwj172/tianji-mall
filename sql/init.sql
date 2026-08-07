@@ -463,3 +463,38 @@ CREATE TABLE IF NOT EXISTS `operation_log` (
   KEY `idx_operator` (`operator_id`),
   KEY `idx_create_time` (`create_time`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='操作审计日志';
+
+-- 用户会员表
+CREATE TABLE IF NOT EXISTS `user_member` (
+  `id`           BIGINT   NOT NULL AUTO_INCREMENT COMMENT '会员ID',
+  `user_id`      BIGINT   NOT NULL COMMENT '用户ID',
+  `level`        INT      NOT NULL DEFAULT 1 COMMENT '等级：1-青铜 2-白银 3-黄金 4-铂金 5-钻石',
+  `points`       INT      NOT NULL DEFAULT 0 COMMENT '当前积分',
+  `total_points` INT      NOT NULL DEFAULT 0 COMMENT '累计积分',
+  `create_time`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  `update_time`  DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_id` (`user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户会员表';
+
+-- 积分流水表
+CREATE TABLE IF NOT EXISTS `points_log` (
+  `id`          BIGINT       NOT NULL AUTO_INCREMENT COMMENT '流水ID',
+  `user_id`     BIGINT       NOT NULL COMMENT '用户ID',
+  `change_type` VARCHAR(32)  NOT NULL COMMENT '变动类型：order_paid-订单支付 sign_in-每日签到',
+  `points`      INT          NOT NULL COMMENT '变动积分数（正为增加）',
+  `remark`      VARCHAR(255) DEFAULT NULL COMMENT '备注',
+  `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_time` (`user_id`, `create_time` DESC)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='积分流水表';
+
+-- 每日签到表
+CREATE TABLE IF NOT EXISTS `sign_in` (
+  `id`          BIGINT   NOT NULL AUTO_INCREMENT COMMENT '签到ID',
+  `user_id`     BIGINT   NOT NULL COMMENT '用户ID',
+  `sign_date`   DATE     NOT NULL COMMENT '签到日期',
+  `create_time` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '签到时间',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_user_date` (`user_id`, `sign_date`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='每日签到表';

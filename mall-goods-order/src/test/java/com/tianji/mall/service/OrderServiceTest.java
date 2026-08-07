@@ -54,12 +54,14 @@ class OrderServiceTest {
     private SeckillService seckillService;
     @Mock
     private ProductMapper productMapper;
+    @Mock
+    private MemberService memberService;
 
     private OrderService orderService;
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, redissonClient, rocketMQTemplate, seckillService, productMapper);
+        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, redissonClient, rocketMQTemplate, seckillService, productMapper, memberService);
         ReflectionTestUtils.setField(orderService, "baseMapper", orderMapper);
 
         // 分布式锁 mock：所有锁操作默认成功（lenient 避免非锁路径报 UnnecessaryStubbing）
@@ -250,6 +252,8 @@ class OrderServiceTest {
 
         assertThat(order.getStatus()).isEqualTo(2); // 已付款
         assertThat(order.getPayType()).isEqualTo(1); // 支付宝
+        // 支付成功发放订单积分（按订单实付金额）
+        verify(memberService).addPointsForOrder(100L, order.getTotalAmount());
     }
 
     @Test

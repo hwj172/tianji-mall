@@ -311,3 +311,32 @@ CREATE TABLE IF NOT EXISTS operation_log (
     ip VARCHAR(64),
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
+
+CREATE TABLE IF NOT EXISTS user_member (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    level INT NOT NULL DEFAULT 1,
+    points INT NOT NULL DEFAULT 0,
+    total_points INT NOT NULL DEFAULT 0,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_id (user_id)
+);
+
+CREATE TABLE IF NOT EXISTS points_log (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    change_type VARCHAR(32) NOT NULL,
+    points INT NOT NULL,
+    remark VARCHAR(255),
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    KEY idx_user_time (user_id, create_time DESC)
+);
+
+CREATE TABLE IF NOT EXISTS sign_in (
+    id BIGINT AUTO_INCREMENT PRIMARY KEY,
+    user_id BIGINT NOT NULL,
+    sign_date DATE NOT NULL,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY uk_user_date (user_id, sign_date)
+);

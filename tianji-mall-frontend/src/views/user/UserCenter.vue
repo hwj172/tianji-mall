@@ -35,7 +35,7 @@
       <h3 class="section-title">快捷入口</h3>
       <div class="ql-group" v-for="g in quickGroups" :key="g.title">
         <div class="ql-group-title">{{ g.title }}</div>
-        <div class="quick-links" :class="g.items.length === 2 ? 'cols-2' : 'cols-4'">
+        <div class="quick-links" :class="g.items.length === 2 ? 'cols-2' : (g.items.length === 5 ? 'cols-5' : 'cols-4')">
           <div
             v-for="item in g.items"
             :key="item.label"
@@ -92,7 +92,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   CreditCard, Box, Van, Stamp,
-  ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close, Shop
+  ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close, Shop, Medal
 } from '@element-plus/icons-vue'
 import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar, registerShop } from '@/api'
 import { useUserStore } from '@/stores/user'
@@ -148,6 +148,7 @@ const quickGroups = computed(() => [
   {
     title: '服务',
     items: [
+      { label: '我的会员', icon: Medal, action: () => router.push('/member') },
       { label: '收货地址', icon: MapLocation, action: () => router.push('/user/address') },
       { label: '我的评价', icon: Document, action: () => router.push('/review/my') },
       { label: '退款售后', icon: Service, action: () => router.push('/refund/list') },
@@ -346,6 +347,7 @@ async function saveProfile() {
 .ql-group:first-child .ql-group-title { margin-top: 0; }
 .quick-links { display: grid; gap: 12px; }
 .quick-links.cols-4 { grid-template-columns: repeat(4, 1fr); }
+.quick-links.cols-5 { grid-template-columns: repeat(5, 1fr); }
 .quick-links.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .ql-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 8px; cursor: pointer; transition: all .2s; position: relative; color: #333; }
 .ql-item:hover { background: #fff7f0; color: #ff5000; }

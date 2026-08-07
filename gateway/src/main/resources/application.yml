@@ -131,6 +131,10 @@ spring:
           uri: lb://mall-goods-order
           predicates:
             - Path=/api/group-buy/**
+        - id: mall-member
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/member/**
         - id: mall-upload
           uri: lb://mall-goods-order
           predicates:

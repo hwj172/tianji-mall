@@ -52,6 +52,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final RocketMQTemplate rocketMQTemplate;
     private final SeckillService seckillService;
     private final ProductMapper productMapper;
+    private final MemberService memberService;
 
     @SentinelResource(value = "createOrder", blockHandler = "createOrderBlockHandler")
     @Transactional
@@ -356,6 +357,13 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         order.setStatus(2); // 已付款
         order.setPayType(1); // 支付宝
         updateById(order);
+
+        // 发放订单积分（best-effort，失败不阻塞支付主流程）
+        try {
+            memberService.addPointsForOrder(userId, order.getTotalAmount());
+        } catch (Exception e) {
+            log.error("发放订单积分失败: orderId={}, userId={}", orderId, userId, e);
+        }
 
         // 发送订单支付事件
         publishOrderEvent(order, "PAID");

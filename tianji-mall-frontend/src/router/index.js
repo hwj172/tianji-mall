@@ -18,6 +18,7 @@ const routes = [
       { path: 'order/list', name: 'orderList', component: () => import('@/views/order/OrderList.vue'), meta: { title: '我的订单', auth: true } },
       { path: 'order/:id', name: 'orderDetail', component: () => import('@/views/order/OrderDetail.vue'), meta: { title: '订单详情', auth: true } },
       { path: 'user/center', name: 'userCenter', component: () => import('@/views/user/UserCenter.vue'), meta: { title: '用户中心', auth: true } },
+      { path: 'member', name: 'memberCenter', component: () => import('@/views/user/MemberCenter.vue'), meta: { title: '会员中心', auth: true } },
       { path: 'user/address', name: 'address', component: () => import('@/views/user/AddressPage.vue'), meta: { title: '收货地址', auth: true } },
       { path: 'coupon/center', name: 'couponCenter', component: () => import('@/views/coupon/CouponCenter.vue'), meta: { title: '领券中心', auth: true } },
       { path: 'review/my', name: 'myReviews', component: () => import('@/views/review/MyReviews.vue'), meta: { title: '我的评价', auth: true } },
