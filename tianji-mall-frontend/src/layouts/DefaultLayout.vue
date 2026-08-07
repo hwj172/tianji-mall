@@ -10,7 +10,9 @@
           </el-input>
         </div>
         <div class="header-actions">
+          <router-link to="/" title="返回首页"><el-button text>🏠</el-button></router-link>
           <template v-if="userStore.isLoggedIn">
+            <router-link v-if="userStore.isSeller" to="/seller"><el-button text>🏪 商家中心</el-button></router-link>
             <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text>🛒 购物车</el-button></el-badge></router-link>
             <router-link to="/chat"><el-button text>🤖 AI导购</el-button></router-link>
             <el-dropdown>
