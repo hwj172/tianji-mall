@@ -10,7 +10,7 @@
         <div class="gb-tiers">
           <div class="tier-item" v-for="(tier, idx) in parseTiers(a.tiers)" :key="idx">
             <span class="tier-count">{{ tier.count }}人团</span>
-            <span class="tier-discount">{{ (tier.discount * 100).toFixed(0) }}折</span>
+            <span class="tier-discount">{{ formatDiscount(tier.discount) }}</span>
           </div>
         </div>
         <div class="gb-meta">
@@ -44,6 +44,11 @@ async function loadData() {
 function parseTiers(tiers) {
   if (!tiers) return []
   try { return typeof tiers === 'string' ? JSON.parse(tiers) : tiers } catch { return [] }
+}
+
+// discount: 0.9 = 9折（与 GroupBuyDetail.formatDiscount 一致）
+function formatDiscount(d) {
+  return (Number(d) * 10) + '折'
 }
 
 function fmtTime(t) {

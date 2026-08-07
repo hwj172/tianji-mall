@@ -112,6 +112,7 @@ async function handleClaim(c) {
     await claimCoupon(c.id)
     ElMessage.success('领取成功')
     c.claimed = true
+    await loadMy()          // 刷新「我的优惠券」tab
     loadUnclaimedCount()  // 角标递减
   } catch { /* handle by interceptor */ }
   finally { c.claiming = false }

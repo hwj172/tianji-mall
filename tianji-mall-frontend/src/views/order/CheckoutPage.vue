@@ -33,7 +33,7 @@
       <div class="section">
         <h3 class="section-title">商品明细</h3>
         <div class="item-list">
-          <div class="checkout-item" v-for="item in items" :key="item.product.id">
+          <div class="checkout-item" v-for="item in items" :key="buyParams ? item.product.id : item.cart.id">
             <div class="item-img" @click="$router.push(`/product/${item.product.id}`)">
               <img :src="item.image" :alt="item.product.name" @error="onImgError" />
             </div>

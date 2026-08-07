@@ -90,7 +90,7 @@ function openDialog(addr) {
     Object.assign(form, {
       receiverName: addr.receiverName, phone: addr.phone,
       province: addr.province, city: addr.city, district: addr.district,
-      detail: addr.detail, isDefault: addr.isDefault === 1
+      detail: addr.detail, isDefault: addr.isDefault === 1 || addr.isDefault === true
     })
     regionPath.value = [addr.province, addr.city, addr.district].filter(Boolean)
   } else {

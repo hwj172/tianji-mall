@@ -52,7 +52,7 @@
       <h3 class="section-title">🛍 商品信息</h3>
       <div class="item-list">
         <div class="od-item" v-for="(item, idx) in detail.items" :key="idx">
-          <el-image :src="getItemImage(item.productId)" class="od-item-img" @error="onImgError" style="width:72px;height:72px" />
+          <img :src="getItemImage(item.productId)" class="od-item-img" @error="onImgError" style="width:72px;height:72px;object-fit:cover" />
           <div class="od-item-info">
             <router-link :to="`/product/${item.productId}`" class="od-item-name">{{ item.productName }}</router-link>
             <span class="od-item-spec" v-if="item.skuSpecs">{{ item.skuSpecs }}</span>
