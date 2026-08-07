@@ -328,8 +328,8 @@ export function createPay(params) {
 
 
 // ========== 浏览足迹 ==========
-export function getBrowsingHistory() {
-  return request.get('/product/history')
+export function getBrowsingHistory(params) {
+  return request.get('/product/history', { params })
 }
 
 export function clearBrowsingHistory() {

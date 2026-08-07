@@ -1,7 +1,7 @@
 <template>
   <div class="product-card" @click="$router.push(`/product/${product.id}`)">
     <div class="product-image">
-      <img :src="firstImage" :alt="product.name" loading="lazy" decoding="async" @error="imageOnError($event, 200)" />
+      <AppImage :src="firstImage" :alt="product.name" :size="200" />
       <span v-if="showOriginalPrice && discountPercent != null" class="discount-badge">-{{ discountPercent }}%</span>
     </div>
     <div class="product-info">
@@ -18,7 +18,8 @@
 <script setup>
 import { computed } from 'vue'
 import { fmtPrice } from '@/utils/format'
-import { getFirstImage, imageOnError } from '@/utils/image'
+import { getFirstImage } from '@/utils/image'
+import AppImage from '@/components/common/AppImage.vue'
 
 const props = defineProps({
   product: { type: Object, required: true },

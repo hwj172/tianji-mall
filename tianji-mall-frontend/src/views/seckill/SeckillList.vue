@@ -1,35 +1,42 @@
 <template>
-  <div class="seckill-page" v-loading="loading">
+  <div class="seckill-page">
     <div class="sk-header">
       <h2>⚡ 限时秒杀</h2>
       <span class="sk-now" v-if="products.length">当前时间 {{ fmtClock(now) }}</span>
     </div>
 
-    <div class="product-grid" v-if="products.length">
-      <div class="sk-card" v-for="p in products" :key="p.id">
-        <ProductCard :product="enrich(p)" showOriginalPrice />
-        <div class="sk-state" :class="'sk-' + seckillState(p)" v-if="seckillState(p) !== 'unknown'">
-          <template v-if="seckillState(p) === 'active'">
-            <span class="sk-tag sk-tag-active">抢购中</span>
-            <span class="sk-cd">距结束 {{ remainingText(p) }}</span>
-          </template>
-          <span v-else-if="seckillState(p) === 'pending'" class="sk-tag sk-tag-gray">未开始</span>
-          <span v-else class="sk-tag sk-tag-gray">已结束</span>
+    <ProductGrid
+      :products="products"
+      :loading="loading"
+      :cols="5"
+      :total="total"
+      :page-size="pageSize"
+      empty-text="暂无秒杀活动"
+    >
+      <template #card="{ product }">
+        <div class="sk-card">
+          <ProductCard :product="enrich(product)" showOriginalPrice />
+          <div class="sk-state" :class="'sk-' + seckillState(product)" v-if="seckillState(product) !== 'unknown'">
+            <template v-if="seckillState(product) === 'active'">
+              <span class="sk-tag sk-tag-active">抢购中</span>
+              <span class="sk-cd">距结束 {{ remainingText(product) }}</span>
+            </template>
+            <span v-else-if="seckillState(product) === 'pending'" class="sk-tag sk-tag-gray">未开始</span>
+            <span v-else class="sk-tag sk-tag-gray">已结束</span>
+          </div>
         </div>
-      </div>
-    </div>
-    <el-empty v-else-if="!loading" description="暂无秒杀活动" />
-
-    <div class="pagination-wrap" v-if="total > pageSize">
-      <el-pagination
-        v-model:current-page="currentPage"
-        :page-size="pageSize"
-        :total="total"
-        layout="prev, pager, next"
-        @current-change="loadData"
-        background
-      />
-    </div>
+      </template>
+      <template #pagination>
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="prev, pager, next"
+          @current-change="loadData"
+          background
+        />
+      </template>
+    </ProductGrid>
   </div>
 </template>
 
@@ -37,6 +44,7 @@
 import { ref, onMounted, onUnmounted } from 'vue'
 import { getSeckillList } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
+import ProductGrid from '@/components/common/ProductGrid.vue'
 
 const products = ref([])
 const loading = ref(false)
@@ -123,7 +131,4 @@ function fmtClock(t) {
 .sk-tag-active { background: #ff5000; }
 .sk-tag-gray { background: rgba(0,0,0,.55); }
 .sk-cd { font-size: 11px; color: #fff; background: rgba(255,80,0,.9); padding: 3px 8px; border-radius: 4px; line-height: 1.2; }
-
-.product-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
-.pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }
 </style>

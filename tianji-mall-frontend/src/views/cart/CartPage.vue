@@ -12,7 +12,7 @@
         <div class="cart-item" v-for="item in cartItems" :key="item.cart.id" :class="{ invalid: item.invalid }">
           <el-checkbox v-model="item.checked" @change="onItemCheck(item)" :disabled="item.invalid" class="item-check" />
           <div class="item-image" @click="!item.invalid && $router.push(`/product/${item.product.id}`)">
-            <img :src="item.image" :alt="item.product.name || '商品已失效'" loading="lazy" decoding="async" @error="imageOnError($event, 80)" />
+            <AppImage :src="item.image" :alt="item.product.name || '商品已失效'" :size="80" />
           </div>
           <div class="item-info">
             <router-link v-if="!item.invalid" :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
@@ -58,7 +58,8 @@ import { getCartList, updateCartItem, deleteCartItem, checkCartItem, getProductB
 import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
 import EmptyState from '@/components/common/EmptyState.vue'
-import { getFirstImage, imageOnError } from '@/utils/image'
+import AppImage from '@/components/common/AppImage.vue'
+import { getFirstImage } from '@/utils/image'
 
 const router = useRouter()
 const cartStore = useCartStore()

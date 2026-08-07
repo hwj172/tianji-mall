@@ -33,18 +33,7 @@
       <div class="section">
         <h3 class="section-title">商品明细</h3>
         <div class="item-list">
-          <div class="checkout-item" v-for="item in items" :key="buyParams ? item.product.id : item.cart.id">
-            <div class="item-img" @click="$router.push(`/product/${item.product.id}`)">
-              <img :src="item.image" :alt="item.product.name" loading="lazy" decoding="async" @error="imageOnError($event, 80)" />
-            </div>
-            <div class="item-info">
-              <router-link :to="`/product/${item.product.id}`" class="item-name">{{ item.product.name }}</router-link>
-              <span class="item-spec" v-if="item.specs">{{ item.specs }}</span>
-            </div>
-            <div class="item-price">¥{{ fmtPrice(item.price) }}</div>
-            <div class="item-qty">×{{ item.cart.quantity }}</div>
-            <div class="item-subtotal">¥{{ fmtPrice(item.price * item.cart.quantity) }}</div>
-          </div>
+          <OrderItemRow v-for="item in items" :key="buyParams ? item.product.id : item.cart.id" :item="item" />
         </div>
       </div>
 
@@ -120,9 +109,10 @@ import { ElMessage } from 'element-plus'
 import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree, getMyCoupons } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
-import { getFirstImage, imageOnError } from '@/utils/image'
+import { getFirstImage } from '@/utils/image'
 import { formatDiscount } from '@/utils/discount'
 import EmptyState from '@/components/common/EmptyState.vue'
+import OrderItemRow from '@/components/common/OrderItemRow.vue'
 
 const route = useRoute()
 const router = useRouter()
@@ -342,18 +332,8 @@ async function submitOrder() {
 .addr-text { font-size: 13px; color: #666; }
 .add-addr-btn { margin-top: 10px; }
 
-/* 商品 */
+/* 商品明细：行内结构与样式已收敛到公共组件 OrderItemRow */
 .item-list { display: flex; flex-direction: column; gap: 12px; }
-.checkout-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
-.item-img { width: 72px; height: 72px; border-radius: 4px; overflow: hidden; cursor: pointer; background: #fafafa; flex-shrink: 0; }
-.item-img img { width: 100%; height: 100%; object-fit: cover; }
-.item-info { flex: 1; min-width: 0; }
-.item-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.item-name:hover { color: #ff5000; }
-.item-spec { font-size: 12px; color: #999; }
-.item-price, .item-qty, .item-subtotal { width: 90px; text-align: center; font-size: 14px; }
-.item-price { color: #333; }
-.item-subtotal { color: #ff5000; font-weight: 600; }
 
 /* 底部 */
 .checkout-footer { background: #fff; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }

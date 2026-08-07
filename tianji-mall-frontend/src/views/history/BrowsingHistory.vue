@@ -1,14 +1,28 @@
 <template>
-  <div class="history-page" v-loading="loading">
+  <div class="history-page">
     <div class="page-header">
       <h2>浏览足迹</h2>
       <el-button type="danger" text @click="handleClear" :disabled="!products.length">清空足迹</el-button>
     </div>
 
-    <div class="product-grid" v-if="products.length">
-      <ProductCard v-for="p in products" :key="p.id" :product="p" />
-    </div>
-    <el-empty v-else-if="!loading" description="暂无浏览记录" />
+    <ProductGrid
+      :products="products"
+      :loading="loading"
+      :cols="5"
+      :total="total"
+      :page-size="pageSize"
+      empty-text="暂无浏览记录"
+    >
+      <template #pagination>
+        <el-pagination
+          v-model:current-page="currentPage"
+          :page-size="pageSize"
+          :total="total"
+          layout="total, prev, pager, next"
+          @current-change="loadData"
+        />
+      </template>
+    </ProductGrid>
   </div>
 </template>
 
@@ -16,23 +30,27 @@
 import { ref, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
 import { getBrowsingHistory, clearBrowsingHistory } from '@/api'
-import ProductCard from '@/components/common/ProductCard.vue'
+import ProductGrid from '@/components/common/ProductGrid.vue'
 import { useProductBatch } from '@/composables/useProductBatch'
 
 const products = ref([])
 const loading = ref(false)
+const currentPage = ref(1)
+const pageSize = ref(20)
+const total = ref(0)
 const { resolveProducts } = useProductBatch()
 
 onMounted(() => loadData())
 
-// 后端返回 List<BrowsingHistory>（仅 productId），批量查询商品回填详情后渲染
+// 后端返回 Page<BrowsingHistory>（records 仅 productId），批量查询商品回填详情后渲染
 async function loadData() {
   loading.value = true
   try {
-    const res = await getBrowsingHistory()
-    const hist = res.data || []
+    const res = await getBrowsingHistory({ page: currentPage.value, size: pageSize.value })
+    const hist = res.data?.records || []
     const items = await resolveProducts(hist)
     products.value = items.map(i => i.product).filter(Boolean)
+    total.value = res.data?.total || 0
   } catch { /* ignore */ }
   finally { loading.value = false }
 }
@@ -49,7 +67,8 @@ async function handleClear() {
   }
   try {
     await clearBrowsingHistory()
-    products.value = []
+    currentPage.value = 1
+    await loadData()
   } catch { /* ignore */ }
 }
 </script>
@@ -58,6 +77,4 @@ async function handleClear() {
 .history-page { max-width: 1200px; margin: 0 auto; }
 .page-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .page-header h2 { font-size: 22px; }
-
-.product-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 12px; }
 </style>

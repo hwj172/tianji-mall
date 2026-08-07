@@ -166,7 +166,7 @@ import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Star, StarFilled } from '@element-plus/icons-vue'
-import { getProductDetail, getProductReviews, toggleFavorite, getFavorites } from '@/api'
+import { getProductDetail, getProductReviews, toggleFavorite } from '@/api'
 import { addToCart as apiAddToCart } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtTime } from '@/utils/date'
@@ -240,10 +240,9 @@ const canBuy = computed(() => {
 })
 
 onMounted(() => {
-  // 详情/评价/收藏状态三路并行；loadFavoriteStatus 用 route.params.id，不依赖详情返回
+  // 详情/评价并行；收藏状态由详情接口的 favorited 字段返回，无需单独请求
   loadDetail()
   loadReviews()
-  loadFavoriteStatus(route.params.id)
 })
 onUnmounted(stopCountdown)
 
@@ -265,6 +264,8 @@ async function loadDetail() {
       specTree.value = res.data.specTree || null
       skuMatrix.value = res.data.skuMatrix || null
       preselectFirstSku()
+      // 收藏状态直接取自详情接口（未登录/未收藏均为 false）
+      isFavorite.value = !!res.data.favorited
     }
   } catch (e) {
     console.error('加载商品详情失败', e)
@@ -337,16 +338,6 @@ async function toggleFav() {
   } catch {
     // handle by interceptor
   }
-}
-
-// 加载商品时同步收藏状态（老用户重访时按钮状态正确）；productId 由调用方传入，可并行执行
-async function loadFavoriteStatus(productId) {
-  if (!productId) return
-  try {
-    const res = await getFavorites()
-    const list = res.data || []
-    isFavorite.value = list.some(f => f.productId === productId)
-  } catch { /* ignore */ }
 }
 
 async function loadReviews() {
