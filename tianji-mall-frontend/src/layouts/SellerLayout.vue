@@ -10,7 +10,13 @@
     </el-aside>
     <el-container>
       <el-header class="topbar"><span>商家中心</span></el-header>
-      <el-main class="content"><router-view /></el-main>
+      <el-main class="content">
+        <router-view v-slot="{ Component }">
+          <transition name="fade-slide" mode="out-in">
+            <component :is="Component" />
+          </transition>
+        </router-view>
+      </el-main>
     </el-container>
   </el-container>
 </template>

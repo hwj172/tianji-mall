@@ -31,7 +31,7 @@
             </div>
           </div>
         </div>
-        <el-empty v-else description="暂无可领优惠券" />
+        <el-empty v-else-if="!centerLoading && !coupons.length" description="暂无可领优惠券" />
       </el-tab-pane>
 
       <el-tab-pane label="我的优惠券" name="my">
@@ -55,7 +55,7 @@
             </div>
           </div>
         </div>
-        <el-empty v-else description="暂无优惠券" />
+        <el-empty v-else-if="!myLoading && !myCoupons.length" description="暂无优惠券" />
       </el-tab-pane>
     </el-tabs>
   </div>
@@ -70,6 +70,8 @@ const activeTab = ref('center')
 const coupons = ref([])
 const myCoupons = ref([])
 const unclaimedCount = ref(0)
+const centerLoading = ref(true)
+const myLoading = ref(true)
 const statusMap = { UNUSED: '未使用', USED: '已使用', EXPIRED: '已过期' }
 
 onMounted(async () => {
@@ -93,6 +95,7 @@ async function loadCenter() {
       coupons.value = list.map(c => ({ ...c, claiming: false }))
     }
   } catch { /* ignore */ }
+  finally { centerLoading.value = false }
 }
 
 async function loadMy() {
@@ -100,6 +103,7 @@ async function loadMy() {
     const res = await getMyCoupons()
     myCoupons.value = res.data || []
   } catch { /* ignore */ }
+  finally { myLoading.value = false }
 }
 
 async function handleClaim(c) {

@@ -79,7 +79,7 @@
       </div>
     </div>
 
-    <el-empty v-else description="没有待结算的商品">
+    <el-empty v-else-if="!loading && !items.length" description="没有待结算的商品">
       <el-button type="primary" @click="$router.push('/cart')">返回购物车</el-button>
     </el-empty>
 
@@ -123,6 +123,7 @@ const addresses = ref([])
 const selectedAddressId = ref(null)
 const items = ref([])
 const submitting = ref(false)
+const loading = ref(false)
 
 // 新增地址
 const showAddAddress = ref(false)
@@ -176,9 +177,14 @@ async function loadCoupons() {
 }
 
 onMounted(async () => {
-  await Promise.all([loadAddresses(), loadRegionTree(), loadCoupons()])
-  if (buyParams.value) await loadBuyItem()
-  else await loadItems()
+  loading.value = true
+  try {
+    await Promise.all([loadAddresses(), loadRegionTree(), loadCoupons()])
+    if (buyParams.value) await loadBuyItem()
+    else await loadItems()
+  } finally {
+    loading.value = false
+  }
 })
 
 async function loadRegionTree() {

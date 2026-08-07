@@ -1,5 +1,5 @@
 <template>
-  <div class="product-list-page" v-loading="loading">
+  <div class="product-list-page">
     <!-- 搜索热词 -->
     <div class="hot-keywords" v-if="hotKeywords.length && !route.query.keyword">
       <span class="hot-label">热门搜索：</span>
@@ -29,7 +29,8 @@
     </div>
 
     <!-- 商品网格 -->
-    <div class="product-grid cols-4" v-if="products.length">
+    <ProductGridSkeleton v-if="loading" :cols="4" />
+    <div class="product-grid cols-4" v-else-if="products.length">
       <ProductCard v-for="p in products" :key="p.id" :product="p" />
     </div>
     <el-empty v-if="!loading && !products.length" description="暂无商品" />
@@ -52,6 +53,7 @@ import { ref, reactive, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getProductList, getHotKeywords } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
+import ProductGridSkeleton from '@/components/common/ProductGridSkeleton.vue'
 
 const route = useRoute()
 const router = useRouter()

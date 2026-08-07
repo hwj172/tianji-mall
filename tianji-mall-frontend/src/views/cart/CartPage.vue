@@ -44,7 +44,7 @@
       </div>
     </div>
 
-    <el-empty v-else description="购物车空空如也">
+    <el-empty v-else-if="!loading && !cartItems.length" description="购物车空空如也">
       <el-button type="primary" @click="$router.push('/')">去逛逛</el-button>
     </el-empty>
   </div>
@@ -62,6 +62,7 @@ const cartStore = useCartStore()
 
 // 合并后的数据：[{ cart: CartItem, product: Product, image, price, specs, checked }]
 const cartItems = ref([])
+const loading = ref(false)
 
 const selectAll = ref(false)
 const isIndeterminate = ref(false)
@@ -79,6 +80,7 @@ const totalPrice = computed(() => {
 onMounted(() => loadCart())
 
 async function loadCart() {
+  loading.value = true
   try {
     const res = await getCartList()
     const items = res.data || []
@@ -103,6 +105,8 @@ async function loadCart() {
     updateSelectAllState()
   } catch (e) {
     console.error('加载购物车失败', e)
+  } finally {
+    loading.value = false
   }
 }
 

@@ -50,29 +50,38 @@
     </div>
 
     <!-- 热销排行 -->
-    <section class="home-section" v-if="homeData.hotProducts?.length">
+    <section class="home-section" v-if="loading || homeData.hotProducts?.length">
       <div class="section-header">
         <h3>🔥 热销排行榜</h3>
         <span class="section-more" @click="$router.push('/product/list?sort=sales')">查看更多 →</span>
       </div>
-      <div class="product-grid cols-4">
+      <template v-if="loading">
+        <ProductGridSkeleton :cols="4" />
+      </template>
+      <div class="product-grid cols-4" v-else>
         <ProductCard v-for="p in homeData.hotProducts" :key="p.id" :product="p" />
       </div>
     </section>
 
     <!-- 个性化推荐（独立接口） -->
-    <section class="home-section" v-if="personalRecommend.length || personalAlsoBuy.length">
-      <template v-if="personalRecommend.length">
+    <section class="home-section" v-if="loading || personalRecommend.length || personalAlsoBuy.length">
+      <template v-if="loading">
         <div class="section-header"><h3>💝 猜你喜欢</h3></div>
-        <div class="product-grid cols-5">
-          <ProductCard v-for="p in personalRecommend" :key="p.id" :product="p" />
-        </div>
+        <ProductGridSkeleton :cols="5" />
       </template>
-      <template v-if="personalAlsoBuy.length">
-        <div class="section-header" style="margin-top: 24px"><h3>🛒 买了还买</h3></div>
-        <div class="product-grid cols-5">
-          <ProductCard v-for="p in personalAlsoBuy" :key="p.id" :product="p" />
-        </div>
+      <template v-else>
+        <template v-if="personalRecommend.length">
+          <div class="section-header"><h3>💝 猜你喜欢</h3></div>
+          <div class="product-grid cols-5">
+            <ProductCard v-for="p in personalRecommend" :key="p.id" :product="p" />
+          </div>
+        </template>
+        <template v-if="personalAlsoBuy.length">
+          <div class="section-header" style="margin-top: 24px"><h3>🛒 买了还买</h3></div>
+          <div class="product-grid cols-5">
+            <ProductCard v-for="p in personalAlsoBuy" :key="p.id" :product="p" />
+          </div>
+        </template>
       </template>
     </section>
   </div>
@@ -84,8 +93,11 @@ import { useUserStore } from '@/stores/user'
 import { getHomeData } from '@/api'
 import HomeBanner from '@/components/home/HomeBanner.vue'
 import ProductCard from '@/components/common/ProductCard.vue'
+import ProductGridSkeleton from '@/components/common/ProductGridSkeleton.vue'
 
 const userStore = useUserStore()
+
+const loading = ref(true)
 
 const homeData = reactive({
   banners: [],
@@ -134,6 +146,8 @@ onMounted(async () => {
     }
   } catch (e) {
     console.error('首页数据加载失败', e)
+  } finally {
+    loading.value = false
   }
 })
 </script>

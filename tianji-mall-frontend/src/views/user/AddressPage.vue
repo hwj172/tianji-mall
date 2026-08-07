@@ -21,7 +21,7 @@
         </div>
       </div>
     </div>
-    <el-empty v-else description="暂无收货地址" />
+    <el-empty v-else-if="!loading && !addresses.length" description="暂无收货地址" />
 
     <!-- Dialog -->
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑地址' : '新增地址'" width="500px">
@@ -55,6 +55,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getAddressList, addAddress, updateAddress, deleteAddress, getRegionTree } from '@/api'
 
 const addresses = ref([])
+const loading = ref(false)
 const saving = ref(false)
 const dialogVisible = ref(false)
 const editingId = ref(null)
@@ -72,11 +73,14 @@ async function loadRegionTree() {
 }
 
 async function loadData() {
+  loading.value = true
   try {
     const res = await getAddressList()
     addresses.value = res.data || []
   } catch (e) {
     console.error('加载地址失败', e)
+  } finally {
+    loading.value = false
   }
 }
 

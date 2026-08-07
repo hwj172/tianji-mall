@@ -44,7 +44,13 @@
         <router-link to="/coupon/center">🎫 领券中心</router-link>
       </div>
     </nav>
-    <main class="main"><router-view /></main>
+    <main class="main">
+      <router-view v-slot="{ Component }">
+        <transition name="fade-slide" mode="out-in">
+          <component :is="Component" />
+        </transition>
+      </router-view>
+    </main>
     <footer class="footer">© 2026 天机商城 · 仿淘宝智能电商平台</footer>
   </div>
 </template>
