@@ -217,9 +217,11 @@ async function submitRegisterShop() {
       logo: shopForm.value.logo || null,
       description: shopForm.value.description || null
     })
-    ElMessage.success('开店成功！')
+    ElMessage.success('开店成功！请重新登录以激活商家权限')
     registerShopVisible.value = false
-    await userStore.fetchUserInfo()   // 刷新角色 → 顶栏出现商家中心
+    // 角色提升在 DB 生效，但 JWT 的 role claim 仍为旧值（网关据此鉴权）
+    // 必须重新登录签发新 token，商家中心才能通过网关角色校验
+    userStore.logout()
   } catch { /* handle by interceptor */ }
   finally { registeringShop.value = false }
 }
