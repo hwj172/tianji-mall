@@ -4,7 +4,7 @@
     <div class="detail-main">
       <!-- 左：图片 -->
       <div class="detail-gallery">
-        <div class="main-image">
+        <div class="main-image" @click="openViewer" title="点击查看大图">
           <img :src="currentImage" :alt="product.name" @error="onImageError" />
         </div>
         <div class="thumb-list" v-if="imageList.length > 1">
@@ -28,11 +28,12 @@
         <div class="price-box">
           <div class="price-row">
             <span class="price-label">价格</span>
-            <span class="price-current">¥{{ currentPrice }}</span>
-            <span class="price-original" v-if="isSeckill">¥{{ product.price }}</span>
+            <span class="price-current">¥{{ formatPrice(currentPrice) }}</span>
+            <span class="price-original" v-if="isSeckill">¥{{ formatPrice(product.price) }}</span>
           </div>
           <div class="price-tags" v-if="isSeckill">
             <el-tag type="danger" size="small">限时秒杀</el-tag>
+            <span class="seckill-countdown" v-if="countdown">距结束 {{ countdown }}</span>
           </div>
         </div>
 
@@ -50,6 +51,8 @@
             </div>
           </div>
         </div>
+
+        <div class="sku-hint" v-if="specTree?.length && !currentSkuInfo">请选择规格</div>
 
         <div class="stock-info" v-if="!specTree?.length || currentSkuInfo">
           <span>库存：{{ currentStock }} 件</span>
@@ -84,12 +87,22 @@
         <div class="review-summary">
           <h4>用户评价</h4>
           <div class="review-score">{{ detail.reviewStats?.avgRating || 0 }}</div>
-          <el-rate :model-value="Math.round(detail.reviewStats?.avgRating || 0)" disabled />
+          <el-rate :model-value="Math.round((detail.reviewStats?.avgRating || 0) * 2) / 2" disabled allow-half />
           <p>{{ detail.reviewStats?.count || 0 }} 条评价</p>
-          <p>好评率 {{ ((detail.reviewStats?.goodRate || 0) * 100).toFixed(0) }}%</p>
+          <p>好评率 {{ ((detail.reviewStats?.goodRate || 0) * 100).toFixed(1) }}%</p>
         </div>
       </div>
     </div>
+
+    <!-- 全屏图片灯箱（点击主图打开） -->
+    <el-image-viewer
+      v-if="viewerVisible"
+      :url-list="imageList"
+      :initial-index="activeImageIdx"
+      hide-on-click-modal
+      teleported
+      @close="viewerVisible = false"
+    />
 
     <!-- 详情 + 参数 -->
     <div class="detail-bottom">
@@ -118,7 +131,7 @@
         <h3>商品评价</h3>
         <div class="review-stats-summary" v-if="detail.reviewStats?.count">
           <span>共 {{ detail.reviewStats.count }} 条评价</span>
-          <span class="review-good-rate">好评率 {{ ((detail.reviewStats.goodRate || 0) * 100).toFixed(0) }}%</span>
+          <span class="review-good-rate">好评率 {{ ((detail.reviewStats.goodRate || 0) * 100).toFixed(1) }}%</span>
         </div>
       </div>
 
@@ -130,7 +143,7 @@
           <div class="review-item-header">
             <span class="review-avatar">👤</span>
             <span class="review-username">{{ r.username }}</span>
-            <el-rate :model-value="r.rating" disabled size="small" />
+            <el-rate :model-value="r.rating" disabled size="small" allow-half />
             <span class="review-time">{{ fmtReviewTime(r.createTime) }}</span>
           </div>
           <div class="review-content" v-if="r.content">{{ r.content }}</div>
@@ -149,7 +162,7 @@
 </template>
 
 <script setup>
-import { ref, reactive, computed, onMounted } from 'vue'
+import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { Star, StarFilled } from '@element-plus/icons-vue'
@@ -168,6 +181,7 @@ const skuMatrix = ref(null)
 const selectedSpecs = reactive({})
 const quantity = ref(1)
 const activeImageIdx = ref(0)
+const viewerVisible = ref(false)
 const loading = ref(false)
 const isFavorite = ref(false)
 const reviews = ref([])
@@ -224,6 +238,13 @@ const canBuy = computed(() => {
 })
 
 onMounted(() => { loadDetail(); loadReviews() })
+onUnmounted(stopCountdown)
+
+// 秒杀窗口变化时启停倒计时
+watch(isSeckill, (val) => {
+  if (val) startCountdown()
+  else { countdown.value = ''; stopCountdown() }
+})
 
 async function loadDetail() {
   loading.value = true
@@ -236,6 +257,7 @@ async function loadDetail() {
       detail.attributes = res.data.attributes || []
       specTree.value = res.data.specTree || null
       skuMatrix.value = res.data.skuMatrix || null
+      preselectFirstSku()
     }
     await loadFavoriteStatus()
   } catch (e) {
@@ -367,6 +389,73 @@ function fmtReviewTime(t) {
   return new Date(t).toLocaleDateString('zh-CN')
 }
 
+function formatPrice(n) {
+  if (n == null || n === '') return '0.00'
+  const num = Number(n)
+  return isNaN(num) ? '0.00' : num.toFixed(2)
+}
+
+function openViewer() {
+  viewerVisible.value = true
+}
+
+// 兼容 ISO 字符串与 LocalDateTime 数组两种返回格式
+function parseDate(t) {
+  if (!t) return 0
+  let str = t
+  if (Array.isArray(t)) {
+    const [y, mo, d, h = 0, mi = 0, s = 0] = t
+    str = `${y}-${String(mo).padStart(2, '0')}-${String(d).padStart(2, '0')}T${String(h).padStart(2, '0')}:${String(mi).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+  }
+  const ts = new Date(str).getTime()
+  return isNaN(ts) ? 0 : ts
+}
+
+const countdown = ref('')
+let countdownTimer = null
+
+function updateCountdown() {
+  const remain = parseDate(product.value?.seckillEndTime) - Date.now()
+  if (remain <= 0) {
+    countdown.value = '00:00:00'
+    stopCountdown()
+    return
+  }
+  const h = Math.floor(remain / 3600000)
+  const m = Math.floor((remain % 3600000) / 60000)
+  const s = Math.floor((remain % 60000) / 1000)
+  countdown.value = [h, m, s].map(n => String(n).padStart(2, '0')).join(':')
+}
+
+function startCountdown() {
+  stopCountdown()
+  updateCountdown()
+  countdownTimer = setInterval(updateCountdown, 1000)
+}
+
+function stopCountdown() {
+  if (countdownTimer) {
+    clearInterval(countdownTimer)
+    countdownTimer = null
+  }
+}
+
+// 预选首个可购 SKU：遍历 skuMatrix，用可购组合的 specs 填充 selectedSpecs，
+// currentSkuInfo（computed）随之联动回填价格/库存/数量上限
+function preselectFirstSku() {
+  if (!specTree.value?.length || !skuMatrix.value) return
+  const names = specTree.value.map(s => s.name)
+  for (const [key, sku] of Object.entries(skuMatrix.value)) {
+    if (sku && sku.stock > 0) {
+      const parts = key.split(';')
+      names.forEach((name, i) => {
+        selectedSpecs[name] = parts[i] || ''
+      })
+      return
+    }
+  }
+}
+
 function onImageError(e) {
   e.target.src = 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400"><rect fill="%23f5f5f5" width="400" height="400"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="16">暂无图片</text></svg>'
 }
@@ -381,7 +470,7 @@ function onThumbError(e) {
 .detail-main { display: flex; gap: 24px; background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
 
 .detail-gallery { width: 400px; flex-shrink: 0; }
-.main-image { width: 400px; height: 400px; overflow: hidden; border-radius: 4px; border: 1px solid #f0f0f0; background: #fafafa; }
+.main-image { width: 400px; height: 400px; overflow: hidden; border-radius: 4px; border: 1px solid #f0f0f0; background: #fafafa; cursor: zoom-in; }
 .main-image img { width: 100%; height: 100%; object-fit: contain; }
 .thumb-list { display: flex; gap: 8px; margin-top: 8px; }
 .thumb-list img { width: 64px; height: 64px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; cursor: pointer; }
@@ -453,4 +542,15 @@ function onThumbError(e) {
 .review-images { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .review-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #f0f0f0; }
 .review-load-more { text-align: center; padding: 16px 0; }
+
+/* 批次 C：SKU 提示条 + 秒杀倒计时 + 响应式 */
+.sku-hint { font-size: 13px; color: #ff5000; background: #fff5f0; border: 1px solid #ffd8c8; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; }
+.seckill-countdown { color: #ff5000; font-size: 13px; margin-left: 10px; }
+
+@media (max-width: 992px) {
+  .detail-main { flex-direction: column; }
+  .detail-gallery { width: 100%; flex-shrink: 0; }
+  .main-image { width: 100%; height: auto; aspect-ratio: 1 / 1; }
+  .action-row .el-button { flex: 1; width: auto; }
+}
 </style>
