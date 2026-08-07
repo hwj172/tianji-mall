@@ -13,27 +13,24 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { getFavorites, getProductBatch } from '@/api'
+import { getFavorites } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
+import { useProductBatch } from '@/composables/useProductBatch'
 
 const products = ref([])
 const loading = ref(false)
+const { resolveProducts } = useProductBatch()
 
 onMounted(() => loadData())
 
-// 后端返回 List<Favorite>（仅 productId），需批量查询商品回填详情后渲染
+// 后端返回 List<Favorite>（仅 productId），批量查询商品回填详情后渲染
 async function loadData() {
   loading.value = true
   try {
     const res = await getFavorites()
     const favs = res.data || []
-    if (!favs.length) {
-      products.value = []
-      return
-    }
-    const pRes = await getProductBatch(favs.map(f => f.productId))
-    const byId = new Map((pRes.data || []).map(p => [p.id, p]))
-    products.value = favs.map(f => byId.get(f.productId)).filter(Boolean)
+    const items = await resolveProducts(favs)
+    products.value = items.map(i => i.product).filter(Boolean)
   } catch { /* ignore */ }
   finally { loading.value = false }
 }

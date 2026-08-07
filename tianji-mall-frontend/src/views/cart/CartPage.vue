@@ -44,9 +44,9 @@
       </div>
     </div>
 
-    <el-empty v-else-if="!loading && !cartItems.length" description="购物车空空如也">
+    <EmptyState v-else-if="!loading && !cartItems.length" description="购物车空空如也">
       <el-button type="primary" @click="$router.push('/')">去逛逛</el-button>
-    </el-empty>
+    </EmptyState>
   </div>
 </template>
 
@@ -57,6 +57,7 @@ import { ElMessage, ElMessageBox } from 'element-plus'
 import { getCartList, updateCartItem, deleteCartItem, checkCartItem, getProductBatch } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
+import EmptyState from '@/components/common/EmptyState.vue'
 import { getFirstImage, imageOnError } from '@/utils/image'
 
 const router = useRouter()

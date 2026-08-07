@@ -32,12 +32,12 @@
     <div class="product-grid cols-4" v-else-if="products.length">
       <ProductCard v-for="p in products" :key="p.id" :product="p" :show-original-price="true" />
     </div>
-    <el-empty v-if="!loading && !products.length" description="暂无商品">
+    <EmptyState v-if="!loading && !products.length" description="暂无商品">
       <div class="empty-actions">
         <el-button v-if="hasActiveFilters" type="primary" plain @click="clearFilters">清除筛选</el-button>
         <el-button @click="router.push('/')">返回首页</el-button>
       </div>
-    </el-empty>
+    </EmptyState>
 
     <!-- 分页 -->
     <div class="pagination-wrap" v-if="total > pageSize">
@@ -58,6 +58,7 @@ import { useRoute, useRouter } from 'vue-router'
 import { getProductList, getHotKeywords } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
 import ProductGridSkeleton from '@/components/common/ProductGridSkeleton.vue'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

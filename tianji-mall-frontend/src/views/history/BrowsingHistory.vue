@@ -15,11 +15,13 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { ElMessageBox } from 'element-plus'
-import { getBrowsingHistory, clearBrowsingHistory, getProductBatch } from '@/api'
+import { getBrowsingHistory, clearBrowsingHistory } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
+import { useProductBatch } from '@/composables/useProductBatch'
 
 const products = ref([])
 const loading = ref(false)
+const { resolveProducts } = useProductBatch()
 
 onMounted(() => loadData())
 
@@ -29,13 +31,8 @@ async function loadData() {
   try {
     const res = await getBrowsingHistory()
     const hist = res.data || []
-    if (!hist.length) {
-      products.value = []
-      return
-    }
-    const pRes = await getProductBatch(hist.map(h => h.productId))
-    const byId = new Map((pRes.data || []).map(p => [p.id, p]))
-    products.value = hist.map(h => byId.get(h.productId)).filter(Boolean)
+    const items = await resolveProducts(hist)
+    products.value = items.map(i => i.product).filter(Boolean)
   } catch { /* ignore */ }
   finally { loading.value = false }
 }

@@ -79,9 +79,9 @@
       </div>
     </div>
 
-    <el-empty v-else-if="!loading && !items.length" description="没有待结算的商品">
+    <EmptyState v-else-if="!loading && !items.length" description="没有待结算的商品">
       <el-button type="primary" @click="$router.push('/cart')">返回购物车</el-button>
-    </el-empty>
+    </EmptyState>
 
     <!-- 添加地址 Dialog -->
     <el-dialog v-model="showAddAddress" title="添加收货地址" width="500px">
@@ -122,6 +122,7 @@ import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
 import { getFirstImage, imageOnError } from '@/utils/image'
 import { formatDiscount } from '@/utils/discount'
+import EmptyState from '@/components/common/EmptyState.vue'
 
 const route = useRoute()
 const router = useRouter()

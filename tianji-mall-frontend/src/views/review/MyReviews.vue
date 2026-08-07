@@ -20,43 +20,16 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { onMounted } from 'vue'
 import { getMyReviews } from '@/api'
 import { fmtTime } from '@/utils/date'
+import { usePagedList } from '@/composables/usePagedList'
 
-const reviews = ref([])
-const loading = ref(false)
-const loadingMore = ref(false)
-const reviewPage = ref(1)
-const pageSize = 20
-const hasMore = ref(true)
+const { list: reviews, loading, loadingMore, hasMore, loadData, loadMore } = usePagedList(
+  ({ page, size }) => getMyReviews({ page, size })
+)
 
 onMounted(() => loadData())
-
-async function loadData() {
-  loading.value = true
-  reviewPage.value = 1
-  hasMore.value = true
-  try {
-    const res = await getMyReviews({ page: 1, size: pageSize })
-    reviews.value = res.data || []
-    hasMore.value = reviews.value.length >= pageSize
-  } catch { /* ignore */ }
-  finally { loading.value = false }
-}
-
-async function loadMore() {
-  if (loadingMore.value) return
-  loadingMore.value = true
-  try {
-    reviewPage.value++
-    const res = await getMyReviews({ page: reviewPage.value, size: pageSize })
-    const list = res.data || []
-    reviews.value = [...reviews.value, ...list]
-    hasMore.value = list.length >= pageSize
-  } catch { reviewPage.value-- }
-  finally { loadingMore.value = false }
-}
 
 </script>
 

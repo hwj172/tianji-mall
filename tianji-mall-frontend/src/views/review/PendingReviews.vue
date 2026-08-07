@@ -54,14 +54,12 @@ import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getPendingReviews, createReview, uploadImage } from '@/api'
 import { imageOnError } from '@/utils/image'
+import { usePagedList } from '@/composables/usePagedList'
 
-const items = ref([])
-const loading = ref(false)
+const { list: items, loading, loadingMore, hasMore, loadData, loadMore } = usePagedList(
+  ({ page, size }) => getPendingReviews({ page, size })
+)
 const submitting = ref(false)
-const loadingMore = ref(false)
-const reviewPage = ref(1)
-const pageSize = 20
-const hasMore = ref(true)
 const dialogVisible = ref(false)
 const reviewTarget = ref(null)
 const reviewForm = reactive({ rating: 5, content: '' })
@@ -83,31 +81,6 @@ async function handleUpload(options) {
 }
 
 onMounted(() => loadData())
-
-async function loadData() {
-  loading.value = true
-  reviewPage.value = 1
-  hasMore.value = true
-  try {
-    const res = await getPendingReviews({ page: 1, size: pageSize })
-    items.value = res.data || []
-    hasMore.value = items.value.length >= pageSize
-  } catch { /* ignore */ }
-  finally { loading.value = false }
-}
-
-async function loadMore() {
-  if (loadingMore.value) return
-  loadingMore.value = true
-  try {
-    reviewPage.value++
-    const res = await getPendingReviews({ page: reviewPage.value, size: pageSize })
-    const list = res.data || []
-    items.value = [...items.value, ...list]
-    hasMore.value = list.length >= pageSize
-  } catch { reviewPage.value-- }
-  finally { loadingMore.value = false }
-}
 
 function openReview(item) {
   reviewTarget.value = item
