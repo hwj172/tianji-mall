@@ -2,9 +2,19 @@
   <div class="refund-page" v-loading="loading">
     <h2 class="page-title">退款/售后</h2>
 
+    <!-- 状态筛选 -->
+    <div class="refund-tabs">
+      <el-radio-group v-model="filterStatus">
+        <el-radio-button value="">全部</el-radio-button>
+        <el-radio-button value="processing">处理中</el-radio-button>
+        <el-radio-button value="success">已完成</el-radio-button>
+        <el-radio-button value="fail">已失败</el-radio-button>
+      </el-radio-group>
+    </div>
+
     <!-- 退款列表 -->
-    <div class="refund-list" v-if="refunds.length">
-      <div class="refund-card" v-for="r in refunds" :key="r.id" @click="showDetail(r.id)">
+    <div class="refund-list" v-if="filteredRefunds.length">
+      <div class="refund-card" v-for="r in filteredRefunds" :key="r.id" @click="showDetail(r.id)">
         <div class="rc-header">
           <span class="rc-id">退款ID：{{ r.id }}</span>
           <span class="rc-order">关联订单：{{ r.orderId }}</span>
@@ -70,9 +80,11 @@
         <div v-if="detailItems && detailItems.length" style="margin-top: 16px;">
           <h4 style="margin-bottom: 8px;">退款商品</h4>
           <div class="refund-item" v-for="item in detailItems" :key="item.id">
-            <span>商品 #{{ item.productId }}</span>
-            <span v-if="item.skuId">SKU #{{ item.skuId }}</span>
-            <span>x{{ item.quantity }}</span>
+            <el-image v-if="item.product" :src="getFirstImage(item.product.images)" class="ri-img" fit="cover" />
+            <div class="ri-info">
+              <div class="ri-name">{{ item.product?.name || `商品 #${item.productId}` }}</div>
+              <div class="ri-meta">{{ item.skuId ? `SKU #${item.skuId} · ` : '' }}x{{ item.quantity }}</div>
+            </div>
           </div>
         </div>
       </template>
@@ -81,12 +93,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyRefunds, getRefundDetail, receiveRefund } from '@/api'
+import { getMyRefunds, getRefundDetail, receiveRefund, getProductBatch } from '@/api'
 import { useUserStore } from '@/stores/user'
 import { fmtPrice } from '@/utils/format'
 import { fmtTime } from '@/utils/date'
+import { getFirstImage } from '@/utils/image'
 
 const userStore = useUserStore()
 
@@ -99,6 +112,13 @@ const total = ref(0)
 const dialogVisible = ref(false)
 const detailRefund = ref(null)
 const detailItems = ref([])
+
+// 状态 tab 筛选（本地过滤）
+const filterStatus = ref('')
+const filteredRefunds = computed(() => {
+  if (!filterStatus.value) return refunds.value
+  return refunds.value.filter(r => r.status === filterStatus.value)
+})
 
 const statusMap = { processing: '处理中', success: '已完成', fail: '失败' }
 const typeMap = { REFUND_ONLY: '仅退款', RETURN_REFUND: '退货退款' }
@@ -142,6 +162,15 @@ async function showDetail(id) {
     const res = await getRefundDetail(id)
     detailRefund.value = res.data?.refund || null
     detailItems.value = res.data?.items || []
+    // 回填商品名称/图片
+    if (detailItems.value.length) {
+      const ids = [...new Set(detailItems.value.map(i => i.productId))]
+      try {
+        const pb = await getProductBatch(ids)
+        const map = new Map((pb.data || []).map(p => [p.id, p]))
+        detailItems.value = detailItems.value.map(i => ({ ...i, product: map.get(i.productId) }))
+      } catch { /* 回填失败不影响详情 */ }
+    }
     dialogVisible.value = true
   } catch { /* ignore */ }
 }
@@ -161,6 +190,7 @@ async function handleReceive(r) {
 .refund-page { max-width: 900px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
+.refund-tabs { margin-bottom: 16px; }
 .refund-list { display: flex; flex-direction: column; gap: 12px; }
 .refund-card { background: #fff; border-radius: 8px; padding: 16px 20px; cursor: pointer; transition: box-shadow .2s; }
 .refund-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
@@ -176,8 +206,11 @@ async function handleReceive(r) {
 
 .rc-logistics { margin-top: 10px; padding-top: 10px; border-top: 1px solid #f5f5f5; display: flex; align-items: center; gap: 10px; font-size: 13px; color: #666; }
 
-.refund-item { display: flex; gap: 16px; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; color: #333; }
+.refund-item { display: flex; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid #f5f5f5; font-size: 13px; color: #333; }
 .refund-item:last-child { border-bottom: none; }
+.ri-img { width: 48px; height: 48px; border-radius: 6px; flex-shrink: 0; }
+.ri-name { font-size: 13px; color: #333; }
+.ri-meta { font-size: 12px; color: #999; margin-top: 2px; }
 
 .pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }
 </style>
