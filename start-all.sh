@@ -21,7 +21,7 @@ fi
 
 # [2/4] VM 恢复（清残留 -> 中间件 -> redis -> 应用重启，约 2-3 分钟）
 echo "==> [2/4] 恢复 VM 中间件 + 微服务..."
-bash recover-vm.sh
+bash recover-vm.sh || echo "警告: recover-vm.sh 验证未通过（应用可能仍在启动），继续启动前端"
 
 # [3/4] 前端 dev server
 if (echo >/dev/tcp/127.0.0.1/5173) 2>/dev/null; then
@@ -31,10 +31,16 @@ else
   (cd tianji-mall-frontend && npm run dev > /tmp/vite-dev.log 2>&1 &)
 fi
 
-# [4/4] 验证
-echo "==> [4/4] 验证"
-sleep 5
-curl -s -o /dev/null -w "gateway /api/home: HTTP %{http_code}\n" http://localhost:8080/api/home || echo "gateway 未就绪"
+# [4/4] 验证（轮询 gateway 就绪，最多 90 秒）
+echo "==> [4/4] 验证 gateway（轮询，最多 90 秒）"
+code=000
+for i in $(seq 1 18); do
+  code=$(curl -s -o /dev/null -w '%{http_code}' http://localhost:8080/api/home 2>/dev/null || true)
+  [ "$code" = "200" ] && break
+  sleep 5
+done
+echo "gateway /api/home: HTTP ${code}"
+[ "$code" = "200" ] || echo "警告: gateway 未就绪（HTTP ${code}），请稍后手动验证"
 echo ""
 echo "前端:   http://localhost:5173"
 echo "Nacos:  http://192.168.150.11:8848/nacos"

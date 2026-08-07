@@ -36,6 +36,6 @@ echo "==> 等待应用健康检查（40 秒）..."
 sleep 40
 
 echo "==> 验证"
-ssh $SSH_ARGS $VM "cd /root/tianji-mall/docker && docker compose ps --format 'table {{.Name}}\t{{.Status}}' && curl -s -o /dev/null -w '首页 HTTP %{http_code}\n' http://localhost:8080/api/home"
+ssh $SSH_ARGS $VM "cd /root/tianji-mall/docker && docker compose ps --format 'table {{.Name}}\t{{.Status}}' && (curl -s -o /dev/null -w '首页 HTTP %{http_code}\n' http://localhost:8080/api/home || echo '首页 HTTP 000（应用可能仍在启动，由 start-all.sh 轮询兜底）')"
 
 echo "==> 完成"
