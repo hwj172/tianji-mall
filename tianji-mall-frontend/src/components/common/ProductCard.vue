@@ -2,12 +2,13 @@
   <div class="product-card" @click="$router.push(`/product/${product.id}`)">
     <div class="product-image">
       <img :src="firstImage" :alt="product.name" @error="onImageError" />
+      <span v-if="showOriginalPrice && discountPercent != null" class="discount-badge">-{{ discountPercent }}%</span>
     </div>
     <div class="product-info">
       <h4 class="product-name">{{ product.name }}</h4>
       <div class="product-price">
-        <span class="price-current">¥{{ product.price }}</span>
-        <span class="price-original" v-if="showOriginalPrice">¥{{ product.originalPrice }}</span>
+        <span class="price-current">¥{{ priceDisplay }}</span>
+        <span class="price-original" v-if="showOriginalPrice && originalPrice != null">¥{{ originalPriceDisplay }}</span>
       </div>
       <span class="product-sales" v-if="product.sales != null">已售 {{ formatSales(product.sales) }}</span>
     </div>
@@ -30,6 +31,26 @@ const firstImage = computed(() => {
       : props.product.images
     return imgs[0] || ''
   } catch { return '' }
+})
+
+// 价格统一保留两位小数
+const priceDisplay = computed(() => (Number(props.product.price) || 0).toFixed(2))
+
+// 原价字段存在时划线显示 + 折扣角标（列表接口目前不返回该字段，防御式：有才渲染）
+const originalPrice = computed(() => {
+  const v = props.product.originalPrice
+  return v != null ? Number(v) : null
+})
+const originalPriceDisplay = computed(() =>
+  originalPrice.value != null ? originalPrice.value.toFixed(2) : ''
+)
+const discountPercent = computed(() => {
+  const p = Number(props.product.price) || 0
+  const o = originalPrice.value
+  if (o != null && p > 0 && o > p) {
+    return Math.round((1 - p / o) * 100)
+  }
+  return null
 })
 
 function onImageError(e) {
@@ -56,6 +77,7 @@ function formatSales(n) {
   box-shadow: 0 4px 12px rgba(0,0,0,.1);
 }
 .product-image {
+  position: relative;
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
@@ -66,15 +88,33 @@ function formatSales(n) {
   height: 100%;
   object-fit: cover;
 }
+.discount-badge {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #ff5000;
+  color: #fff;
+  font-size: 11px;
+  line-height: 1;
+  font-weight: 600;
+  padding: 4px 6px;
+  border-radius: 4px;
+}
 .product-info {
   padding: 10px 12px;
+  min-height: 100px;
+  display: flex;
+  flex-direction: column;
 }
 .product-name {
   font-size: 13px;
   font-weight: 400;
+  line-height: 1.3;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  min-height: 2.6em;
   margin-bottom: 6px;
 }
 .product-price { display: flex; align-items: baseline; gap: 6px; }

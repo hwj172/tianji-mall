@@ -12,12 +12,11 @@
         <span
           v-for="opt in sortOptions" :key="opt.value"
           class="sort-item"
-          :class="{ active: currentSort === opt.value }"
+          :class="{ active: isSortActive(opt) }"
           @click="changeSort(opt.value)"
         >
           {{ opt.label }}
-          <template v-if="opt.value === 'price_asc'">↑</template>
-          <template v-if="opt.value === 'price_desc'">↓</template>
+          <template v-if="opt.value === 'price' && isSortActive(opt)"><span class="sort-arrow">{{ priceArrow }}</span></template>
         </span>
       </div>
       <div class="filter-price">
@@ -31,9 +30,14 @@
     <!-- 商品网格 -->
     <ProductGridSkeleton v-if="loading" :cols="4" />
     <div class="product-grid cols-4" v-else-if="products.length">
-      <ProductCard v-for="p in products" :key="p.id" :product="p" />
+      <ProductCard v-for="p in products" :key="p.id" :product="p" :show-original-price="true" />
     </div>
-    <el-empty v-if="!loading && !products.length" description="暂无商品" />
+    <el-empty v-if="!loading && !products.length" description="暂无商品">
+      <div class="empty-actions">
+        <el-button v-if="hasActiveFilters" type="primary" plain @click="clearFilters">清除筛选</el-button>
+        <el-button @click="router.push('/')">返回首页</el-button>
+      </div>
+    </el-empty>
 
     <!-- 分页 -->
     <div class="pagination-wrap" v-if="total > pageSize">
@@ -42,14 +46,14 @@
         :page-size="pageSize"
         :total="total"
         layout="total, prev, pager, next"
-        @current-change="loadProducts"
+        @current-change="onPageChange"
       />
     </div>
   </div>
 </template>
 
 <script setup>
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { getProductList, getHotKeywords } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
@@ -60,8 +64,7 @@ const router = useRouter()
 
 const sortOptions = [
   { label: '综合', value: '' },
-  { label: '价格', value: 'price_asc' },
-  { label: '价格', value: 'price_desc' },
+  { label: '价格', value: 'price' },
   { label: '销量', value: 'sales' },
   { label: '新品', value: 'created' }
 ]
@@ -72,20 +75,47 @@ const loading = ref(false)
 const currentPage = ref(1)
 const total = ref(0)
 const pageSize = 20
-// 从 URL ?sort= 初始化（首页"查看更多 →"带 sort=sales）
-const currentSort = ref(route.query.sort ? String(route.query.sort) : '')
+
+// URL query 是筛选参数的单一数据源，以下 ref 仅作 query 的镜像（供 UI 展示/输入框回显）
+const currentSort = ref('')
 const priceFrom = ref('')
 const priceTo = ref('')
+
+// 价格 tab 激活时显示当前方向箭头（price_asc↑ / price_desc↓），非激活无箭头
+const isSortActive = (opt) => {
+  if (opt.value === 'price') {
+    return currentSort.value === 'price_asc' || currentSort.value === 'price_desc'
+  }
+  return currentSort.value === opt.value
+}
+const priceArrow = computed(() => (currentSort.value === 'price_asc' ? '↑' : '↓'))
+
+// 有激活的筛选条件时显示「清除筛选」
+const hasActiveFilters = computed(() =>
+  Boolean(route.query.keyword || route.query.minPrice || route.query.maxPrice || route.query.sort)
+)
+
+// 从 URL query 同步 ref（currentSort 保持从 query 初始化的逻辑）
+function syncFromQuery() {
+  currentSort.value = route.query.sort ? String(route.query.sort) : ''
+  priceFrom.value = route.query.minPrice ? String(route.query.minPrice) : ''
+  priceTo.value = route.query.maxPrice ? String(route.query.maxPrice) : ''
+  currentPage.value = route.query.page ? parseInt(route.query.page, 10) : 1
+}
+syncFromQuery()
 
 onMounted(() => {
   loadProducts()
   loadHotKeywords()
 })
 
-// 监听路由 query 变化重新加载
+// 筛选/排序/分页统一写回 URL（router.replace，不新增历史记录），由 watch 驱动加载
 watch(() => route.query, () => {
-  currentPage.value = 1
-  loadProducts()
+  syncFromQuery()
+  loadProducts().then(() => {
+    // 仅交互触发的加载（非首屏）滚动回顶
+    window.scrollTo({ top: 0, behavior: 'smooth' })
+  })
 })
 
 async function loadProducts() {
@@ -110,6 +140,7 @@ async function loadHotKeywords() {
   } catch { /* hot keywords are optional */ }
 }
 
+// 只从 route.query 读取筛选参数（单一数据源）
 function buildParams() {
   const params = {
     page: currentPage.value,
@@ -117,21 +148,43 @@ function buildParams() {
   }
   if (route.query.keyword) params.keyword = route.query.keyword
   if (route.query.categoryId) params.categoryId = route.query.categoryId
-  if (priceFrom.value) params.minPrice = priceFrom.value
-  if (priceTo.value) params.maxPrice = priceTo.value
-  if (currentSort.value) params.sortBy = currentSort.value
+  if (route.query.minPrice) params.minPrice = route.query.minPrice
+  if (route.query.maxPrice) params.maxPrice = route.query.maxPrice
+  if (route.query.sort) params.sortBy = route.query.sort
   return params
 }
 
+// 写回 URL：空值删 key，不新增历史记录
+function updateQuery(patch) {
+  const query = { ...route.query }
+  for (const [key, value] of Object.entries(patch)) {
+    if (value === '' || value == null) {
+      delete query[key]
+    } else {
+      query[key] = value
+    }
+  }
+  router.replace({ query })
+}
+
 function changeSort(value) {
-  currentSort.value = value
-  currentPage.value = 1
-  loadProducts()
+  // 价格 tab：在升序/降序间翻转
+  if (value === 'price') {
+    value = currentSort.value === 'price_asc' ? 'price_desc' : 'price_asc'
+  }
+  updateQuery({ sort: value, page: 1 })
 }
 
 function applyPrice() {
-  currentPage.value = 1
-  loadProducts()
+  updateQuery({ minPrice: priceFrom.value.trim(), maxPrice: priceTo.value.trim(), page: 1 })
+}
+
+function onPageChange(page) {
+  updateQuery({ page })
+}
+
+function clearFilters() {
+  updateQuery({ sort: '', minPrice: '', maxPrice: '', keyword: '', page: 1 })
 }
 
 function search(keyword) {
@@ -149,10 +202,12 @@ function search(keyword) {
 .filter-sorts { display: flex; gap: 4px; }
 .sort-item { padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }
 .sort-item:hover, .sort-item.active { background: #fff5f0; color: #ff5000; font-weight: 600; }
+.sort-arrow { margin-left: 2px; }
 .filter-price { display: flex; align-items: center; gap: 6px; }
 .price-input { width: 90px; }
 .price-sep { color: #999; font-size: 12px; }
 .product-grid { display: grid; gap: 16px; }
 .product-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 24px; padding-bottom: 40px; }
+.empty-actions { margin-top: 12px; }
 </style>
