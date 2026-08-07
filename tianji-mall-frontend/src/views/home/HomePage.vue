@@ -21,7 +21,7 @@
       <div class="hero-sidebar">
         <div class="hero-user">
           <div class="user-avatar">👤</div>
-          <div class="user-hi">{{ userStore.isLoggedIn ? `Hi, ${userStore.userInfo?.username}` : 'Hi, 欢迎光临' }}</div>
+          <div class="user-hi">{{ userStore.isLoggedIn ? `Hi, ${userStore.userInfo?.username || '用户'}` : 'Hi, 欢迎光临' }}</div>
           <el-button v-if="!userStore.isLoggedIn" class="user-login-btn" size="small" round @click="$router.push('/login')">登录 / 注册</el-button>
           <div class="user-tags">
             <template v-if="userStore.isLoggedIn">
@@ -29,7 +29,7 @@
               <span @click="$router.push('/coupon/center')">领券中心</span>
             </template>
             <template v-else>
-              <span>新人福利</span>
+              <span @click="$router.push('/coupon/center')">新人福利</span>
               <span @click="$router.push('/coupon/center')">领券中心</span>
             </template>
           </div>
