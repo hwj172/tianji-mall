@@ -26,7 +26,14 @@ function onImageError(e) {
 
 <style scoped>
 .home-banner { border-radius: 8px; overflow: hidden; }
-.banner-link { display: block; height: 300px; }
+.banner-link { position: relative; display: block; height: 300px; }
+.banner-link::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: 0; height: 60px;
+  background: linear-gradient(180deg, transparent, rgba(0, 0, 0, .25));
+  pointer-events: none;
+}
 .banner-link img { width: 100%; height: 100%; object-fit: cover; }
 .placeholder {
   height: 300px;
@@ -36,4 +43,15 @@ function onImageError(e) {
 .placeholder-content { text-align: center; color: #fff; }
 .placeholder-content h3 { font-size: 32px; margin-bottom: 8px; }
 .placeholder-content p { font-size: 14px; opacity: .9; }
+
+/* 轮播指示器：普通态小圆点，active 态拉长圆角条 */
+.home-banner :deep(.el-carousel__indicators--horizontal) { bottom: 14px; }
+.home-banner :deep(.el-carousel__indicator) { padding: 0 3px; }
+.home-banner :deep(.el-carousel__indicator .el-carousel__button) {
+  width: 7px; height: 7px; border-radius: 50%; background: #fff; opacity: .6;
+  transition: width .2s;
+}
+.home-banner :deep(.el-carousel__indicator.is-active .el-carousel__button) {
+  width: 18px; border-radius: 4px; opacity: 1;
+}
 </style>
