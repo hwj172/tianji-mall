@@ -1,7 +1,7 @@
 <template>
   <el-container class="admin-layout">
     <el-aside width="220px" class="aside">
-      <div class="aside-header"><router-link to="/" style="color:#ff5000">← 回商城</router-link></div>
+      <div class="aside-header"><router-link to="/">← 回商城</router-link></div>
       <el-menu :default-active="route.path" router :ellipsis="false">
         <el-menu-item index="/admin"><el-icon><DataAnalysis /></el-icon> 数据看板</el-menu-item>
         <el-menu-item index="/admin/categories"><el-icon><Grid /></el-icon> 分类管理</el-menu-item>
@@ -36,6 +36,13 @@ const route = useRoute()
 .admin-layout { min-height: 100vh; }
 .aside { background: #304156; }
 .aside-header { padding: 16px; font-size: 14px; }
+.aside-header a { color: #fff; }
+.aside-header a:hover { color: #ff7a3d; }
+/* 深色侧栏：el-menu 默认白底 → 透明 + 浅灰文字 + 橙色高亮 */
+.aside :deep(.el-menu) { background: transparent; border-right: none; }
+.aside :deep(.el-menu-item) { color: #bfcbd9; }
+.aside :deep(.el-menu-item:hover) { background: rgba(255,255,255,.08); color: #fff; }
+.aside :deep(.el-menu-item.is-active) { background: #ff5000; color: #fff; }
 .topbar { background: #fff; display: flex; align-items: center; padding: 0 20px; font-size: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
 .content { background: #f0f2f5; min-height: calc(100vh - 60px); padding: 20px; }
 </style>

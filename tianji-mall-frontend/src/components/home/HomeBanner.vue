@@ -17,10 +17,12 @@
 </template>
 
 <script setup>
+import { imageOnError } from '@/utils/image'
+
 defineProps({ banners: { type: Array, default: () => [] } })
 
 function onImageError(e) {
-  e.target.style.display = 'none'
+  imageOnError(e, 300)
 }
 </script>
 

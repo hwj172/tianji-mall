@@ -47,25 +47,41 @@ export function checkCartItem(data) {
 
 // 商品批量查询（模块级 Map 缓存：session 内同一批商品只拉一次，跨页面复用）
 const productBatchCache = new Map()
+// 未返回（null）缓存带短 TTL：商品重新上架后可重新拉取，避免整个 session 永久视为失效
+const NULL_CACHE_TTL = 30 * 1000
 
 export async function getProductBatch(ids) {
   const list = Array.isArray(ids) ? ids : []
   const misses = []
+  const now = Date.now()
   for (const id of list) {
     if (id == null) continue
-    if (!productBatchCache.has(id)) misses.push(id)
+    const cached = productBatchCache.get(id)
+    if (cached === undefined) {
+      misses.push(id)
+    } else if (cached === null && now - (productBatchCache.get(`ts:${id}`) || 0) > NULL_CACHE_TTL) {
+      misses.push(id)
+    }
   }
   if (misses.length) {
     const res = await request.post('/product/batch', misses)
+    const found = new Set()
     if (res.data && Array.isArray(res.data)) {
-      res.data.forEach(p => { if (p && p.id != null) productBatchCache.set(p.id, p) })
+      res.data.forEach(p => { if (p && p.id != null) { productBatchCache.set(p.id, p); found.add(p.id) } })
     }
-    // 未返回的商品（已下架/删除）标记为不存在，避免每次重复请求
-    misses.forEach(id => { if (!productBatchCache.has(id)) productBatchCache.set(id, null) })
+    misses.forEach(id => {
+      if (!found.has(id)) {
+        productBatchCache.set(id, null)
+        productBatchCache.set(`ts:${id}`, now)
+      }
+    })
     return res
   }
   // 全部命中缓存，无需请求
-  const data = list.map(id => productBatchCache.get(id)).filter(Boolean)
+  const data = list.map(id => {
+    const v = productBatchCache.get(id)
+    return v === null ? null : v
+  }).filter(Boolean)
   return { code: 200, data }
 }
 
@@ -397,6 +413,10 @@ export function shipRefund(id, data) {
 
 export function receiveRefund(id) {
   return request.put(`/refund/${id}/receive`)
+}
+
+export function getSellerPendingRefunds() {
+  return request.get('/refund/seller-pending')
 }
 
 // ========== 消息通知 ==========

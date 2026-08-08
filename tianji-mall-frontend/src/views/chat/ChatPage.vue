@@ -86,7 +86,7 @@
 import { ref, nextTick, onMounted } from 'vue'
 import { Promotion } from '@element-plus/icons-vue'
 import ProductCard from '@/components/common/ProductCard.vue'
-import { sendChatMessage, getChatHistory, getChatSessions, getHotKeywords, uploadImage, imageSearch } from '@/api'
+import { sendChatMessage, getChatHistory, getChatSessions, getHotKeywords, imageSearch } from '@/api'
 import { fmtTime } from '@/utils/date'
 
 const messages = ref([])
@@ -113,8 +113,10 @@ onMounted(async () => {
   if (saved) {
     try {
       const parsed = JSON.parse(saved)
-      if (parsed && typeof parsed.sessionId === 'string') saved = parsed.sessionId
-    } catch { /* 纯字符串，直接使用 */ }
+      // 兼容三种旧格式：纯字符串 / JSON 字符串（带引号）/ 旧对象 {sessionId, messages}
+      if (typeof parsed === 'string') saved = parsed
+      else if (parsed && typeof parsed.sessionId === 'string') saved = parsed.sessionId
+    } catch { /* 非 JSON，纯字符串直接使用 */ }
     sessionId.value = saved
     await loadHistory(saved)
   }
@@ -200,18 +202,16 @@ function sendQuick(hint) {
   sendMessage()
 }
 
-// 传图搜商品：上传图片 → 后端 VL-Embedding 相似度搜索 → 展示相似商品
+// 传图搜商品：图片压缩转 base64 data URL → 后端 VL-Embedding 相似度搜索 → 展示相似商品
+// 注：不依赖上传接口返回的相对路径（/uploads/xxx，SiliconFlow 无法访问），直接传 data URL
 async function handleFile(e) {
   const file = e.target.files && e.target.files[0]
   if (!file || sending.value) return
   messages.value.push({ role: 'user', content: '🔍 图片搜索：' + (file.name || '图片') })
   sending.value = true
   try {
-    const fd = new FormData()
-    fd.append('file', file)
-    const up = await uploadImage(fd)
-    const url = Array.isArray(up.data) ? up.data[0] : up.data
-    const res = await imageSearch({ imageUrl: url })
+    const dataUrl = await fileToBase64(file)
+    const res = await imageSearch({ imageUrl: dataUrl })
     messages.value.push({
       role: 'assistant',
       content: '根据图片找到以下相似商品：',
@@ -225,6 +225,34 @@ async function handleFile(e) {
     await nextTick()
     scrollBottom()
   }
+}
+
+// 图片 → 压缩后 base64 data URL（限宽 600px、JPEG 0.85，控制体积避免请求超限）
+function fileToBase64(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file)
+    const img = new Image()
+    img.onload = () => {
+      try {
+        const MAX = 600
+        let w = img.naturalWidth || MAX
+        let h = img.naturalHeight || MAX
+        const ratio = Math.min(MAX / w, MAX / h)
+        if (ratio < 1) { w = Math.round(w * ratio); h = Math.round(h * ratio) }
+        const canvas = document.createElement('canvas')
+        canvas.width = w
+        canvas.height = h
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h)
+        resolve(canvas.toDataURL('image/jpeg', 0.85))
+      } catch (err) {
+        reject(err)
+      } finally {
+        URL.revokeObjectURL(url)
+      }
+    }
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('图片解析失败')) }
+    img.src = url
+  })
 }
 
 function scrollBottom() {

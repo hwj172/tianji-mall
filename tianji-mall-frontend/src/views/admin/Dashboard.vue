@@ -114,8 +114,8 @@ function statusPercent(count) {
 }
 
 function statusColor(s) {
-  const m = { 1: '#e6a23c', 2: '#409eff', 3: '#909399', 4: '#67c23a', 5: '#f56c6c' }
-  return m[s] || '#409eff'
+  const m = { 1: '#e6a23c', 2: '#ff7a3d', 3: '#909399', 4: '#67c23a', 5: '#f56c6c' }
+  return m[s] || '#ff7a3d'
 }
 </script>
 

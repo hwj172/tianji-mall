@@ -56,6 +56,7 @@ const routes = [
       { path: 'products', name: 'sellerProducts', component: () => import('@/views/seller/ProductManage.vue'), meta: { title: '商品管理' } },
       { path: 'orders', name: 'sellerOrders', component: () => import('@/views/seller/OrderManage.vue'), meta: { title: '订单管理' } },
       { path: 'reviews', name: 'sellerReviews', component: () => import('@/views/seller/SellerReviewManage.vue'), meta: { title: '商品评价' } },
+      { path: 'refunds', name: 'sellerRefunds', component: () => import('@/views/seller/SellerRefundManage.vue'), meta: { title: '退款处理' } },
     ]
   },
   { path: '/login', name: 'login', component: () => import('@/views/auth/LoginPage.vue'), meta: { title: '登录' } },

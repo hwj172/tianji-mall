@@ -134,7 +134,7 @@ function formatSales(n) {
   font-weight: 600;
 }
 .product-price { display: flex; align-items: baseline; gap: 6px; }
-.price-current { color: #ff5000; font-size: 18px; font-weight: 700; }
+.price-current { color: var(--el-color-primary); font-size: 18px; font-weight: 700; }
 .price-original { color: #999; font-size: 12px; text-decoration: line-through; }
-.product-sales { font-size: 11px; color: #999; margin-top: 4px; display: block; }
+.product-sales { font-size: 11px; color: #999; margin-top: auto; padding-top: 4px; display: block; }
 </style>

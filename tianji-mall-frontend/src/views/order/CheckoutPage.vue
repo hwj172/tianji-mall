@@ -266,6 +266,11 @@ async function loadBuyItem() {
     if (!p) { items.value = []; return }
     let price = p.price
     let specs = ''
+    // 秒杀窗口内以秒杀价展示（与服务端 createOrder 扣款口径一致）
+    const now = Date.now()
+    if (p.seckillPrice != null && now >= parseTs(p.seckillStartTime) && now <= parseTs(p.seckillEndTime)) {
+      price = p.seckillPrice
+    }
     if (skuId && res.data.skuMatrix) {
       // skuMatrix value 结构为 {skuId, price, stock}（buildSpecSelectorData）
       const found = Object.entries(res.data.skuMatrix).find(([, s]) => s.skuId === skuId)
@@ -296,6 +301,16 @@ async function loadAddresses() {
   } catch { /* handled by interceptor */ }
 }
 
+// 兼容 LocalDateTime 数组与 ISO 字符串，返回时间戳（秒杀窗口判断用）
+function parseTs(t) {
+  if (!t) return 0
+  if (Array.isArray(t)) {
+    const [y, m, d, h = 0, mi = 0, s = 0] = t
+    return new Date(y, (m || 1) - 1, d || 1, h, mi, s).getTime()
+  }
+  return new Date(t).getTime()
+}
+
 async function loadItems() {
   try {
     const res = await getCartList()
@@ -307,8 +322,12 @@ async function loadItems() {
     const productMap = {}
     if (pRes.data) pRes.data.forEach(p => { productMap[p.id] = p })
 
-    items.value = cartItems.map(ci => {
-      const product = productMap[ci.productId] || {}
+    const validItems = cartItems.filter(ci => productMap[ci.productId])
+    if (validItems.length < cartItems.length) {
+      ElMessage.warning(`有 ${cartItems.length - validItems.length} 件商品已失效，已移除结算`)
+    }
+    items.value = validItems.map(ci => {
+      const product = productMap[ci.productId]
       return {
         cart: ci,
         product,

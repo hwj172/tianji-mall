@@ -83,6 +83,11 @@ const tabs = [
 function switchTab(key) {
   activeTab.value = key
   currentPage.value = 1
+  // 状态写回 URL：刷新/分享后保持当前 Tab
+  const query = { ...route.query }
+  if (key === 'all') delete query.status
+  else query.status = key
+  router.replace({ query })
   loadOrders()
 }
 

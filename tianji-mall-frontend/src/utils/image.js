@@ -11,6 +11,6 @@ export function getFirstImage(images) {
 
 // 图片加载失败换 SVG 占位 data-URI（size 控制占位图边长）
 export function imageOnError(e, size = 200) {
-  const n = Math.max(10, Math.round(size / 25))
+  const n = Math.max(14, Math.round(size / 10))
   e.target.src = `data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${size} ${size}"><rect fill="%23f5f5f5" width="${size}" height="${size}"/><text x="50%" y="50%" text-anchor="middle" dy=".3em" fill="%23ccc" font-size="${n}">暂无图片</text></svg>`
 }

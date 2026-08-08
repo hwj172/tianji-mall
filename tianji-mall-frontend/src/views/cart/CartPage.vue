@@ -5,7 +5,7 @@
     <!-- 购物车列表 -->
     <div class="cart-main" v-if="cartItems.length">
       <div class="cart-header">
-        <el-checkbox v-model="selectAll" @change="onSelectAll" :indeterminate="isIndeterminate">全选</el-checkbox>
+        <span class="cart-header-hint">已选 <b>{{ checkedCount }}</b> 件商品</span>
       </div>
 
       <div class="cart-list">
@@ -106,7 +106,8 @@ async function loadCart() {
       const image = getFirstImage(product.images)
       // 优先 CartItemDTO.price（SKU 商品为 SKU 价，无 SKU 为商品价）
       const price = ci.price ?? product.price ?? 0
-      return { cart: ci, product, image, price, specs: ci.skuSpecs || '', checked: ci.checked === 1, invalid }
+      // 失效商品强制不勾选，避免计入合计 / 进入结算
+      return { cart: ci, product, image, price, specs: ci.skuSpecs || '', checked: ci.checked === 1 && !invalid, invalid }
     })
     updateSelectAllState()
   } catch (e) {
@@ -124,13 +125,15 @@ function updateSelectAllState() {
 }
 
 async function onSelectAll(val) {
-  cartItems.value.forEach(i => { i.checked = val })
+  // 只勾选有效商品（失效项 disabled 无法手动取消，全选不得包含）
+  cartItems.value.forEach(i => { if (!i.invalid) i.checked = val })
   isIndeterminate.value = false
   // 批量更新后端（并行请求）
-  await Promise.all(cartItems.value.map(item =>
+  await Promise.all(cartItems.value.filter(i => !i.invalid).map(item =>
     checkCartItem({ cartItemId: item.cart.id, checked: val ? 1 : 0 }).catch(() => {})
   ))
   cartStore.setList(cartItems.value.map(i => i.cart))
+  updateSelectAllState()
 }
 
 async function onItemCheck(item) {
@@ -186,7 +189,8 @@ function goCheckout() {
 .cart-page { max-width: 1200px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 .cart-main { background: #fff; border-radius: 8px; overflow: hidden; }
-.cart-header { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; }
+.cart-header { padding: 12px 16px; border-bottom: 1px solid #f0f0f0; font-size: 13px; color: #666; }
+.cart-header-hint b { color: #ff5000; }
 .cart-list { padding: 0 16px; }
 .cart-item { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid #f5f5f5; }
 .item-check { flex-shrink: 0; }
@@ -210,4 +214,12 @@ function goCheckout() {
 .total-label b { color: #ff5000; }
 .total-price { font-size: 22px; font-weight: 700; color: #ff5000; }
 .checkout-btn { background: #ff5000; border-color: #ff5000; padding: 12px 40px; font-size: 16px; }
+
+/* 响应式：窄屏购物车行换行、隐藏次要列 */
+@media (max-width: 768px) {
+  .cart-item { flex-wrap: wrap; }
+  .item-price, .item-subtotal { width: auto; }
+  .item-subtotal { display: none; }
+  .item-info { flex: 1 1 100%; order: 2; }
+}
 </style>

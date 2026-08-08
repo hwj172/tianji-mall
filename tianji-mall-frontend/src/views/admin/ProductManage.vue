@@ -61,8 +61,18 @@
             <el-radio :value="0">下架</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item label="图片URL">
-          <el-input v-model="form.images" placeholder="JSON数组，如 [&quot;http://...&quot;]" />
+        <el-form-item label="商品图片">
+          <div class="img-list">
+            <div v-for="(img, i) in imageList" :key="i" class="img-item">
+              <img :src="img" alt="商品图" />
+              <el-icon class="img-del" @click="removeImage(i)"><Close /></el-icon>
+            </div>
+            <div class="img-add" @click="imgInput.click()">
+              <el-icon><Plus /></el-icon>
+              <span>上传</span>
+            </div>
+          </div>
+          <input ref="imgInput" type="file" accept="image/*" style="display:none" @change="handleImgUpload" />
         </el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
       </el-form>
@@ -77,7 +87,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories } from '@/api'
+import { getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, uploadImage } from '@/api'
 
 const products = ref([])
 const total = ref(0)
@@ -91,6 +101,36 @@ const filterCategoryId = ref(null)
 const dialogVisible = ref(false)
 const editingId = ref(null)
 const form = reactive({ name: '', categoryId: null, price: 0, stock: 0, status: 1, images: '', description: '' })
+const imageList = ref([])
+const imgInput = ref(null)
+
+// images 字段存 JSON 数组字符串；imageList 为图片 URL 数组（UI 用），互相同步
+function syncImages() {
+  form.images = JSON.stringify(imageList.value)
+}
+
+function parseImages(str) {
+  if (!str) return []
+  try { const arr = JSON.parse(str); return Array.isArray(arr) ? arr : [] } catch { return [] }
+}
+
+function removeImage(i) {
+  imageList.value.splice(i, 1)
+  syncImages()
+}
+
+async function handleImgUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = ''
+  const fd = new FormData()
+  fd.append('files', file)
+  try {
+    const res = await uploadImage(fd)
+    const url = Array.isArray(res.data) ? res.data[0] : res.data
+    if (url) { imageList.value.push(url); syncImages() }
+  } catch { /* interceptor 统一处理 */ }
+}
 
 onMounted(async () => {
   await loadCategories()
@@ -135,12 +175,14 @@ function openDialog(row) {
     form.price = row.price || 0
     form.stock = row.stock || 0
     form.status = row.status
-    form.images = typeof row.images === 'string' ? row.images : JSON.stringify(row.images || [])
+    imageList.value = parseImages(row.images)
     form.description = row.description || ''
   } else {
     editingId.value = null
-    Object.assign(form, { name: '', categoryId: null, price: 0, stock: 0, status: 1, images: '', description: '' })
+    Object.assign(form, { name: '', categoryId: null, price: 0, stock: 0, status: 1, description: '' })
+    imageList.value = []
   }
+  syncImages()
   dialogVisible.value = true
 }
 
@@ -187,4 +229,10 @@ async function handleDelete(row) {
 .ap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .ap-filter { margin-bottom: 12px; }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 16px; }
+.img-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-item { position: relative; width: 64px; height: 64px; border-radius: 4px; overflow: hidden; border: 1px solid #f0f0f0; }
+.img-item img { width: 100%; height: 100%; object-fit: cover; }
+.img-del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; padding: 2px; cursor: pointer; }
+.img-add { width: 64px; height: 64px; border: 1px dashed #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #999; cursor: pointer; font-size: 12px; }
+.img-add:hover { border-color: #ff5000; color: #ff5000; }
 </style>

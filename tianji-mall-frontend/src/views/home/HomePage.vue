@@ -234,4 +234,11 @@ onMounted(async () => {
 .product-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
 .rec-card { position: relative; }
 .rec-reason { position: absolute; top: 4px; left: 4px; z-index: 2; font-size: 11px; color: #ff5000; background: rgba(255,255,255,.92); border: 1px solid #ffd8c8; border-radius: 10px; padding: 1px 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* 响应式：窄屏首屏折叠为单列 */
+@media (max-width: 900px) {
+  .home-hero { flex-direction: column; }
+  .category-sidebar, .hero-sidebar { width: 100%; }
+  .product-grid.cols-5, .product-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
 </style>

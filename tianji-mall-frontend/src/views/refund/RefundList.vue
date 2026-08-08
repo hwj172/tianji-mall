@@ -13,8 +13,8 @@
     </div>
 
     <!-- 退款列表 -->
-    <div class="refund-list" v-if="filteredRefunds.length">
-      <div class="refund-card" v-for="r in filteredRefunds" :key="r.id" @click="showDetail(r.id)">
+    <div class="refund-list" v-if="refunds.length">
+      <div class="refund-card" v-for="r in refunds" :key="r.id" @click="showDetail(r.id)">
         <div class="rc-header">
           <span class="rc-id">退款ID：{{ r.id }}</span>
           <span class="rc-order">关联订单：{{ r.orderId }}</span>
@@ -25,11 +25,11 @@
         <div class="rc-body">
           <div class="rc-amount">¥{{ fmtPrice(r.amount) }}</div>
           <div class="rc-actions" @click.stop>
-            <!-- 退货退款 + 已寄回 + 卖家/管理员：确认收货 -->
+            <!-- 买家：退货退款未寄回 → 填退货物流 -->
             <el-button
-              v-if="userStore.isSeller && r.refundType === 'RETURN_REFUND' && r.returnStatus === 'SHIPPED' && r.status === 'processing'"
-              size="small" type="success" @click="handleReceive(r)"
-            >确认收货</el-button>
+              v-if="r.refundType === 'RETURN_REFUND' && r.status === 'processing' && r.returnStatus !== 'SHIPPED'"
+              size="small" type="primary" @click="openShipDialog(r)"
+            >填写退货物流</el-button>
           </div>
         </div>
         <!-- 退货物流信息 -->
@@ -89,19 +89,28 @@
         </div>
       </template>
     </el-dialog>
+
+    <!-- 填写退货物流对话框 -->
+    <el-dialog v-model="shipVisible" title="填写退货物流" width="420px">
+      <el-form :model="shipForm" label-width="80px">
+        <el-form-item label="快递公司"><el-input v-model="shipForm.trackingCompany" placeholder="如：顺丰速运" /></el-form-item>
+        <el-form-item label="快递单号"><el-input v-model="shipForm.trackingNumber" placeholder="快递单号" /></el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="shipVisible = false">取消</el-button>
+        <el-button type="primary" @click="submitShip" :loading="shipping">提交</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
-import { getMyRefunds, getRefundDetail, receiveRefund, getProductBatch } from '@/api'
-import { useUserStore } from '@/stores/user'
+import { ref, watch, onMounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import { getMyRefunds, getRefundDetail, shipRefund, getProductBatch } from '@/api'
 import { fmtPrice } from '@/utils/format'
 import { fmtTime } from '@/utils/date'
 import { getFirstImage } from '@/utils/image'
-
-const userStore = useUserStore()
 
 const refunds = ref([])
 const loading = ref(false)
@@ -113,12 +122,36 @@ const dialogVisible = ref(false)
 const detailRefund = ref(null)
 const detailItems = ref([])
 
-// 状态 tab 筛选（本地过滤）
+// 状态 tab 筛选（服务端分页过滤）
 const filterStatus = ref('')
-const filteredRefunds = computed(() => {
-  if (!filterStatus.value) return refunds.value
-  return refunds.value.filter(r => r.status === filterStatus.value)
+watch(filterStatus, () => {
+  currentPage.value = 1
+  loadData()
 })
+
+// 填写退货物流
+const shipVisible = ref(false)
+const shipping = ref(false)
+const shipRefundId = ref(null)
+const shipForm = ref({ trackingCompany: '', trackingNumber: '' })
+
+function openShipDialog(r) {
+  shipRefundId.value = r.id
+  shipForm.value = { trackingCompany: r.trackingCompany || '', trackingNumber: r.trackingNumber || '' }
+  shipVisible.value = true
+}
+
+async function submitShip() {
+  if (!shipForm.value.trackingNumber.trim()) { ElMessage.warning('请填写快递单号'); return }
+  shipping.value = true
+  try {
+    await shipRefund(shipRefundId.value, shipForm.value)
+    ElMessage.success('物流信息已提交，等待卖家确认收货')
+    shipVisible.value = false
+    await loadData()
+  } catch { /* handle by interceptor */ }
+  finally { shipping.value = false }
+}
 
 const statusMap = { processing: '处理中', success: '已完成', fail: '失败' }
 const typeMap = { REFUND_ONLY: '仅退款', RETURN_REFUND: '退货退款' }
@@ -145,7 +178,7 @@ onMounted(() => loadData())
 async function loadData() {
   loading.value = true
   try {
-    const res = await getMyRefunds({ page: currentPage.value, size: pageSize.value })
+    const res = await getMyRefunds({ page: currentPage.value, size: pageSize.value, status: filterStatus.value || undefined })
     if (res.data) {
       refunds.value = res.data.records || res.data || []
       total.value = res.data.total || 0
@@ -173,15 +206,6 @@ async function showDetail(id) {
     }
     dialogVisible.value = true
   } catch { /* ignore */ }
-}
-
-async function handleReceive(r) {
-  try { await ElMessageBox.confirm('确认已收到退货商品？', '提示', { type: 'warning' }) } catch { return }
-  try {
-    await receiveRefund(r.id)
-    ElMessage.success('已确认收货，退款处理中')
-    await loadData()
-  } catch { /* handle by interceptor */ }
 }
 
 </script>

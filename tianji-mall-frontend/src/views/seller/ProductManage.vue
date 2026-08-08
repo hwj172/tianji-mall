@@ -50,9 +50,26 @@
     <el-dialog v-model="dialogVisible" :title="editingId ? '编辑商品' : '新增商品'" width="500px">
       <el-form :model="form" label-width="80px">
         <el-form-item label="名称"><el-input v-model="form.name" placeholder="商品名称" /></el-form-item>
+        <el-form-item label="分类">
+          <el-select v-model="form.categoryId" placeholder="选择商品分类（必填）" clearable style="width: 100%">
+            <el-option v-for="c in categoryOptions" :key="c.id" :label="c.name" :value="c.id" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="价格"><el-input-number v-model="form.price" :min="0" :precision="2" /></el-form-item>
         <el-form-item label="库存"><el-input-number v-model="form.stock" :min="0" /></el-form-item>
-        <el-form-item label="图片URL"><el-input v-model="form.images" placeholder="JSON数组" /></el-form-item>
+        <el-form-item label="商品图片">
+          <div class="img-list">
+            <div v-for="(img, i) in imageList" :key="i" class="img-item">
+              <img :src="img" alt="商品图" />
+              <el-icon class="img-del" @click="removeImage(i)"><Close /></el-icon>
+            </div>
+            <div class="img-add" @click="imgInput.click()">
+              <el-icon><Plus /></el-icon>
+              <span>上传</span>
+            </div>
+          </div>
+          <input ref="imgInput" type="file" accept="image/*" style="display:none" @change="handleImgUpload" />
+        </el-form-item>
         <el-form-item label="描述"><el-input v-model="form.description" type="textarea" :rows="3" /></el-form-item>
       </el-form>
       <template #footer>
@@ -66,7 +83,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getSellerProducts, createSellerProduct, updateSellerProduct, deleteSellerProduct } from '@/api'
+import { getSellerProducts, createSellerProduct, updateSellerProduct, deleteSellerProduct, uploadImage, getHomeData } from '@/api'
 import { fmtPrice } from '@/utils/format'
 
 const products = ref([])
@@ -89,7 +106,54 @@ function switchStatus(v) {
 
 const dialogVisible = ref(false)
 const editingId = ref(null)
-const form = reactive({ name: '', price: 0, stock: 0, images: '', description: '' })
+const form = reactive({ name: '', categoryId: null, price: 0, stock: 0, status: 1, images: '', description: '' })
+const imageList = ref([])
+const imgInput = ref(null)
+const categoryOptions = ref([])
+
+// 分类下拉：公开首页接口返回分类树，扁平化为平铺选项
+function flattenCategories(tree, list = []) {
+  tree.forEach(c => {
+    list.push({ id: c.id, name: c.name })
+    if (c.children?.length) flattenCategories(c.children, list)
+  })
+  return list
+}
+
+onMounted(async () => {
+  try {
+    const res = await getHomeData()
+    categoryOptions.value = flattenCategories(res.data?.categories || [])
+  } catch { /* 分类加载失败不影响主流程 */ }
+})
+
+// images 字段存 JSON 数组字符串；imageList 为图片 URL 数组（UI 用），互相同步
+function syncImages() {
+  form.images = JSON.stringify(imageList.value)
+}
+
+function parseImages(str) {
+  if (!str) return []
+  try { const arr = JSON.parse(str); return Array.isArray(arr) ? arr : [] } catch { return [] }
+}
+
+function removeImage(i) {
+  imageList.value.splice(i, 1)
+  syncImages()
+}
+
+async function handleImgUpload(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = ''
+  const fd = new FormData()
+  fd.append('files', file)
+  try {
+    const res = await uploadImage(fd)
+    const url = Array.isArray(res.data) ? res.data[0] : res.data
+    if (url) { imageList.value.push(url); syncImages() }
+  } catch { /* interceptor 统一处理 */ }
+}
 
 onMounted(() => loadData())
 
@@ -109,14 +173,19 @@ function openDialog(row) {
   if (row) {
     editingId.value = row.id
     form.name = row.name || ''
+    form.categoryId = row.categoryId ?? null
     form.price = row.price || 0
     form.stock = row.stock || 0
-    form.images = typeof row.images === 'string' ? row.images : JSON.stringify(row.images || [])
+    // 编辑保留原上下架状态（updateProduct 用 NOT_NULL 策略，传原 status 避免误上架/误下架）
+    form.status = row.status ?? 1
+    imageList.value = parseImages(row.images)
     form.description = row.description || ''
   } else {
     editingId.value = null
-    Object.assign(form, { name: '', price: 0, stock: 0, images: '', description: '' })
+    Object.assign(form, { name: '', categoryId: null, price: 0, stock: 0, status: 1, description: '' })
+    imageList.value = []
   }
+  syncImages()
   dialogVisible.value = true
 }
 
@@ -124,8 +193,16 @@ async function handleSave() {
   if (!form.name) { ElMessage.warning('请输入商品名称'); return }
   saving.value = true
   try {
-    // Server expects Product entity directly
-    const data = { name: form.name, price: form.price, stock: form.stock, images: form.images, description: form.description, status: 1 }
+    // Server expects Product entity directly（编辑保留原上下架状态；新建默认上架）
+    const data = {
+      name: form.name,
+      categoryId: form.categoryId,
+      price: form.price,
+      stock: form.stock,
+      images: form.images,
+      description: form.description,
+      status: editingId.value ? form.status : 1
+    }
     if (editingId.value) {
       await updateSellerProduct(editingId.value, data)
       ElMessage.success('已更新')
@@ -165,4 +242,10 @@ async function handleRestore(row) {
 .sp-tabs .tab-item { padding: 6px 16px; font-size: 13px; cursor: pointer; border-radius: 4px; color: #666; }
 .sp-tabs .tab-item:hover, .sp-tabs .tab-item.active { background: #fff7f0; color: #ff5000; font-weight: 600; }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 16px; }
+.img-list { display: flex; flex-wrap: wrap; gap: 8px; }
+.img-item { position: relative; width: 64px; height: 64px; border-radius: 4px; overflow: hidden; border: 1px solid #f0f0f0; }
+.img-item img { width: 100%; height: 100%; object-fit: cover; }
+.img-del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; padding: 2px; cursor: pointer; }
+.img-add { width: 64px; height: 64px; border: 1px dashed #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #999; cursor: pointer; font-size: 12px; }
+.img-add:hover { border-color: #ff5000; color: #ff5000; }
 </style>

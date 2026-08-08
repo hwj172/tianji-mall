@@ -35,7 +35,7 @@
       <h3 class="section-title">快捷入口</h3>
       <div class="ql-group" v-for="g in quickGroups" :key="g.title">
         <div class="ql-group-title">{{ g.title }}</div>
-        <div class="quick-links" :class="g.items.length === 2 ? 'cols-2' : (g.items.length === 5 ? 'cols-5' : 'cols-4')">
+        <div class="quick-links" :class="gridClass(g.items.length)">
           <div
             v-for="item in g.items"
             :key="item.label"
@@ -75,7 +75,13 @@
     <el-dialog v-model="registerShopVisible" title="注册开店" width="460px">
       <el-form ref="shopFormRef" :model="shopForm" :rules="shopRules" label-width="70px">
         <el-form-item label="店铺名" prop="name"><el-input v-model="shopForm.name" maxlength="32" placeholder="给店铺起个名字" /></el-form-item>
-        <el-form-item label="Logo" prop="logo"><el-input v-model="shopForm.logo" placeholder="Logo 图片 URL（可选）" /></el-form-item>
+        <el-form-item label="Logo" prop="logo">
+          <div class="shop-logo-upload">
+            <el-avatar v-if="shopForm.logo" :src="shopForm.logo" :size="48" shape="square" />
+            <el-button size="small" @click="shopLogoInput.click()">{{ shopForm.logo ? '更换' : '上传' }}</el-button>
+          </div>
+          <input ref="shopLogoInput" type="file" accept="image/*" style="display:none" @change="handleShopLogoChange" />
+        </el-form-item>
         <el-form-item label="简介" prop="description"><el-input v-model="shopForm.description" type="textarea" :rows="2" placeholder="店铺简介（可选）" /></el-form-item>
       </el-form>
       <template #footer>
@@ -94,11 +100,19 @@ import {
   CreditCard, Box, Van, Stamp,
   ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close, Shop, Medal
 } from '@element-plus/icons-vue'
-import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar, registerShop } from '@/api'
+import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar, uploadImage, registerShop } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
 const userStore = useUserStore()
+
+// 快捷入口网格列数：2/4 固定列，3 的倍数（6/9）用 3 列避免末行大块留白
+function gridClass(n) {
+  if (n === 2) return 'cols-2'
+  if (n === 4) return 'cols-4'
+  if (n % 3 === 0) return 'cols-3'
+  return 'cols-4'
+}
 
 const user = ref({})
 const unreadCount = ref(0)
@@ -199,8 +213,23 @@ const registerShopVisible = ref(false)
 const registeringShop = ref(false)
 const shopFormRef = ref(null)
 const shopForm = ref({ name: '', logo: '', description: '' })
+const shopLogoInput = ref(null)
 const shopRules = {
   name: [{ required: true, message: '请输入店铺名', trigger: 'blur' }]
+}
+
+// 开店 Logo 文件上传 → 回填 shopForm.logo（唤起文件夹，不再手动输 URL）
+async function handleShopLogoChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = ''
+  const fd = new FormData()
+  fd.append('files', file)
+  try {
+    const res = await uploadImage(fd)
+    const url = Array.isArray(res.data) ? res.data[0] : res.data
+    if (url) shopForm.value.logo = url
+  } catch { /* interceptor 统一处理 */ }
 }
 
 function openRegisterShop() {
@@ -327,6 +356,7 @@ async function saveProfile() {
 .avatar-upload { position: relative; cursor: pointer; border-radius: 50%; overflow: hidden; flex-shrink: 0; }
 .avatar-mask { position: absolute; inset: 0; background: rgba(0,0,0,.45); color: #fff; font-size: 12px; display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity .2s; }
 .avatar-upload:hover .avatar-mask { opacity: 1; }
+.shop-logo-upload { display: flex; align-items: center; gap: 12px; }
 
 /* 通用区块 */
 .section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
@@ -347,9 +377,10 @@ async function saveProfile() {
 .ql-group-title { font-size: 13px; color: #999; margin: 14px 0 8px; }
 .ql-group:first-child .ql-group-title { margin-top: 0; }
 .quick-links { display: grid; gap: 12px; }
+.quick-links.cols-2 { grid-template-columns: repeat(2, 1fr); }
+.quick-links.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .quick-links.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .quick-links.cols-5 { grid-template-columns: repeat(5, 1fr); }
-.quick-links.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .ql-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 8px; cursor: pointer; transition: all .2s; position: relative; color: #333; }
 .ql-item:hover { background: #fff7f0; color: #ff5000; }
 .ql-item span { font-size: 13px; }

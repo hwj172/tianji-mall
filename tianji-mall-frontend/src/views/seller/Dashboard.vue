@@ -32,7 +32,13 @@
     <el-dialog v-model="editVisible" title="编辑店铺信息" width="460px">
       <el-form :model="editForm" label-width="80px">
         <el-form-item label="店铺名称"><el-input v-model="editForm.name" placeholder="店铺名称" /></el-form-item>
-        <el-form-item label="Logo URL"><el-input v-model="editForm.logo" placeholder="Logo 图片地址" /></el-form-item>
+        <el-form-item label="店铺 Logo">
+          <div class="logo-upload">
+            <el-avatar v-if="editForm.logo" :src="editForm.logo" :size="48" shape="square" />
+            <el-button size="small" @click="logoInput.click()">{{ editForm.logo ? '更换' : '上传' }}</el-button>
+          </div>
+          <input ref="logoInput" type="file" accept="image/*" style="display:none" @change="handleLogoChange" />
+        </el-form-item>
         <el-form-item label="描述"><el-input v-model="editForm.description" type="textarea" :rows="3" placeholder="店铺描述" /></el-form-item>
         <el-form-item label="公告"><el-input v-model="editForm.notice" type="textarea" :rows="2" maxlength="200" show-word-limit placeholder="店铺公告（展示在店铺主页顶部）" /></el-form-item>
       </el-form>
@@ -48,7 +54,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { Shop } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
-import { getSellerDashboard, getSellerShop, updateSellerShop } from '@/api'
+import { getSellerDashboard, getSellerShop, updateSellerShop, uploadImage } from '@/api'
 
 const shop = ref(null)
 const dashboard = reactive({ productCount: 0 })
@@ -57,6 +63,21 @@ const saving = ref(false)
 
 const editVisible = ref(false)
 const editForm = reactive({ name: '', logo: '', description: '', notice: '' })
+const logoInput = ref(null)
+
+// 上传 Logo → 回填 editForm.logo（文件选择唤起文件夹，不再手动输 URL）
+async function handleLogoChange(e) {
+  const file = e.target.files?.[0]
+  if (!file) return
+  e.target.value = ''
+  const fd = new FormData()
+  fd.append('files', file)
+  try {
+    const res = await uploadImage(fd)
+    const url = Array.isArray(res.data) ? res.data[0] : res.data
+    if (url) editForm.logo = url
+  } catch { /* interceptor 统一处理 */ }
+}
 
 onMounted(async () => {
   loading.value = true
@@ -110,4 +131,5 @@ async function handleUpdateShop() {
 .stat-card { background: #fff; border-radius: 8px; padding: 24px; text-align: center; }
 .stat-label { font-size: 14px; color: #999; margin-bottom: 8px; }
 .stat-value { font-size: 28px; font-weight: 700; color: #333; }
+.logo-upload { display: flex; align-items: center; gap: 12px; }
 </style>

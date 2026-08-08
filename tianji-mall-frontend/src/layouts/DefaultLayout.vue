@@ -27,12 +27,12 @@
           </el-autocomplete>
         </div>
         <div class="header-actions">
-          <router-link to="/" title="返回首页"><el-button text>🏠</el-button></router-link>
+          <router-link to="/" title="返回首页"><el-button text><el-icon><HomeFilled /></el-icon></el-button></router-link>
           <template v-if="userStore.isLoggedIn">
-            <router-link v-if="userStore.isSeller" to="/seller"><el-button text>🏪 商家中心</el-button></router-link>
-            <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text>🛒 购物车</el-button></el-badge></router-link>
-            <router-link to="/notification/list"><el-badge :value="unreadCount" :hidden="!unreadCount"><el-button text>🔔</el-button></el-badge></router-link>
-            <router-link to="/chat"><el-button text>🤖 AI导购</el-button></router-link>
+            <router-link v-if="userStore.isSeller" to="/seller"><el-button text><el-icon><Shop /></el-icon> 商家中心</el-button></router-link>
+            <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text><el-icon><ShoppingCart /></el-icon> 购物车</el-button></el-badge></router-link>
+            <router-link to="/notification/list"><el-badge :value="unreadCount" :hidden="!unreadCount"><el-button text><el-icon><Bell /></el-icon></el-button></el-badge></router-link>
+            <router-link to="/chat"><el-button text><el-icon><ChatDotRound /></el-icon> AI导购</el-button></router-link>
             <el-dropdown>
               <span class="user-name">{{ userStore.userInfo?.username }}</span>
               <template #dropdown>
@@ -144,6 +144,7 @@ function search() {
 .search-bar { flex: 1; max-width: 540px; }
 .search-input { width: 100%; }
 .search-input :deep(.el-input__wrapper) { border-radius: 20px 0 0 20px; border: 2px solid #ff5000; box-shadow: none; }
+.search-input :deep(.el-input__wrapper.is-focus) { border-color: #ff7a3d; box-shadow: 0 0 0 2px rgba(255, 122, 61, .2) inset; }
 .search-btn { background: #ff5000; border-color: #ff5000; border-radius: 0 20px 20px 0; }
 .suggest-item { display: flex; align-items: center; gap: 8px; width: 100%; }
 .suggest-icon { font-size: 12px; }

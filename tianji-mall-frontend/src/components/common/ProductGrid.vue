@@ -29,6 +29,6 @@ defineProps({
 </script>
 
 <style scoped>
-.product-grid { display: grid; gap: 12px; }
+.product-grid { display: grid; gap: 16px; }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }
 </style>

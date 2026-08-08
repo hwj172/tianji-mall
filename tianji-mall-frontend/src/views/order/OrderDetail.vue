@@ -214,6 +214,7 @@ async function handleRefund() {
   refunding.value = true
   try {
     const items = (detail.items || []).map(i => ({
+      orderItemId: i.id,
       productId: i.productId,
       skuId: i.skuId,
       quantity: i.quantity
@@ -252,7 +253,7 @@ async function confirmReceive() {
 /* 状态横幅 */
 .status-bar { display: flex; align-items: center; gap: 16px; background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 12px; border-left: 4px solid #eee; }
 .status-1 { border-color: #e6a23c; }
-.status-2, .status-3 { border-color: #409eff; }
+.status-2, .status-3 { border-color: #ff7a3d; }
 .status-4 { border-color: #67c23a; }
 .status-5 { border-color: #999; }
 .status-icon { font-size: 40px; }

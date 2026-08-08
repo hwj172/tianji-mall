@@ -67,7 +67,7 @@
         <div class="action-row">
           <el-button size="large" @click="addToCart" :disabled="!canBuy">加入购物车</el-button>
           <el-button size="large" type="primary" @click="buyNow" :disabled="!canBuy">立即购买</el-button>
-          <el-button size="large" @click="toggleFav" :type="isFavorite ? 'warning' : 'default'">
+          <el-button size="large" @click="toggleFav" :type="isFavorite ? 'primary' : 'default'">
             <el-icon><StarFilled v-if="isFavorite" /><Star v-else /></el-icon>
             {{ isFavorite ? '已收藏' : '收藏' }}
           </el-button>
@@ -234,8 +234,8 @@ const isSeckill = computed(() => {
   const p = product.value
   if (!p?.seckillPrice) return false
   const now = Date.now()
-  const start = p.seckillStartTime ? new Date(p.seckillStartTime).getTime() : 0
-  const end = p.seckillEndTime ? new Date(p.seckillEndTime).getTime() : 0
+  const start = parseDate(p.seckillStartTime)
+  const end = parseDate(p.seckillEndTime)
   return now >= start && now <= end && p.seckillStock > 0
 })
 
@@ -484,6 +484,7 @@ function onThumbError(e) {
 
 <style scoped>
 .product-detail-page { max-width: 1200px; margin: 0 auto; }
+.detail-loading-wrap { min-height: 400px; }
 .detail-main { display: flex; gap: 24px; background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
 
 .detail-gallery { width: 400px; flex-shrink: 0; }

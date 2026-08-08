@@ -116,9 +116,9 @@ function clearHistory() {
   historyList.value = []
 }
 
-// 有激活的筛选条件时显示「清除筛选」
+// 有激活的筛选条件时显示「清除筛选」（含分类筛选）
 const hasActiveFilters = computed(() =>
-  Boolean(route.query.keyword || route.query.minPrice || route.query.maxPrice || route.query.sort)
+  Boolean(route.query.keyword || route.query.minPrice || route.query.maxPrice || route.query.sort || route.query.categoryId)
 )
 
 // 从 URL query 同步 ref（currentSort 保持从 query 初始化的逻辑）
@@ -138,6 +138,8 @@ onMounted(() => {
 // 筛选/排序/分页统一写回 URL（router.replace，不新增历史记录），由 watch 驱动加载
 watch(() => route.query, () => {
   syncFromQuery()
+  // 顶栏搜索后同页复用组件时刷新搜索历史（组件不重新 mount）
+  historyList.value = getSearchHistory()
   loadProducts().then(() => {
     // 仅交互触发的加载（非首屏）滚动回顶
     window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -221,7 +223,7 @@ function onPageChange(page) {
 }
 
 function clearFilters() {
-  updateQuery({ sort: '', minPrice: '', maxPrice: '', keyword: '', page: 1 })
+  updateQuery({ sort: '', minPrice: '', maxPrice: '', keyword: '', categoryId: '', page: 1 })
 }
 
 function search(keyword) {
@@ -250,4 +252,11 @@ function search(keyword) {
 .product-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 24px; padding-bottom: 40px; }
 .empty-actions { margin-top: 12px; }
+
+/* 响应式：窄屏筛选栏竖排 */
+@media (max-width: 768px) {
+  .filter-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .filter-price { justify-content: flex-start; flex-wrap: wrap; }
+  .product-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+}
 </style>
