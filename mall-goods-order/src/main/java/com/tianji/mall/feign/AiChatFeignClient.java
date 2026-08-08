@@ -12,4 +12,12 @@ public interface AiChatFeignClient {
 
     @PostMapping("/api/vector/upsert")
     void upsertProductVector(@RequestBody Map<String, Object> body);
+
+    /** 商品图片向量回填 */
+    @PostMapping("/api/vector/image-upsert")
+    void upsertProductImage(@RequestBody Map<String, Object> body);
+
+    /** 以图搜图：返回相似商品 ID 列表 */
+    @PostMapping("/api/vector/image-search")
+    Map<String, Object> imageSearch(@RequestBody Map<String, Object> body);
 }

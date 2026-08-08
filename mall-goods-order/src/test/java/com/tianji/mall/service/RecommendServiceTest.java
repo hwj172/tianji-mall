@@ -12,6 +12,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.math.BigDecimal;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
@@ -58,7 +59,8 @@ class RecommendServiceTest {
 
         assertThat(resp.getHotSales()).hasSize(2);
         assertThat(resp.getHotSales().get(0).getId()).isEqualTo(1L);
-        assertThat(resp.getGuessYouLike()).isEmpty();
+        // 未登录也有冷启动混合推荐（热销兜底）
+        assertThat(resp.getGuessYouLike()).isNotEmpty();
         assertThat(resp.getBuyAfterBuy()).isEmpty();
     }
 
@@ -106,10 +108,6 @@ class RecommendServiceTest {
 
     @Test
     void shouldReturnBuyAfterBuyWithReasons() {
-        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(p1, p2, p3));
-        when(favoriteMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-        when(reviewMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
-
         Order order = buildOrder(1L, 1L);
         OrderItem item = buildOrderItem(1L, 1L);
         when(orderMapper.selectList(any(LambdaQueryWrapper.class)))
@@ -125,10 +123,11 @@ class RecommendServiceTest {
         when(productMapper.selectById(1L)).thenReturn(p1);
         when(productMapper.selectById(2L)).thenReturn(p2);
 
-        RecommendResponse resp = recommendService.recommend(1L, 5);
+        // 直接测 getBuyAfterBuy（recommend 会因跨块去重排除热销中商品，此处验证独立逻辑与 reason）
+        List<RecommendResponse.RecommendItem> list = recommendService.getBuyAfterBuy(1L, 5, Set.of());
 
-        assertThat(resp.getBuyAfterBuy()).isNotEmpty();
-        assertThat(resp.getBuyAfterBuy().get(0).getReason()).contains("iPhone");
+        assertThat(list).isNotEmpty();
+        assertThat(list.get(0).getReason()).contains("iPhone");
     }
 
     // ==================== 测试 5：无商品时返回空 ====================

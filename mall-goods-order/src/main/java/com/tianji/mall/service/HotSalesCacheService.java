@@ -13,7 +13,10 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 
+import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 /**
@@ -36,16 +39,18 @@ public class HotSalesCacheService {
     public List<RecommendResponse.RecommendItem> computeHotSales() {
         List<Product> products = productMapper.selectList(
                 new LambdaQueryWrapper<Product>().eq(Product::getStatus, 1));
+        // 加权评分：销量×0.5 + 收藏×0.3 + 评价×0.2，按真实加权分排序（此前误用 sales 排序）
+        Map<Long, Double> scores = new HashMap<>();
+        for (Product p : products) {
+            scores.put(p.getId(), p.getSales() * 0.5
+                    + countFavorites(p.getId()) * 0.3
+                    + countReviews(p.getId()) * 0.2);
+        }
         return products.stream()
-                .map(p -> {
-                    double score = p.getSales() * 0.5
-                            + countFavorites(p.getId()) * 0.3
-                            + countReviews(p.getId()) * 0.2;
-                    return new RecommendResponse.RecommendItem(
-                            p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "", p.getImages());
-                })
-                .sorted((a, b) -> Long.compare(b.getSales(), a.getSales()))
+                .sorted(Comparator.comparingDouble((Product p) -> scores.getOrDefault(p.getId(), 0d)).reversed())
                 .limit(TOP_N)
+                .map(p -> new RecommendResponse.RecommendItem(
+                        p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "", p.getImages()))
                 .collect(Collectors.toList());
     }
 

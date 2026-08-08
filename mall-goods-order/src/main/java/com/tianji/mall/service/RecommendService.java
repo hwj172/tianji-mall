@@ -49,11 +49,17 @@ public class RecommendService {
     public RecommendResponse recommend(Long userId, int count) {
         int n = count > 0 ? count : DEFAULT_COUNT;
         List<RecommendResponse.RecommendItem> hotSales = getHotSales(n);
+        Set<Long> hotIds = hotSales.stream().map(RecommendResponse.RecommendItem::getId).collect(Collectors.toSet());
 
+        // 猜你喜欢排除热销已出现商品（跨块去重）；未登录也返回冷启动混合推荐
         List<RecommendResponse.RecommendItem> guessYouLike = userId != null
-                ? getGuessYouLike(userId, n) : List.of();
+                ? getGuessYouLike(userId, n, hotIds) : getColdStartMix(n, hotIds);
+        Set<Long> guessIds = guessYouLike.stream().map(RecommendResponse.RecommendItem::getId).collect(Collectors.toSet());
 
-        List<RecommendResponse.RecommendItem> buyAfterBuy = getBuyAfterBuy(userId, n);
+        // 买了还买排除前两块已出现商品
+        Set<Long> excludeIds = new HashSet<>(hotIds);
+        excludeIds.addAll(guessIds);
+        List<RecommendResponse.RecommendItem> buyAfterBuy = getBuyAfterBuy(userId, n, excludeIds);
 
         return new RecommendResponse(guessYouLike, hotSales, buyAfterBuy);
     }
@@ -68,21 +74,43 @@ public class RecommendService {
 
     // ==================== 猜你喜欢 ====================
 
-    public List<RecommendResponse.RecommendItem> getGuessYouLike(Long userId, int count) {
+    public List<RecommendResponse.RecommendItem> getGuessYouLike(Long userId, int count, Set<Long> excludeIds) {
         List<Long> purchasedIds = getPurchasedProductIds(userId);
         if (purchasedIds.isEmpty()) {
-            return getHotSales(count);
+            // 冷启动兜底：热销 + 新品混合，而非空（排除已推荐商品，避免与热销块重复）
+            return getColdStartMix(count, excludeIds);
         }
 
         Map<Long, Long> categoryWeight = new HashMap<>();
-        for (Product p : productMapper.selectBatchIds(purchasedIds)) {
+        List<Product> purchasedProducts = productMapper.selectBatchIds(purchasedIds);
+        for (Product p : purchasedProducts) {
             if (p.getCategoryId() != null) {
                 categoryWeight.merge(p.getCategoryId(), 1L, Long::sum);
             }
         }
 
+        // 推荐理由：偏好度最高的品类中用户买过的一个商品
+        String reason = "";
+        if (!categoryWeight.isEmpty()) {
+            Long topCategory = categoryWeight.entrySet().stream()
+                    .max(Map.Entry.comparingByValue()).map(Map.Entry::getKey).orElse(null);
+            if (topCategory != null) {
+                Product bought = purchasedProducts.stream()
+                        .filter(p -> topCategory.equals(p.getCategoryId())).findFirst().orElse(null);
+                if (bought != null) {
+                    reason = "因为您购买过「" + bought.getName() + "」";
+                }
+            }
+        }
+
         List<RecommendResponse.RecommendItem> result = new ArrayList<>();
         List<Long> excluded = new ArrayList<>(purchasedIds);
+        if (excludeIds != null) {
+            excluded.addAll(excludeIds);
+        }
+
+        // lambda 引用需 effectively final
+        final String finalReason = reason;
 
         categoryWeight.entrySet().stream()
                 .sorted(Map.Entry.<Long, Long>comparingByValue().reversed())
@@ -99,7 +127,7 @@ public class RecommendService {
                                     java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
                             .limit(count - result.size()).toList()) {
                         result.add(new RecommendResponse.RecommendItem(
-                                p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "", p.getImages()));
+                                p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), finalReason, p.getImages()));
                         excluded.add(p.getId());
                     }
                 });
@@ -107,9 +135,42 @@ public class RecommendService {
         return result;
     }
 
+    /** 冷启动兜底：热销（排除已推荐）+ 新品混合 */
+    private List<RecommendResponse.RecommendItem> getColdStartMix(int count, Set<Long> excludeIds) {
+        List<RecommendResponse.RecommendItem> result = new ArrayList<>();
+        Set<Long> seen = new HashSet<>(excludeIds != null ? excludeIds : Set.of());
+        for (RecommendResponse.RecommendItem item : getHotSales(count)) {
+            if (result.size() >= count) break;
+            if (seen.add(item.getId())) {
+                result.add(item);
+            }
+        }
+        if (result.size() < count) {
+            // 新品取热销之外的（排除已选，避免同页重复）
+            List<Product> newProducts = productMapper.selectList(
+                    new LambdaQueryWrapper<Product>()
+                            .eq(Product::getStatus, 1)
+                            .notIn(!seen.isEmpty(), Product::getId, seen)
+                            .orderByDesc(Product::getCreateTime)
+                            .last("LIMIT " + count));
+            for (Product p : newProducts) {
+                if (result.size() >= count) break;
+                if (seen.add(p.getId())) {
+                    result.add(new RecommendResponse.RecommendItem(
+                            p.getId(), p.getName(), p.getPrice(), (long) p.getSales(), "新品上市", p.getImages()));
+                }
+            }
+        }
+        // 兜底：冷启动且排除后仍为空（如商品全在热销），返回热销完整列表
+        if (result.isEmpty()) {
+            result.addAll(getHotSales(count));
+        }
+        return result;
+    }
+
     // ==================== 买了还买 ====================
 
-    public List<RecommendResponse.RecommendItem> getBuyAfterBuy(Long userId, int count) {
+    public List<RecommendResponse.RecommendItem> getBuyAfterBuy(Long userId, int count, Set<Long> excludeIds) {
         List<Long> seedIds;
         if (userId != null) {
             seedIds = getPurchasedProductIds(userId);
@@ -120,7 +181,7 @@ public class RecommendService {
             seedIds = getHotSales(10).stream().map(RecommendResponse.RecommendItem::getId).collect(Collectors.toList());
         }
 
-        Set<Long> seen = new HashSet<>();
+        Set<Long> seen = new HashSet<>(excludeIds != null ? excludeIds : Set.of());
         List<RecommendResponse.RecommendItem> result = new ArrayList<>();
 
         for (Long seedId : seedIds) {

@@ -73,13 +73,19 @@
         <template v-if="personalRecommend.length">
           <div class="section-header"><h3>💝 猜你喜欢</h3></div>
           <div class="product-grid cols-5">
-            <ProductCard v-for="p in personalRecommend" :key="p.id" :product="p" />
+            <div v-for="p in personalRecommend" :key="p.id" class="rec-card">
+              <div class="rec-reason" v-if="p.reason">{{ p.reason }}</div>
+              <ProductCard :product="p" />
+            </div>
           </div>
         </template>
         <template v-if="personalAlsoBuy.length">
           <div class="section-header" style="margin-top: 24px"><h3>🛒 买了还买</h3></div>
           <div class="product-grid cols-5">
-            <ProductCard v-for="p in personalAlsoBuy" :key="p.id" :product="p" />
+            <div v-for="p in personalAlsoBuy" :key="p.id" class="rec-card">
+              <div class="rec-reason" v-if="p.reason">{{ p.reason }}</div>
+              <ProductCard :product="p" />
+            </div>
           </div>
         </template>
       </template>
@@ -226,4 +232,6 @@ onMounted(async () => {
 .product-grid { display: grid; gap: 16px; }
 .product-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .product-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+.rec-card { position: relative; }
+.rec-reason { position: absolute; top: 4px; left: 4px; z-index: 2; font-size: 11px; color: #ff5000; background: rgba(255,255,255,.92); border: 1px solid #ffd8c8; border-radius: 10px; padding: 1px 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 </style>

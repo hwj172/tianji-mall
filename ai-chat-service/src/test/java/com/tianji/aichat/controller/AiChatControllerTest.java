@@ -1,6 +1,7 @@
 package com.tianji.aichat.controller;
 
 import com.tianji.aichat.dto.ChatResponse;
+import com.tianji.aichat.dto.ConversationDTO;
 import com.tianji.aichat.entity.AiConversation;
 import com.tianji.aichat.service.AiChatService;
 import com.tianji.common.util.JwtUtil;
@@ -16,6 +17,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
@@ -89,23 +91,21 @@ class AiChatControllerTest {
 
     @Test
     void shouldGetChatHistory() throws Exception {
-        AiConversation conv1 = new AiConversation();
+        ConversationDTO conv1 = new ConversationDTO();
         conv1.setId(1L);
-        conv1.setUserId(1L);
         conv1.setSessionId("session-123");
         conv1.setRole("user");
         conv1.setContent("推荐手机");
         conv1.setCreateTime(LocalDateTime.now());
 
-        AiConversation conv2 = new AiConversation();
+        ConversationDTO conv2 = new ConversationDTO();
         conv2.setId(2L);
-        conv2.setUserId(1L);
         conv2.setSessionId("session-123");
         conv2.setRole("assistant");
         conv2.setContent("为您找到以下手机...");
         conv2.setCreateTime(LocalDateTime.now().plusMinutes(1));
 
-        when(aiChatService.getHistory(1L, "session-123")).thenReturn(List.of(conv1, conv2));
+        when(aiChatService.getHistoryWithProducts(1L, "session-123")).thenReturn(List.of(conv1, conv2));
 
         mockMvc.perform(get("/api/chat/history/session-123")
                         .header("Authorization", "Bearer test-token"))
@@ -117,7 +117,7 @@ class AiChatControllerTest {
 
     @Test
     void shouldReturnEmptyHistoryForNewSession() throws Exception {
-        when(aiChatService.getHistory(1L, "new-session")).thenReturn(List.of());
+        when(aiChatService.getHistoryWithProducts(1L, "new-session")).thenReturn(List.of());
 
         mockMvc.perform(get("/api/chat/history/new-session")
                         .header("Authorization", "Bearer test-token"))
@@ -125,5 +125,17 @@ class AiChatControllerTest {
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data").isEmpty());
+    }
+
+    @Test
+    void shouldGetSessions() throws Exception {
+        when(aiChatService.getSessions(1L)).thenReturn(List.of(
+                Map.of("sessionId", "s1", "title", "推荐手机", "messageCount", 2)));
+
+        mockMvc.perform(get("/api/chat/sessions")
+                        .header("Authorization", "Bearer test-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data[0].sessionId").value("s1"));
     }
 }

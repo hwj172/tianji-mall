@@ -3,6 +3,7 @@ package com.tianji.aichat.service;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.tianji.aichat.dto.ChatResponse;
+import com.tianji.aichat.dto.ConversationDTO;
 import com.tianji.aichat.dto.ProductDTO;
 import com.tianji.aichat.entity.AiConversation;
 import com.tianji.aichat.feign.McpFeignClient;
@@ -83,28 +84,107 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
         // 4. 构建 messages（system prompt 含 RAG 上下文 + 历史 + 当前消息）
         List<Map<String, Object>> messages = buildMessages(history, ragProducts);
 
-        // 5. 调用 DeepSeek（含工具调用循环，工具命中的商品追加到 products）
-        String reply = callDeepSeekWithTools(messages, userId, products);
+        // 5. 调用 DeepSeek（含工具调用循环，工具命中的商品追加到 products；记录工具执行过程）
+        List<Map<String, Object>> toolExecutions = new ArrayList<>();
+        String reply = callDeepSeekWithTools(messages, userId, products, toolExecutions);
 
-        // 6. 保存 assistant 回复
+        // 6. 保存 assistant 回复（携带本轮关联商品 ID，供历史回显商品卡片）
+        List<Map<String, Object>> finalProducts = dedupeProducts(products);
         AiConversation assistantMsg = new AiConversation();
         assistantMsg.setUserId(userId);
         assistantMsg.setSessionId(sessionId);
         assistantMsg.setRole("assistant");
         assistantMsg.setContent(reply);
+        if (!finalProducts.isEmpty()) {
+            assistantMsg.setProductIds(finalProducts.stream()
+                    .map(p -> String.valueOf(p.get("id"))).collect(Collectors.joining(",")));
+        }
         save(assistantMsg);
 
-        return new ChatResponse(sessionId, reply, dedupeProducts(products));
+        return new ChatResponse(sessionId, reply, finalProducts, toolExecutions);
     }
 
     /**
-     * 查询对话历史
+     * 查询对话历史（assistant 消息附带商品卡片）
      */
-    public List<AiConversation> getHistory(Long userId, String sessionId) {
+    public List<ConversationDTO> getHistoryWithProducts(Long userId, String sessionId) {
         return list(new LambdaQueryWrapper<AiConversation>()
                 .eq(AiConversation::getUserId, userId)
                 .eq(AiConversation::getSessionId, sessionId)
-                .orderByAsc(AiConversation::getCreateTime));
+                .orderByAsc(AiConversation::getCreateTime))
+                .stream().map(this::toConversationDTO).toList();
+    }
+
+    /**
+     * 会话列表：按 sessionId 分组，返回每个会话的首条消息摘要 + 最新消息时间 + 消息数
+     */
+    public List<Map<String, Object>> getSessions(Long userId) {
+        List<AiConversation> all = list(new LambdaQueryWrapper<AiConversation>()
+                .eq(AiConversation::getUserId, userId)
+                .orderByDesc(AiConversation::getCreateTime));
+        // 按 sessionId 分组（保持最近使用在前）
+        Map<String, List<AiConversation>> bySession = new LinkedHashMap<>();
+        for (AiConversation c : all) {
+            bySession.computeIfAbsent(c.getSessionId(), k -> new ArrayList<>()).add(c);
+        }
+        List<Map<String, Object>> sessions = new ArrayList<>();
+        for (Map.Entry<String, List<AiConversation>> entry : bySession.entrySet()) {
+            List<AiConversation> list = entry.getValue();
+            AiConversation first = list.get(list.size() - 1); // 最早一条
+            AiConversation latest = list.get(0);              // 最新一条
+            Map<String, Object> s = new LinkedHashMap<>();
+            s.put("sessionId", entry.getKey());
+            s.put("title", first.getContent() != null
+                    ? first.getContent().replaceAll("\\s+", " ").trim()
+                    : "新会话");
+            if (s.get("title") != null && ((String) s.get("title")).length() > 20) {
+                s.put("title", ((String) s.get("title")).substring(0, 20) + "…");
+            }
+            s.put("lastTime", latest.getCreateTime());
+            s.put("messageCount", list.size());
+            sessions.add(s);
+        }
+        return sessions;
+    }
+
+    private ConversationDTO toConversationDTO(AiConversation conv) {
+        ConversationDTO dto = new ConversationDTO();
+        dto.setId(conv.getId());
+        dto.setSessionId(conv.getSessionId());
+        dto.setRole(conv.getRole());
+        dto.setContent(conv.getContent());
+        dto.setProductIds(conv.getProductIds());
+        dto.setCreateTime(conv.getCreateTime());
+        // assistant 消息且有关联商品时，批量回填商品卡片
+        if (conv.getProductIds() != null && !conv.getProductIds().isBlank()) {
+            List<Long> ids = Arrays.stream(conv.getProductIds().split(","))
+                    .map(String::trim).filter(s -> !s.isEmpty())
+                    .map(Long::valueOf).toList();
+            dto.setProducts(fetchProductsByIds(ids));
+        }
+        return dto;
+    }
+
+    /**
+     * 批量查询商品（Feign，best-effort 失败返回空）
+     */
+    private List<Map<String, Object>> fetchProductsByIds(List<Long> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> result = productFeignClient.getProductBatch(ids);
+            Object data = result != null ? result.get("data") : null;
+            if (data == null) {
+                return List.of();
+            }
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> list = (List<Map<String, Object>>) data;
+            return list;
+        } catch (Exception e) {
+            log.warn("批量查询商品失败: {}", e.getMessage());
+            return List.of();
+        }
     }
 
     // ===== 私有方法 =====
@@ -188,7 +268,8 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
      * 调用 DeepSeek API，自动处理工具调用循环
      */
     private String callDeepSeekWithTools(List<Map<String, Object>> messages, Long userId,
-                                         List<Map<String, Object>> products) {
+                                         List<Map<String, Object>> products,
+                                         List<Map<String, Object>> toolExecutions) {
         List<Map<String, Object>> conversation = new ArrayList<>(messages);
 
         for (int round = 0; round < MAX_TOOL_ROUNDS; round++) {
@@ -249,7 +330,7 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
                 if (input == null) input = Collections.emptyMap();
 
                 log.info("执行工具: tool={}, input={}", toolName, input);
-                String toolResult = executeTool(toolName, input, userId, products);
+                String toolResult = executeTool(toolName, input, userId, products, toolExecutions);
 
                 // 3. 将 tool 结果消息加入对话
                 Map<String, Object> toolMsg = new LinkedHashMap<>();
@@ -299,7 +380,8 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
      * 通过 Feign 调用 mcp-server 执行工具
      */
     private String executeTool(String toolName, Map<String, Object> input, Long userId,
-                               List<Map<String, Object>> products) {
+                               List<Map<String, Object>> products,
+                               List<Map<String, Object>> toolExecutions) {
         try {
             Map<String, Object> request = new LinkedHashMap<>();
             request.put("tool", toolName);
@@ -307,7 +389,16 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
             request.put("userId", userId);
 
             Map<String, Object> result = mcpFeignClient.executeTool(request);
-            if (result != null && Boolean.TRUE.equals(result.get("success"))) {
+            boolean success = result != null && Boolean.TRUE.equals(result.get("success"));
+            // 记录工具执行过程（供前端展示 chip）
+            if (toolExecutions != null) {
+                Map<String, Object> exec = new LinkedHashMap<>();
+                exec.put("tool", toolName);
+                exec.put("status", success ? "success" : "error");
+                exec.put("action", toolActionName(toolName));
+                toolExecutions.add(exec);
+            }
+            if (success) {
                 Object data = result.get("data");
                 // 工具命中商品时，收集进推荐列表（供前端渲染卡片）
                 if ("search_products".equals(toolName) || "get_product".equals(toolName)) {
@@ -320,6 +411,21 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
             log.error("工具调用异常: tool={}", toolName, e);
             return "工具调用异常: " + e.getMessage();
         }
+    }
+
+    /** 工具名 → 中文动作摘要 */
+    private String toolActionName(String toolName) {
+        return switch (toolName) {
+            case "search_products" -> "搜索商品";
+            case "get_product" -> "查看商品";
+            case "get_orders" -> "查询订单";
+            case "get_order_detail" -> "查看订单详情";
+            case "get_cart" -> "查看购物车";
+            case "add_to_cart" -> "加入购物车";
+            case "create_order" -> "创建订单";
+            case "pay_order" -> "支付订单";
+            default -> "调用工具";
+        };
     }
 
     /**

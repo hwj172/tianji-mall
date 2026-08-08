@@ -40,6 +40,11 @@ public class VectorSearchService {
     private static final String FIELD_ID = "product_id";
     private static final String FIELD_VECTOR = "embedding";
 
+    // ===== 图像向量集合（以图搜图，VL-Embedding 维度动态） =====
+    private static final String IMAGE_COLLECTION = "product_image_vectors";
+    private static final String IMAGE_FIELD_ID = "product_id";
+    private static final String IMAGE_FIELD_VECTOR = "image_embedding";
+
     private final EmbeddingClient embeddingClient;
 
     @Value("${milvus.host:192.168.150.11}")
@@ -139,6 +144,116 @@ public class VectorSearchService {
             }
         } catch (Exception e) {
             log.warn("商品向量同步异常: productId={}", productId, e);
+        }
+    }
+
+    /**
+     * 商品图片向量 upsert（以图搜图，按 productId 覆盖）
+     */
+    public void upsertProductImage(Long productId, String imageUrl) {
+        if (milvusClient == null) {
+            log.warn("Milvus 客户端未初始化，跳过图片向量同步: productId={}", productId);
+            return;
+        }
+        try {
+            float[] vector = embeddingClient.embedImage(imageUrl);
+            ensureImageCollection(vector.length);
+            List<Float> vec = toFloatList(vector);
+            List<InsertParam.Field> fields = List.of(
+                    new InsertParam.Field(IMAGE_FIELD_ID, List.of(productId)),
+                    new InsertParam.Field(IMAGE_FIELD_VECTOR, List.of(vec)));
+            R<MutationResult> response = milvusClient.upsert(UpsertParam.newBuilder()
+                    .withCollectionName(IMAGE_COLLECTION)
+                    .withFields(fields)
+                    .build());
+            if (response.getStatus() != R.Status.Success.getCode()) {
+                log.warn("商品图片向量同步失败: productId={}, message={}", productId, response.getMessage());
+            } else {
+                log.info("商品图片向量已同步: productId={}", productId);
+            }
+        } catch (Exception e) {
+            log.warn("商品图片向量同步异常: productId={}", productId, e);
+        }
+    }
+
+    /**
+     * 以图搜图：图片 → VL-Embedding → Milvus 图像集合相似度搜索 → 商品 ID（失败返回空列表）
+     */
+    public List<Long> searchByImage(String imageUrl, int topK) {
+        if (milvusClient == null) {
+            log.warn("Milvus 客户端未初始化，跳过图片搜索");
+            return Collections.emptyList();
+        }
+        try {
+            float[] vector = embeddingClient.embedImage(imageUrl);
+            List<Float> queryVector = toFloatList(vector);
+
+            SearchParam searchParam = SearchParam.newBuilder()
+                    .withCollectionName(IMAGE_COLLECTION)
+                    .withVectorFieldName(IMAGE_FIELD_VECTOR)
+                    .withVectors(List.of(queryVector))
+                    .withTopK(topK)
+                    .withMetricType(MetricType.COSINE)
+                    .withParams("{\"nprobe\":16}")
+                    .build();
+
+            R<SearchResults> response = milvusClient.search(searchParam);
+            if (response.getStatus() != R.Status.Success.getCode() || response.getData() == null) {
+                log.warn("图片向量搜索失败: {}", response.getMessage());
+                return Collections.emptyList();
+            }
+            SearchResultsWrapper wrapper = new SearchResultsWrapper(response.getData().getResults());
+            return wrapper.getIDScore(0).stream()
+                    .map(SearchResultsWrapper.IDScore::getLongID)
+                    .collect(Collectors.toList());
+        } catch (Exception e) {
+            log.warn("图片向量搜索异常: imageUrl={}", imageUrl, e);
+            return Collections.emptyList();
+        }
+    }
+
+    /**
+     * 确保图像集合存在（VL-Embedding 维度动态，按首次向量的长度创建）
+     */
+    private void ensureImageCollection(int dim) {
+        try {
+            R<Boolean> has = milvusClient.hasCollection(HasCollectionParam.newBuilder()
+                    .withCollectionName(IMAGE_COLLECTION)
+                    .build());
+            if (has.getStatus() != R.Status.Success.getCode()) {
+                log.warn("检查图像集合失败: {}", has.getMessage());
+                return;
+            }
+            if (!Boolean.TRUE.equals(has.getData())) {
+                milvusClient.createCollection(CreateCollectionParam.newBuilder()
+                        .withCollectionName(IMAGE_COLLECTION)
+                        .withDescription("商品图片向量（VL-Embedding）")
+                        .addFieldType(FieldType.newBuilder()
+                                .withName(IMAGE_FIELD_ID)
+                                .withDataType(DataType.Int64)
+                                .withPrimaryKey(true)
+                                .withAutoID(false)
+                                .build())
+                        .addFieldType(FieldType.newBuilder()
+                                .withName(IMAGE_FIELD_VECTOR)
+                                .withDataType(DataType.FloatVector)
+                                .withDimension(dim)
+                                .build())
+                        .build());
+                milvusClient.createIndex(CreateIndexParam.newBuilder()
+                        .withCollectionName(IMAGE_COLLECTION)
+                        .withFieldName(IMAGE_FIELD_VECTOR)
+                        .withIndexType(IndexType.IVF_FLAT)
+                        .withMetricType(MetricType.COSINE)
+                        .withExtraParam("{\"nlist\":128}")
+                        .build());
+                log.info("图像向量集合已创建: {} dim={}", IMAGE_COLLECTION, dim);
+            }
+            milvusClient.loadCollection(LoadCollectionParam.newBuilder()
+                    .withCollectionName(IMAGE_COLLECTION)
+                    .build());
+        } catch (Exception e) {
+            log.warn("图像集合初始化异常: {}", e.getMessage());
         }
     }
 
