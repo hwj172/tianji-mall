@@ -34,6 +34,7 @@
         <el-form-item label="店铺名称"><el-input v-model="editForm.name" placeholder="店铺名称" /></el-form-item>
         <el-form-item label="Logo URL"><el-input v-model="editForm.logo" placeholder="Logo 图片地址" /></el-form-item>
         <el-form-item label="描述"><el-input v-model="editForm.description" type="textarea" :rows="3" placeholder="店铺描述" /></el-form-item>
+        <el-form-item label="公告"><el-input v-model="editForm.notice" type="textarea" :rows="2" maxlength="200" show-word-limit placeholder="店铺公告（展示在店铺主页顶部）" /></el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="editVisible = false">取消</el-button>
@@ -55,7 +56,7 @@ const loading = ref(false)
 const saving = ref(false)
 
 const editVisible = ref(false)
-const editForm = reactive({ name: '', logo: '', description: '' })
+const editForm = reactive({ name: '', logo: '', description: '', notice: '' })
 
 onMounted(async () => {
   loading.value = true
@@ -76,6 +77,7 @@ function openEditDialog() {
   editForm.name = shop.value?.name || ''
   editForm.logo = shop.value?.logo || ''
   editForm.description = shop.value?.description || ''
+  editForm.notice = shop.value?.notice || ''
   editVisible.value = true
 }
 

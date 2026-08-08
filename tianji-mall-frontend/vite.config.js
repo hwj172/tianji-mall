@@ -23,6 +23,8 @@ export default defineConfig({
     }
   },
   build: {
+    // element-plus 全量引入 chunk 较大，调高阈值避免误报（不改变产物）
+    chunkSizeWarningLimit: 900,
     rollupOptions: {
       output: {
         manualChunks(id) {

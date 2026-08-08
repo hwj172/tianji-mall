@@ -91,10 +91,25 @@ class ShopServiceTest {
         when(shopMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(shop);
         when(shopMapper.updateById(any(Shop.class))).thenReturn(1);
 
-        shopService.updateShopInfo(1L, "新名", null, null);
+        shopService.updateShopInfo(1L, "新名", null, null, null);
 
         ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
         verify(shopMapper).updateById(captor.capture());
         assertThat(captor.getValue().getName()).isEqualTo("新名");
+    }
+
+    @Test
+    void shouldUpdateShopNotice() {
+        Shop shop = new Shop();
+        shop.setId(1L);
+        shop.setSellerId(1L);
+        when(shopMapper.selectOne(any(LambdaQueryWrapper.class), anyBoolean())).thenReturn(shop);
+        when(shopMapper.updateById(any(Shop.class))).thenReturn(1);
+
+        shopService.updateShopInfo(1L, null, null, null, "本店促销中");
+
+        ArgumentCaptor<Shop> captor = ArgumentCaptor.forClass(Shop.class);
+        verify(shopMapper).updateById(captor.capture());
+        assertThat(captor.getValue().getNotice()).isEqualTo("本店促销中");
     }
 }

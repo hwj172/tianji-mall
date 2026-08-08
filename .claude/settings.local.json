@@ -39,6 +39,20 @@
     ],
     "defaultMode": "plan",
     "hooks": {
+      "PreCompact": [
+        {
+          "matcher": "",
+          "hooks": [
+            {
+              "type": "command",
+              "command": "D:/Users/黄文杰/AppData/Local/Programs/Python/Python313/python.exe",
+              "args": [
+                ".claude/hooks/pre_compact_engramory_check.py"
+              ]
+            }
+          ]
+        }
+      ],
       "PostToolUse": [
         {
           "matcher": "Write|Edit",
