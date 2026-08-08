@@ -19,9 +19,10 @@ public class NotificationController {
     @GetMapping("/list")
     public R<Page<Notification>> list(@RequestHeader("Authorization") String authHeader,
                                        @RequestParam(defaultValue = "1") int page,
-                                       @RequestParam(defaultValue = "20") int size) {
+                                       @RequestParam(defaultValue = "20") int size,
+                                       @RequestParam(defaultValue = "all") String type) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(notificationService.getList(userId, page, size));
+        return R.ok(notificationService.getList(userId, page, size, type));
     }
 
     @GetMapping("/unread-count")

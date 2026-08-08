@@ -25,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.util.StringUtils;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -90,6 +91,52 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             wrapper.orderByDesc(Product::getCreateTime);
         }
         return page(new Page<>(page, size), wrapper);
+    }
+
+    /** 该店在售商品涉及的分类（供店铺页分类筛选 tab） */
+    public List<Map<String, Object>> getShopCategories(Long shopId) {
+        return baseMapper.selectShopCategories(shopId);
+    }
+
+    /**
+     * 搜索建议：商品名包含匹配（按销量倒序）优先，不足时用含关键词的近 7 天热词补足，返回去重建议词。
+     */
+    public List<String> suggest(String keyword, int limit) {
+        if (!StringUtils.hasText(keyword)) {
+            return List.of();
+        }
+        List<String> result = new ArrayList<>();
+        try {
+            List<Product> matches = list(new LambdaQueryWrapper<Product>()
+                    .eq(Product::getStatus, 1)
+                    .like(Product::getName, keyword)
+                    .orderByDesc(Product::getSales)
+                    .last("LIMIT " + limit));
+            for (Product p : matches) {
+                if (p.getName() != null && !result.contains(p.getName())) {
+                    result.add(p.getName());
+                    if (result.size() >= limit) break;
+                }
+            }
+        } catch (Exception e) {
+            log.warn("搜索建议商品名查询失败: {}", e.getMessage());
+        }
+        // 商品名结果不足时，用含该关键词的热词补足
+        if (result.size() < limit) {
+            try {
+                List<Map<String, Object>> hotRows = getHotKeywords();
+                for (Map<String, Object> row : hotRows) {
+                    String word = (String) row.get("keyword");
+                    if (word != null && word.contains(keyword) && !result.contains(word)) {
+                        result.add(word);
+                        if (result.size() >= limit) break;
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("搜索建议热词补足失败: {}", e.getMessage());
+            }
+        }
+        return result;
     }
 
     // NOTE: 不用 @Cacheable — GenericJackson2JsonRedisSerializer 反序列化丢失类型（LinkedHashMap）
@@ -292,5 +339,86 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         return Map.of("total", products.size(),
                       "success", success,
                       "failed", products.size() - success);
+    }
+
+    // ==================== 以图搜图 ====================
+
+    /**
+     * 全量回填商品首图向量（best-effort，VL-Embedding，幂等可重复触发）
+     */
+    public Map<String, Integer> syncAllImageVectors() {
+        List<Product> products = list(new LambdaQueryWrapper<Product>()
+                .eq(Product::getStatus, 1)
+                .isNotNull(Product::getImages));
+        int success = 0;
+        for (Product p : products) {
+            if (syncImageVector(p)) {
+                success++;
+            }
+        }
+        log.info("商品图片向量回填完成: total={}, success={}", products.size(), success);
+        return Map.of("total", products.size(),
+                "success", success,
+                "failed", products.size() - success);
+    }
+
+    /** 同步单个商品首图向量 */
+    private boolean syncImageVector(Product p) {
+        String firstImage = extractFirstImage(p.getImages());
+        if (firstImage == null || firstImage.isBlank()) {
+            return false;
+        }
+        try {
+            aiChatFeignClient.upsertProductImage(Map.of("productId", p.getId(), "imageUrl", firstImage));
+            return true;
+        } catch (Exception e) {
+            log.warn("商品图片向量同步失败: productId={}", p.getId(), e);
+            return false;
+        }
+    }
+
+    /**
+     * 以图搜图：图片 URL → 相似商品（best-effort，失败返回空列表）
+     */
+    public List<Product> imageSearch(String imageUrl) {
+        if (imageUrl == null || imageUrl.isBlank()) {
+            return List.of();
+        }
+        try {
+            Map<String, Object> result = aiChatFeignClient.imageSearch(Map.of("imageUrl", imageUrl));
+            Object data = result != null ? result.get("data") : null;
+            if (data == null) {
+                return List.of();
+            }
+            List<Long> ids = ((List<?>) data).stream()
+                    .map(o -> ((Number) o).longValue())
+                    .toList();
+            if (ids.isEmpty()) {
+                return List.of();
+            }
+            return listByIds(ids);
+        } catch (Exception e) {
+            log.warn("以图搜图失败: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
+    /** 从 images JSON 数组提取首图 URL（非 JSON 视为单 URL） */
+    private String extractFirstImage(String images) {
+        if (images == null || images.isBlank()) {
+            return null;
+        }
+        try {
+            var arr = new com.fasterxml.jackson.databind.ObjectMapper().readTree(images);
+            if (arr.isArray() && !arr.isEmpty()) {
+                return arr.get(0).asText();
+            }
+            if (arr.isTextual()) {
+                return arr.asText();
+            }
+        } catch (Exception ignored) {
+            // 非 JSON 直接视为单图 URL
+        }
+        return images;
     }
 }

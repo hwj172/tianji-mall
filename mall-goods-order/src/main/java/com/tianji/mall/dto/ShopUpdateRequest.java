@@ -7,4 +7,5 @@ public class ShopUpdateRequest {
     private String name;
     private String logo;
     private String description;
+    private String notice;
 }

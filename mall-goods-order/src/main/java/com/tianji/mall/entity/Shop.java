@@ -17,6 +17,7 @@ public class Shop {
     private String name;
     private String logo;
     private String description;
+    private String notice;        // 店铺公告
     private Long sellerId;
     private Integer status;       // 1=营业 0=关闭
     private LocalDateTime createTime;

@@ -277,6 +277,28 @@ class ProductControllerTest {
                 .andExpect(jsonPath("$.data").isEmpty());
     }
 
+    // ==================== GET /api/product/suggest ====================
+
+    @Test
+    void shouldReturnSuggestions() throws Exception {
+        when(productService.suggest("手机", 8)).thenReturn(List.of("手机壳", "手机支架"));
+
+        mockMvc.perform(get("/api/product/suggest")
+                        .param("keyword", "手机"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0]").value("手机壳"));
+    }
+
+    @Test
+    void shouldReturnEmptySuggestionsForBlankKeyword() throws Exception {
+        when(productService.suggest("", 8)).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/product/suggest")
+                        .param("keyword", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
+
     // ==================== helpers ====================
 
     private Product buildProduct(Long id, String name, int price) {

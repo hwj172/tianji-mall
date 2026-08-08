@@ -5,6 +5,15 @@
       <el-button type="primary" size="small" @click="handleMarkAllRead" :disabled="!hasUnread">全部已读</el-button>
     </div>
 
+    <!-- 分类筛选 -->
+    <div class="np-tabs">
+      <span
+        v-for="tab in tabs" :key="tab.value"
+        :class="['np-tab', { active: currentType === tab.value }]"
+        @click="switchTab(tab.value)"
+      >{{ tab.label }}</span>
+    </div>
+
     <!-- 通知列表 -->
     <div class="notification-list" v-if="notifications.length">
       <div
@@ -55,8 +64,18 @@ const loading = ref(false)
 const currentPage = ref(1)
 const pageSize = ref(20)
 const total = ref(0)
+const currentType = ref('all')
 
-const typeIcons = { CREATED: '🛒', SHIPPED: '📦', COMPLETED: '✅' }
+const tabs = [
+  { label: '全部', value: 'all' },
+  { label: '订单通知', value: 'order' },
+  { label: '系统公告', value: 'system' }
+]
+
+// 图标 key 与后端 type 保持一致（ORDER_CREATED / ORDER_SHIPPED / ORDER_COMPLETED / SYSTEM_ANNOUNCEMENT）
+const typeIcons = {
+  ORDER_CREATED: '🛒', ORDER_SHIPPED: '📦', ORDER_COMPLETED: '✅', SYSTEM_ANNOUNCEMENT: '📢'
+}
 
 function typeIcon(t) { return typeIcons[t] || '📌' }
 
@@ -76,7 +95,7 @@ onMounted(() => { loadData(); loadUnread() })
 async function loadData() {
   loading.value = true
   try {
-    const res = await getNotifications({ page: currentPage.value, size: pageSize.value })
+    const res = await getNotifications({ page: currentPage.value, size: pageSize.value, type: currentType.value })
     if (res.data) {
       notifications.value = res.data.records || res.data || []
       total.value = res.data.total || 0
@@ -86,6 +105,13 @@ async function loadData() {
   } finally {
     loading.value = false
   }
+}
+
+function switchTab(value) {
+  if (currentType.value === value) return
+  currentType.value = value
+  currentPage.value = 1
+  loadData()
 }
 
 async function handleClick(n) {
@@ -115,8 +141,12 @@ async function handleMarkAllRead() {
 
 <style scoped>
 .notification-page { max-width: 800px; margin: 0 auto; }
-.np-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.np-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .page-title { font-size: 20px; font-weight: 600; margin: 0; }
+.np-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
+.np-tab { font-size: 13px; color: #666; padding: 5px 16px; border-radius: 16px; border: 1px solid #e0e0e0; cursor: pointer; transition: all .2s; }
+.np-tab:hover { color: #ff5000; border-color: #ff5000; }
+.np-tab.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 
 .notification-list { display: flex; flex-direction: column; gap: 10px; }
 .notification-card { background: #fff; border-radius: 8px; padding: 16px 20px; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .2s; }

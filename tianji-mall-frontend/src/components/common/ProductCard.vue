@@ -5,7 +5,12 @@
       <span v-if="showOriginalPrice && discountPercent != null" class="discount-badge">-{{ discountPercent }}%</span>
     </div>
     <div class="product-info">
-      <h4 class="product-name">{{ product.name }}</h4>
+      <h4 class="product-name">
+        <template v-for="(part, i) in nameParts" :key="i">
+          <mark v-if="part.match" class="name-highlight">{{ part.text }}</mark>
+          <template v-else>{{ part.text }}</template>
+        </template>
+      </h4>
       <div class="product-price">
         <span class="price-current">¥{{ priceDisplay }}</span>
         <span class="price-original" v-if="showOriginalPrice && originalPrice != null">¥{{ originalPriceDisplay }}</span>
@@ -23,10 +28,25 @@ import AppImage from '@/components/common/AppImage.vue'
 
 const props = defineProps({
   product: { type: Object, required: true },
-  showOriginalPrice: { type: Boolean, default: false }
+  showOriginalPrice: { type: Boolean, default: false },
+  keyword: { type: String, default: '' }
 })
 
 const firstImage = computed(() => getFirstImage(props.product.images))
+
+// 搜索词高亮：把商品名按命中位置拆成 [前, 命中, 后] 三段（大小写不敏感，仅高亮首次命中）
+const nameParts = computed(() => {
+  const name = props.product.name || ''
+  const kw = (props.keyword || '').trim()
+  if (!kw || !name) return [{ text: name, match: false }]
+  const idx = name.toLowerCase().indexOf(kw.toLowerCase())
+  if (idx === -1) return [{ text: name, match: false }]
+  return [
+    { text: name.slice(0, idx), match: false },
+    { text: name.slice(idx, idx + kw.length), match: true },
+    { text: name.slice(idx + kw.length), match: false }
+  ]
+})
 
 // 价格统一保留两位小数
 const priceDisplay = computed(() => fmtPrice(props.product.price))
@@ -107,6 +127,11 @@ function formatSales(n) {
   overflow: hidden;
   min-height: 2.6em;
   margin-bottom: 6px;
+}
+.name-highlight {
+  color: #ff5000;
+  background: transparent;
+  font-weight: 600;
 }
 .product-price { display: flex; align-items: baseline; gap: 6px; }
 .price-current { color: #ff5000; font-size: 18px; font-weight: 700; }

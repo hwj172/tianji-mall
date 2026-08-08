@@ -7,6 +7,7 @@ import com.tianji.mall.entity.Notification;
 import com.tianji.mall.mapper.NotificationMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StringUtils;
 
 import java.time.LocalDateTime;
 
@@ -31,10 +32,21 @@ public class NotificationService extends ServiceImpl<NotificationMapper, Notific
         }
     }
 
-    public Page<Notification> getList(Long userId, int page, int size) {
+    /**
+     * 通知列表：返回本人通知 + 系统公告（userId=0）。
+     * type：null/all 全部、order 订单通知（ORDER_ 前缀）、system 仅系统公告。
+     */
+    public Page<Notification> getList(Long userId, int page, int size, String type) {
         LambdaQueryWrapper<Notification> wrapper = new LambdaQueryWrapper<Notification>()
-                .eq(Notification::getUserId, userId)
+                .and(w -> w.eq(Notification::getUserId, userId).or().eq(Notification::getUserId, 0L))
                 .orderByDesc(Notification::getCreateTime);
+        if (StringUtils.hasText(type) && !"all".equals(type)) {
+            if ("order".equals(type)) {
+                wrapper.like(Notification::getType, "ORDER_");
+            } else if ("system".equals(type)) {
+                wrapper.eq(Notification::getUserId, 0L);
+            }
+        }
         return page(new Page<>(page, size), wrapper);
     }
 

@@ -5,15 +5,33 @@
       <div class="top-bar-inner">
         <router-link to="/" class="logo">天机商城</router-link>
         <div class="search-bar">
-          <el-input v-model="keyword" placeholder="搜索商品" size="large" clearable @keyup.enter="search" class="search-input">
+          <el-autocomplete
+            v-model="keyword"
+            :fetch-suggestions="querySearch"
+            placeholder="搜索商品"
+            size="large"
+            clearable
+            :trigger-on-focus="true"
+            class="search-input"
+            @select="onSelectSuggestion"
+            @keyup.enter="search"
+          >
+            <template #default="{ item }">
+              <div class="suggest-item">
+                <span class="suggest-icon">{{ item.tag === 'history' ? '🕘' : '🔍' }}</span>
+                <span class="suggest-text">{{ item.value }}</span>
+                <span class="suggest-tag">{{ item.tag === 'history' ? '历史' : '搜索' }}</span>
+              </div>
+            </template>
             <template #append><el-button @click="search" class="search-btn">搜索</el-button></template>
-          </el-input>
+          </el-autocomplete>
         </div>
         <div class="header-actions">
           <router-link to="/" title="返回首页"><el-button text>🏠</el-button></router-link>
           <template v-if="userStore.isLoggedIn">
             <router-link v-if="userStore.isSeller" to="/seller"><el-button text>🏪 商家中心</el-button></router-link>
             <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text>🛒 购物车</el-button></el-badge></router-link>
+            <router-link to="/notification/list"><el-badge :value="unreadCount" :hidden="!unreadCount"><el-button text>🔔</el-button></el-badge></router-link>
             <router-link to="/chat"><el-button text>🤖 AI导购</el-button></router-link>
             <el-dropdown>
               <span class="user-name">{{ userStore.userInfo?.username }}</span>
@@ -51,17 +69,69 @@ import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
+import { getProductSuggest, getUnreadCount } from '@/api'
 
 const router = useRouter()
 const userStore = useUserStore()
 const cartStore = useCartStore()
 const keyword = ref('')
+const unreadCount = ref(0)
 
-onMounted(() => cartStore.refreshCount())
+const HISTORY_KEY = 'search_history'
+
+onMounted(() => {
+  cartStore.refreshCount()
+  if (userStore.isLoggedIn) refreshUnread()
+})
+
+async function refreshUnread() {
+  try {
+    const res = await getUnreadCount()
+    unreadCount.value = res.data != null ? Number(res.data) : 0
+  } catch { /* ignore */ }
+}
+
+function getHistory() {
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]') } catch { return [] }
+}
+
+function saveHistory(kw) {
+  const h = getHistory().filter(w => w !== kw)
+  h.unshift(kw)
+  localStorage.setItem(HISTORY_KEY, JSON.stringify(h.slice(0, 10)))
+}
+
+// el-autocomplete 联想：输入时返回「联想词 + 历史」，空输入时只显示历史
+async function querySearch(query, cb) {
+  const history = getHistory().map(w => ({ value: w, tag: 'history' }))
+  if (!query || !query.trim()) {
+    cb(history)
+    return
+  }
+  try {
+    const res = await getProductSuggest(query.trim())
+    const suggest = (res.data || []).map(w => ({ value: w, tag: 'suggest' }))
+    // 去重（历史词优先），联想在前、历史在后
+    const merged = [
+      ...suggest.filter(s => !history.some(h => h.value === s.value)),
+      ...history.filter(h => !suggest.some(s => s.value === h.value))
+    ]
+    cb(merged)
+  } catch {
+    cb(history)
+  }
+}
+
+function onSelectSuggestion(item) {
+  keyword.value = item.value
+  search()
+}
 
 function search() {
-  if (keyword.value.trim()) {
-    router.push({ name: 'productList', query: { keyword: keyword.value.trim() } })
+  const kw = keyword.value.trim()
+  if (kw) {
+    saveHistory(kw)
+    router.push({ name: 'productList', query: { keyword: kw } })
   }
 }
 </script>
@@ -72,8 +142,13 @@ function search() {
 .top-bar-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; height: 64px; gap: 20px; }
 .logo { font-size: 24px; font-weight: 700; color: #ff5000; white-space: nowrap; }
 .search-bar { flex: 1; max-width: 540px; }
+.search-input { width: 100%; }
 .search-input :deep(.el-input__wrapper) { border-radius: 20px 0 0 20px; border: 2px solid #ff5000; box-shadow: none; }
 .search-btn { background: #ff5000; border-color: #ff5000; border-radius: 0 20px 20px 0; }
+.suggest-item { display: flex; align-items: center; gap: 8px; width: 100%; }
+.suggest-icon { font-size: 12px; }
+.suggest-text { flex: 1; font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest-tag { font-size: 11px; color: #999; background: #f5f5f5; border-radius: 3px; padding: 1px 6px; }
 .header-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
 .user-name { cursor: pointer; color: #666; }
 .main { max-width: 1200px; margin: 12px auto; min-height: calc(100vh - 200px); }

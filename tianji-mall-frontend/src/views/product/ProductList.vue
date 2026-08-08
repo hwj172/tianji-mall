@@ -6,6 +6,13 @@
       <span v-for="kw in hotKeywords" :key="kw" class="hot-tag" @click="search(kw)">{{ kw }}</span>
     </div>
 
+    <!-- 搜索历史 -->
+    <div class="search-history" v-if="route.query.keyword && historyList.length">
+      <span class="hot-label">搜索历史：</span>
+      <span v-for="kw in historyList" :key="kw" class="hot-tag" @click="search(kw)">{{ kw }}</span>
+      <span class="history-clear" @click="clearHistory">清空历史</span>
+    </div>
+
     <!-- 筛选栏 -->
     <div class="filter-bar">
       <div class="filter-sorts">
@@ -30,7 +37,7 @@
     <!-- 商品网格 -->
     <ProductGridSkeleton v-if="loading" :cols="4" />
     <div class="product-grid cols-4" v-else-if="products.length">
-      <ProductCard v-for="p in products" :key="p.id" :product="p" :show-original-price="true" />
+      <ProductCard v-for="p in products" :key="p.id" :product="p" :show-original-price="true" :keyword="keyword" />
     </div>
     <EmptyState v-if="!loading && !products.length" description="暂无商品">
       <div class="empty-actions">
@@ -95,6 +102,19 @@ const isSortActive = (opt) => {
   return currentSort.value === opt.value
 }
 const priceArrow = computed(() => (currentSort.value === 'price_asc' ? '↑' : '↓'))
+
+// 当前搜索关键词（用于商品名高亮 + 搜索历史展示）
+const keyword = computed(() => String(route.query.keyword || ''))
+
+// 搜索历史（localStorage，与顶栏搜索框共享）
+const historyList = ref(getSearchHistory())
+function getSearchHistory() {
+  try { return JSON.parse(localStorage.getItem('search_history') || '[]') } catch { return [] }
+}
+function clearHistory() {
+  localStorage.removeItem('search_history')
+  historyList.value = []
+}
 
 // 有激活的筛选条件时显示「清除筛选」
 const hasActiveFilters = computed(() =>
@@ -212,9 +232,12 @@ function search(keyword) {
 <style scoped>
 .product-list-page { max-width: 1200px; margin: 0 auto; }
 .hot-keywords { padding: 10px 0; font-size: 13px; }
+.search-history { padding: 10px 0; font-size: 13px; }
 .hot-label { color: #ff5000; }
 .hot-tag { color: #666; margin: 0 8px; cursor: pointer; }
 .hot-tag:hover { color: #ff5000; }
+.history-clear { float: right; color: #999; cursor: pointer; font-size: 12px; }
+.history-clear:hover { color: #ff5000; }
 .filter-bar { display: flex; justify-content: space-between; align-items: center; background: #fff; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
 .filter-sorts { display: flex; gap: 4px; }
 .sort-item { padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }

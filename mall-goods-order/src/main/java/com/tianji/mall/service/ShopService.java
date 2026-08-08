@@ -57,7 +57,7 @@ public class ShopService extends ServiceImpl<ShopMapper, Shop> {
         return shop;
     }
 
-    public void updateShopInfo(Long userId, String name, String logo, String description) {
+    public void updateShopInfo(Long userId, String name, String logo, String description, String notice) {
         Shop shop = getBySellerId(userId);
         if (name != null && !name.isBlank()) {
             shop.setName(name);
@@ -67,6 +67,9 @@ public class ShopService extends ServiceImpl<ShopMapper, Shop> {
         }
         if (description != null) {
             shop.setDescription(description);
+        }
+        if (notice != null) {
+            shop.setNotice(notice);
         }
         updateById(shop);
     }

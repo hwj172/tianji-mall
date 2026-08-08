@@ -289,6 +289,39 @@ class ProductServiceTest {
         verify(productMapper).incrementSales(1L, 5);
     }
 
+    // ==================== suggest ====================
+
+    @Test
+    void shouldSuggestProductNamesByKeyword() {
+        Product p = buildProduct(1L, "iPhone 15", BigDecimal.valueOf(5999), 100, 1);
+        p.setSales(200);
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(p));
+
+        List<String> result = productService.suggest("iphone", 8);
+
+        assertThat(result).contains("iPhone 15");
+    }
+
+    @Test
+    void shouldReturnEmptyForBlankKeyword() {
+        assertThat(productService.suggest("  ", 8)).isEmpty();
+        assertThat(productService.suggest(null, 8)).isEmpty();
+    }
+
+    @Test
+    void shouldSupplementWithHotKeywordsWhenProductNamesShort() {
+        Product p = buildProduct(1L, "小米手机", BigDecimal.valueOf(2999), 100, 1);
+        p.setSales(50);
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(p));
+        when(searchLogMapper.selectHotKeywords()).thenReturn(List.of(
+                Map.of("keyword", "手机壳"),
+                Map.of("keyword", "手机支架")));
+
+        List<String> result = productService.suggest("手机", 8);
+
+        assertThat(result).contains("小米手机", "手机壳");
+    }
+
     private Product buildProduct(Long id, String name, BigDecimal price, int stock, int status) {
         Product p = new Product();
         p.setId(id);

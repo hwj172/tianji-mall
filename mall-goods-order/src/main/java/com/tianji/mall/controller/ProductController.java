@@ -70,6 +70,18 @@ public class ProductController {
         return R.ok(productService.syncAllVectors());
     }
 
+    @PostMapping("/internal/sync-image-vectors")
+    public R<Map<String, Integer>> syncImageVectors() {
+        return R.ok(productService.syncAllImageVectors());
+    }
+
+    // ===== 以图搜图 =====
+
+    @PostMapping("/image-search")
+    public R<List<Product>> imageSearch(@RequestBody Map<String, String> body) {
+        return R.ok(productService.imageSearch(body.get("imageUrl")));
+    }
+
     // ===== 秒杀端点 =====
 
     @GetMapping("/seckill/list")
@@ -101,6 +113,12 @@ public class ProductController {
                 .map(r -> (String) r.get("keyword"))
                 .toList();
         return R.ok(keywords);
+    }
+
+    @GetMapping("/suggest")
+    public R<List<String>> suggest(@RequestParam("keyword") String keyword,
+                                   @RequestParam(defaultValue = "8") int limit) {
+        return R.ok(productService.suggest(keyword, limit));
     }
 
     // ===== 浏览足迹 =====

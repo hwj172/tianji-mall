@@ -105,12 +105,26 @@ class NotificationControllerTest {
     void shouldGetNotificationList() throws Exception {
         Page<Notification> emptyPage = new Page<>(1, 20);
         emptyPage.setRecords(List.of());
-        when(notificationService.getList(eq(1L), eq(1), eq(20))).thenReturn(emptyPage);
+        when(notificationService.getList(eq(1L), eq(1), eq(20), eq("all"))).thenReturn(emptyPage);
 
         mockMvc.perform(get("/api/notification/list")
                         .header("Authorization", "Bearer test-token")
                         .param("page", "1")
-                        .param("size", "20"))
+                        .param("size", "20")
+                        .param("type", "all"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldGetNotificationListWithTypeFilter() throws Exception {
+        Page<Notification> emptyPage = new Page<>(1, 20);
+        emptyPage.setRecords(List.of());
+        when(notificationService.getList(eq(1L), eq(1), eq(20), eq("order"))).thenReturn(emptyPage);
+
+        mockMvc.perform(get("/api/notification/list")
+                        .header("Authorization", "Bearer test-token")
+                        .param("type", "order"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

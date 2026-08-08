@@ -152,6 +152,7 @@ const quickGroups = computed(() => [
       { label: '收货地址', icon: MapLocation, action: () => router.push('/user/address') },
       { label: '我的评价', icon: Document, action: () => router.push('/review/my') },
       { label: '退款售后', icon: Service, action: () => router.push('/refund/list') },
+      { label: '关注店铺', icon: Shop, action: () => router.push('/user/following-shops'), badge: centerData.followShopCount },
       { label: '消息通知', icon: Bell, action: () => router.push('/notification/list'), badge: unreadCount.value }
     ]
   },
