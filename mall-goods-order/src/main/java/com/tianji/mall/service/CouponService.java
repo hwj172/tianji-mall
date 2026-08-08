@@ -195,6 +195,38 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
         return result;
     }
 
+    /**
+     * 新人注册成功后自动发券（best-effort，幂等）。
+     * 对所有有效期内、启用、尚有库存的新人专享券逐个领取；重复领取/领完静默跳过。
+     */
+    @Transactional
+    public int issueNewbieCoupon(Long userId) {
+        LocalDateTime now = LocalDateTime.now();
+        List<Coupon> newbieCoupons = list(new LambdaQueryWrapper<Coupon>()
+                .eq(Coupon::getIsNewbie, 1)
+                .eq(Coupon::getStatus, 1)
+                .lt(Coupon::getStartTime, now)
+                .gt(Coupon::getEndTime, now)
+                .apply("used_quantity < total_quantity"));
+        if (newbieCoupons.isEmpty()) {
+            return 0;
+        }
+        int issued = 0;
+        for (Coupon c : newbieCoupons) {
+            try {
+                claimCoupon(userId, c.getId());
+                issued++;
+            } catch (BizException e) {
+                // COUPON_ALREADY_CLAIMED / COUPON_EXHAUSTED 等：静默跳过，不阻塞注册
+                log.debug("新人发券跳过 couponId={}: {}", c.getId(), e.getMessage());
+            }
+        }
+        if (issued > 0) {
+            log.info("新人 {} 注册成功，自动发放 {} 张新人券", userId, issued);
+        }
+        return issued;
+    }
+
     /** 自动标记过期优惠券（每小时执行） */
     @Transactional
     @Scheduled(cron = "0 7 * * * *")

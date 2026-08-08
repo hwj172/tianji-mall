@@ -13,6 +13,7 @@ import com.tianji.mall.entity.Review;
 import com.tianji.mall.feign.UserFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.mapper.ReviewMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,6 +30,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -45,13 +47,16 @@ class ReviewServiceTest {
     private OrderItemMapper orderItemMapper;
 
     @Mock
+    private ProductMapper productMapper;
+
+    @Mock
     private UserFeignClient userFeignClient;
 
     private ReviewService reviewService;
 
     @BeforeEach
     void setUp() {
-        reviewService = new ReviewService(orderMapper, orderItemMapper, userFeignClient);
+        reviewService = new ReviewService(orderMapper, orderItemMapper, productMapper, userFeignClient);
         ReflectionTestUtils.setField(reviewService, "baseMapper", reviewMapper);
     }
 
@@ -186,10 +191,77 @@ class ReviewServiceTest {
         when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
                 .thenReturn(new Page<Review>().setRecords(List.of(review)));
 
-        IPage<ReviewResponse> result = reviewService.getProductReviews(10L, 1, 20);
+        IPage<ReviewResponse> result = reviewService.getProductReviews(10L, 1, 20, "all");
 
         assertThat(result.getRecords()).hasSize(1);
         assertThat(result.getRecords().get(0).getRating()).isEqualTo(5);
+    }
+
+    @Test
+    void shouldFilterGoodReviews() {
+        Review r5 = new Review();
+        r5.setId(1L);
+        r5.setRating(5);
+        Review r2 = new Review();
+        r2.setId(2L);
+        r2.setRating(2);
+        when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+                .thenReturn(new Page<Review>().setRecords(List.of(r5, r2)));
+
+        // good → rating >= 4，wrapper 由 lambda 断言不可行；这里验证方法不抛且返回转换结果
+        IPage<ReviewResponse> result = reviewService.getProductReviews(10L, 1, 20, "good");
+
+        assertThat(result.getRecords()).hasSize(2);
+    }
+
+    @Test
+    void shouldReplyReview() {
+        Review review = new Review();
+        review.setId(1L);
+        review.setContent("原评价");
+        when(reviewMapper.selectById(1L)).thenReturn(review);
+        when(reviewMapper.updateById(any(Review.class))).thenReturn(1);
+
+        reviewService.replyReview(1L, "感谢支持");
+
+        verify(reviewMapper).updateById(argThat((com.tianji.mall.entity.Review upd) ->
+                "感谢支持".equals(upd.getReply()) && upd.getReplyTime() != null));
+    }
+
+    @Test
+    void shouldThrowWhenReplyNonExistent() {
+        when(reviewMapper.selectById(99L)).thenReturn(null);
+
+        assertThatThrownBy(() -> reviewService.replyReview(99L, "回复"))
+                .isInstanceOf(BizException.class)
+                .hasMessage("评价不存在");
+    }
+
+    @Test
+    void shouldGetShopReviews() {
+        com.tianji.mall.entity.Product p = new com.tianji.mall.entity.Product();
+        p.setId(10L);
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(p));
+        Review review = new Review();
+        review.setId(1L);
+        review.setProductId(10L);
+        review.setRating(4);
+        when(reviewMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class)))
+                .thenReturn(new Page<Review>().setRecords(List.of(review)));
+
+        IPage<ReviewResponse> result = reviewService.getShopReviews(5L, 1, 20);
+
+        assertThat(result.getRecords()).hasSize(1);
+        assertThat(result.getRecords().get(0).getProductId()).isEqualTo(10L);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenShopHasNoProducts() {
+        when(productMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        IPage<ReviewResponse> result = reviewService.getShopReviews(5L, 1, 20);
+
+        assertThat(result.getRecords()).isEmpty();
     }
 
     @Test

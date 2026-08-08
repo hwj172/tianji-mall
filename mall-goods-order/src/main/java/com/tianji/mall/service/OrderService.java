@@ -48,6 +48,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
     private final ProductSkuService skuService;
     private final AddressService addressService;
     private final CouponService couponService;
+    private final PromotionService promotionService;
     private final RedissonClient redissonClient;
     private final RocketMQTemplate rocketMQTemplate;
     private final SeckillService seckillService;
@@ -174,10 +175,12 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 totalAmount = totalAmount.add(itemPrice.multiply(BigDecimal.valueOf(line.quantity())));
             }
 
-            // 6. 优惠券折扣（锁内）
-            BigDecimal discount = BigDecimal.ZERO;
+            // 6. 满减活动折扣（按优惠券前金额判断门槛，与优惠券叠加）
+            BigDecimal discount = promotionService.calculateDiscount(totalAmount);
+
+            // 6.1 优惠券折扣（锁内）
             if (req.getCouponId() != null) {
-                discount = couponService.applyCoupon(userId, req.getCouponId(), totalAmount);
+                discount = discount.add(couponService.applyCoupon(userId, req.getCouponId(), totalAmount));
             }
 
             // 6.5 拼团折扣（锁内，与优惠券叠加）

@@ -9,8 +9,11 @@ import com.tianji.user.dto.LoginResponse;
 import com.tianji.user.dto.RegisterRequest;
 import com.tianji.user.entity.User;
 import com.tianji.user.mapper.UserMapper;
+import com.tianji.user.feign.NewbieCouponFeignClient;
 import com.tianji.common.util.JwtUtil;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -21,6 +24,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.util.List;
 import java.util.Set;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class UserService extends ServiceImpl<UserMapper, User> {
@@ -28,6 +32,10 @@ public class UserService extends ServiceImpl<UserMapper, User> {
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
     private final FileStorageService fileStorageService;
+
+    // 测试环境 Feign 被排除（无 FeignClientFactory bean），需 required=false
+    @Autowired(required = false)
+    private NewbieCouponFeignClient newbieCouponFeignClient;
 
     @Transactional
     public void register(RegisterRequest req) {
@@ -48,6 +56,20 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             save(user);
         } catch (DuplicateKeyException e) {
             throw new BizException(BizErrorCode.USERNAME_EXISTS);
+        }
+
+        // 新人注册成功：best-effort 调用 mall-goods-order 自动发新人券（异常不阻塞注册）
+        issueNewbieCoupons(user.getId());
+    }
+
+    private void issueNewbieCoupons(Long userId) {
+        if (newbieCouponFeignClient == null) {
+            return;
+        }
+        try {
+            newbieCouponFeignClient.issueNewbieCoupon(userId);
+        } catch (Exception e) {
+            log.warn("新人发券调用失败（不阻塞注册）: userId={}", userId, e);
         }
     }
 

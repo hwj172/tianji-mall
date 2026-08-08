@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.user.dto.LoginResponse;
 import com.tianji.user.entity.User;
+import com.tianji.user.feign.NewbieCouponFeignClient;
 import com.tianji.user.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class UserControllerTest {
 
     @MockBean
     private JwtUtil jwtUtil;
+
+    @MockBean
+    private NewbieCouponFeignClient newbieCouponFeignClient;
 
     @BeforeEach
     void setUp() {

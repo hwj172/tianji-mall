@@ -25,6 +25,7 @@ const routes = [
       { path: 'review/pending', name: 'pendingReviews', component: () => import('@/views/review/PendingReviews.vue'), meta: { title: '待评价', auth: true } },
       { path: 'favorite/list', name: 'favoriteList', component: () => import('@/views/favorite/FavoriteList.vue'), meta: { title: '我的收藏', auth: true } },
       { path: 'user/history', name: 'browsingHistory', component: () => import('@/views/history/BrowsingHistory.vue'), meta: { title: '浏览足迹', auth: true } },
+      { path: 'user/following-shops', name: 'followingShops', component: () => import('@/views/shop/FollowingShops.vue'), meta: { title: '关注的店铺', auth: true } },
       { path: 'refund/list', name: 'refundList', component: () => import('@/views/refund/RefundList.vue'), meta: { title: '退款/售后', auth: true } },
       { path: 'notification/list', name: 'notificationList', component: () => import('@/views/notification/NotificationList.vue'), meta: { title: '消息通知', auth: true } },
       { path: 'chat', name: 'chat', component: () => import('@/views/chat/ChatPage.vue'), meta: { title: 'AI 导购', auth: true } },
@@ -40,6 +41,8 @@ const routes = [
       { path: 'orders', name: 'adminOrders', component: () => import('@/views/admin/OrderManage.vue'), meta: { title: '订单管理' } },
       { path: 'categories', name: 'adminCategories', component: () => import('@/views/admin/CategoryManage.vue'), meta: { title: '分类管理' } },
       { path: 'coupons', name: 'adminCoupons', component: () => import('@/views/admin/CouponManage.vue'), meta: { title: '优惠券管理' } },
+      { path: 'promotions', name: 'adminPromotions', component: () => import('@/views/admin/PromotionManage.vue'), meta: { title: '满减活动' } },
+      { path: 'announcement', name: 'adminAnnouncement', component: () => import('@/views/admin/AnnouncementManage.vue'), meta: { title: '系统公告' } },
       { path: 'users', name: 'adminUsers', component: () => import('@/views/admin/UserManage.vue'), meta: { title: '用户管理' } },
       { path: 'shops', name: 'adminShops', component: () => import('@/views/admin/ShopManage.vue'), meta: { title: '店铺管理' } },
     ]
@@ -52,6 +55,7 @@ const routes = [
       { path: '', name: 'sellerDashboard', component: () => import('@/views/seller/Dashboard.vue'), meta: { title: '商家中心' } },
       { path: 'products', name: 'sellerProducts', component: () => import('@/views/seller/ProductManage.vue'), meta: { title: '商品管理' } },
       { path: 'orders', name: 'sellerOrders', component: () => import('@/views/seller/OrderManage.vue'), meta: { title: '订单管理' } },
+      { path: 'reviews', name: 'sellerReviews', component: () => import('@/views/seller/SellerReviewManage.vue'), meta: { title: '商品评价' } },
     ]
   },
   { path: '/login', name: 'login', component: () => import('@/views/auth/LoginPage.vue'), meta: { title: '登录' } },

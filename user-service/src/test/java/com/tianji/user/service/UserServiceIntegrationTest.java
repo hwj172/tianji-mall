@@ -5,12 +5,14 @@ import com.tianji.common.exception.BizException;
 import com.tianji.user.dto.LoginResponse;
 import com.tianji.user.dto.RegisterRequest;
 import com.tianji.user.entity.User;
+import com.tianji.user.feign.NewbieCouponFeignClient;
 import com.tianji.user.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -20,6 +22,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @ActiveProfiles("test")
 @AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
 class UserServiceIntegrationTest {
+
+    @MockBean
+    private NewbieCouponFeignClient newbieCouponFeignClient;
 
     @Autowired
     private UserService userService;

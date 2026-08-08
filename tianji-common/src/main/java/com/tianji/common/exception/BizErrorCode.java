@@ -134,6 +134,7 @@ public enum BizErrorCode {
     REVIEW_ORDER_NOT_COMPLETED(13001, "仅可评价已完成的订单"),
     REVIEW_PRODUCT_NOT_IN_ORDER(13002, "该订单不包含此商品"),
     REVIEW_ALREADY_EXISTS(13003, "您已评价过该商品"),
+    REVIEW_NOT_FOUND(13004, "评价不存在"),
 
     // ==================== 权限 (120xx) ====================
     ADMIN_REQUIRED(12001, "需要管理员权限"),

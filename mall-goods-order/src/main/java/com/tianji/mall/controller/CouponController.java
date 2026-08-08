@@ -53,4 +53,10 @@ public class CouponController {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         return R.ok(couponService.getUserCoupons(userId));
     }
+
+    /** 内部端点：新人注册成功自动发券（网关 X-Internal-Token 鉴权，不暴露给前端） */
+    @PostMapping("/internal/newbie/{userId}")
+    public R<Integer> issueNewbie(@PathVariable("userId") Long userId) {
+        return R.ok(couponService.issueNewbieCoupon(userId));
+    }
 }

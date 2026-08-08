@@ -6,6 +6,7 @@
         <el-menu-item index="/seller"><el-icon><DataAnalysis /></el-icon> 商家看板</el-menu-item>
         <el-menu-item index="/seller/products"><el-icon><Goods /></el-icon> 商品管理</el-menu-item>
         <el-menu-item index="/seller/orders"><el-icon><Document /></el-icon> 订单管理</el-menu-item>
+        <el-menu-item index="/seller/reviews"><el-icon><ChatDotRound /></el-icon> 商品评价</el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>

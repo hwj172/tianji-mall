@@ -12,6 +12,14 @@ export function getHotKeywords() {
   return request.get('/product/search/hot')
 }
 
+export function getProductSuggest(keyword) {
+  return request.get('/product/suggest', { params: { keyword } })
+}
+
+export function imageSearch(data) {
+  return request.post('/product/image-search', data)
+}
+
 export function getProductDetail(id) {
   return request.get(`/product/${id}`)
 }
@@ -165,6 +173,27 @@ export function deleteCoupon(id) {
   return request.delete(`/admin/coupon/${id}`)
 }
 
+// 满减活动
+export function getAdminPromotions(params) {
+  return request.get('/admin/promotion', { params })
+}
+
+export function createPromotion(data) {
+  return request.post('/admin/promotion', data)
+}
+
+export function updatePromotion(id, data) {
+  return request.put(`/admin/promotion/${id}`, data)
+}
+
+export function deletePromotion(id) {
+  return request.delete(`/admin/promotion/${id}`)
+}
+
+export function getCurrentPromotions() {
+  return request.get('/promotion/current')
+}
+
 // 用户管理
 export function getAdminUsers(params) {
   return request.get('/admin/user/list', { params })
@@ -295,6 +324,10 @@ export function followShop(id) {
   return request.post(`/shop/${id}/follow`)
 }
 
+export function getFollowingShops() {
+  return request.get('/shop/following')
+}
+
 export function registerShop(data) {
   return request.post('/shop/register', data)
 }
@@ -371,6 +404,14 @@ export function getNotifications(params) {
   return request.get('/notification/list', { params })
 }
 
+export function createAnnouncement(data) {
+  return request.post('/admin/notification', data)
+}
+
+export function getChatSessions() {
+  return request.get('/chat/sessions')
+}
+
 export function getUnreadCount() {
   return request.get('/notification/unread-count')
 }
@@ -391,6 +432,15 @@ export function getCouponCount() {
 // ========== 评价补充 ==========
 export function getProductReviews(productId, params) {
   return request.get(`/review/product/${productId}`, { params })
+}
+
+// ========== 商家评价管理 ==========
+export function getSellerReviews(params) {
+  return request.get('/seller/review', { params })
+}
+
+export function replyReview(id, data) {
+  return request.put(`/seller/review/${id}/reply`, data)
 }
 
 // ========== 会员体系 ==========

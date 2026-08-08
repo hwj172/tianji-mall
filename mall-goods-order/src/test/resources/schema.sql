@@ -116,6 +116,8 @@ CREATE TABLE IF NOT EXISTS review (
     content     VARCHAR(1000),
     images      VARCHAR(2048),
     status      TINYINT DEFAULT 1,
+    reply       VARCHAR(500),
+    reply_time  TIMESTAMP,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     CONSTRAINT uk_user_order_product UNIQUE (user_id, order_id, product_id)
@@ -166,8 +168,21 @@ CREATE TABLE IF NOT EXISTS coupon (
     end_time              TIMESTAMP NOT NULL,
     applicable_category_id BIGINT DEFAULT NULL,
     applicable_product_id  BIGINT DEFAULT NULL,
+    is_newbie             TINYINT DEFAULT 0,
     create_time           TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     update_time           TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE TABLE IF NOT EXISTS promotion (
+    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
+    name        VARCHAR(128) NOT NULL,
+    threshold   DECIMAL(10,2) NOT NULL,
+    discount    DECIMAL(10,2) NOT NULL,
+    start_time  TIMESTAMP NOT NULL,
+    end_time    TIMESTAMP NOT NULL,
+    status      TINYINT DEFAULT 1,
+    create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    update_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 CREATE TABLE IF NOT EXISTS user_coupon (
@@ -236,6 +251,7 @@ CREATE TABLE IF NOT EXISTS shop (
     name VARCHAR(64) NOT NULL,
     logo VARCHAR(256),
     description VARCHAR(512),
+    notice VARCHAR(500),
     seller_id BIGINT NOT NULL,
     status TINYINT DEFAULT 1,
     create_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,

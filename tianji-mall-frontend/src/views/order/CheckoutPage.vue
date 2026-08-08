@@ -37,6 +37,28 @@
         </div>
       </div>
 
+      <!-- 满减活动（自动应用，无需选择） -->
+      <div class="section" v-if="availablePromotions.length">
+        <h3 class="section-title">满减活动</h3>
+        <div class="promotion-options">
+          <div
+            v-for="p in applicablePromotions" :key="p.id"
+            class="promotion-option active"
+          >
+            <div class="po-name">{{ p.name }}</div>
+            <div class="po-value">满 ¥{{ fmtPrice(p.threshold) }} 减 ¥{{ fmtPrice(p.discount) }}</div>
+          </div>
+          <div
+            v-for="p in notMetPromotions" :key="'nm-' + p.id"
+            class="promotion-option"
+          >
+            <div class="po-name">{{ p.name }}</div>
+            <div class="po-value">满 ¥{{ fmtPrice(p.threshold) }} 减 ¥{{ fmtPrice(p.discount) }}</div>
+            <div class="po-hint">还差 ¥{{ fmtPrice(p.threshold - Number(totalPrice)) }}</div>
+          </div>
+        </div>
+      </div>
+
       <!-- 优惠券 -->
       <div class="section" v-if="availableCoupons.length">
         <h3 class="section-title">优惠券</h3>
@@ -58,9 +80,9 @@
       <div class="checkout-footer">
         <div class="footer-summary">
           <span>共 <b>{{ totalCount }}</b> 件，合计：</span>
-          <span v-if="couponDiscount > 0" class="footer-original">¥{{ fmtPrice(totalPrice) }}</span>
+          <span v-if="totalDiscount > 0" class="footer-original">¥{{ fmtPrice(totalPrice) }}</span>
           <span class="footer-total">¥{{ fmtPrice(payPrice) }}</span>
-          <span v-if="couponDiscount > 0" class="footer-coupon">已优惠 ¥{{ fmtPrice(couponDiscount) }}</span>
+          <span v-if="totalDiscount > 0" class="footer-coupon">已优惠 ¥{{ fmtPrice(totalDiscount) }}</span>
         </div>
         <el-button type="primary" size="large" @click="submitOrder" :loading="submitting" class="submit-btn">
           提交订单
@@ -106,7 +128,7 @@ let regionTreePromise = null
 import { ref, computed, onMounted, reactive } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree, getMyCoupons } from '@/api'
+import { getCartList, getProductBatch, getProductDetail, getAddressList, addAddress, createOrder, getRegionTree, getMyCoupons, getCurrentPromotions } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtPrice } from '@/utils/format'
 import { getFirstImage } from '@/utils/image'
@@ -166,7 +188,39 @@ const couponDiscount = computed(() => {
   return Math.round(total * (1 - Number(c.discountValue)) * 100) / 100
 })
 
-const payPrice = computed(() => (Number(totalPrice) - couponDiscount.value).toFixed(2))
+// ====== 满减活动 ======
+const promotions = ref([])
+
+// API 只返回当前有效活动，前端按门槛过滤
+const applicablePromotions = computed(() => {
+  const total = Number(totalPrice)
+  return promotions.value.filter(p => Number(p.threshold) <= total)
+})
+const notMetPromotions = computed(() => {
+  const total = Number(totalPrice)
+  return promotions.value.filter(p => Number(p.threshold) > total)
+})
+const availablePromotions = computed(() => promotions.value)
+
+// 满减自动应用：取满足门槛的最大减免，不超过订单金额（与后端 calculateDiscount 一致）
+const promotionDiscount = computed(() => {
+  const total = Number(totalPrice)
+  let best = 0
+  for (const p of applicablePromotions.value) {
+    best = Math.max(best, Math.min(Number(p.discount), total))
+  }
+  return best
+})
+
+const totalDiscount = computed(() => promotionDiscount.value + couponDiscount.value)
+const payPrice = computed(() => (Number(totalPrice) - totalDiscount.value).toFixed(2))
+
+async function loadPromotions() {
+  try {
+    const res = await getCurrentPromotions()
+    promotions.value = res.data || []
+  } catch { /* ignore */ }
+}
 
 async function loadCoupons() {
   try {
@@ -196,7 +250,7 @@ function openAddAddress() {
 onMounted(async () => {
   loading.value = true
   try {
-    await Promise.all([loadAddresses(), loadCoupons()])
+    await Promise.all([loadAddresses(), loadCoupons(), loadPromotions()])
     if (buyParams.value) await loadBuyItem()
     else await loadItems()
   } finally {
@@ -352,6 +406,14 @@ async function submitOrder() {
 .co-name { font-size: 14px; font-weight: 600; }
 .co-value { color: #ff5000; font-weight: 700; font-size: 14px; }
 .co-cond { font-size: 12px; color: #999; }
+
+/* 满减活动（自动应用） */
+.promotion-options { display: flex; flex-wrap: wrap; gap: 12px; }
+.promotion-option { border: 1px solid #f0f0f0; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.promotion-option.active { border-color: #ff5000; background: #fff7f0; }
+.po-name { font-size: 14px; font-weight: 600; }
+.po-value { color: #ff5000; font-weight: 700; font-size: 14px; }
+.po-hint { font-size: 12px; color: #999; }
 
 .region-row { display: flex; gap: 8px; }
 .region-input { flex: 1; }

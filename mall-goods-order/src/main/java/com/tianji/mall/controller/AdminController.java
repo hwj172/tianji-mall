@@ -21,7 +21,10 @@ import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.ProductAttribute;
 import com.tianji.mall.entity.ProductSku;
+import com.tianji.mall.entity.Promotion;
 import com.tianji.mall.dto.CouponRequest;
+import com.tianji.mall.dto.NotificationRequest;
+import com.tianji.mall.dto.PromotionRequest;
 import com.tianji.mall.feign.UserFeignClient;
 import com.tianji.mall.service.*;
 import jakarta.validation.Valid;
@@ -49,6 +52,8 @@ public class AdminController {
     private final GroupBuyService groupBuyService;
     private final ShopService shopService;
     private final BannerService bannerService;
+    private final PromotionService promotionService;
+    private final NotificationService notificationService;
     private final UserFeignClient userFeignClient;
 
     // ==================== 店铺管理 ====================
@@ -195,6 +200,43 @@ public class AdminController {
     @AuditLog(action = "delete_coupon", targetType = "coupon", targetArg = 0)
     public R<Void> deleteCoupon(@PathVariable("id") Long id) {
         couponService.disable(id);
+        return R.ok();
+    }
+
+    // ==================== 满减活动管理 ====================
+
+    @GetMapping("/promotion")
+    public R<List<Promotion>> listPromotions(@RequestParam(defaultValue = "1") int page,
+                                             @RequestParam(defaultValue = "10") int size) {
+        return R.ok(promotionService.listByPage(page, size));
+    }
+
+    @PostMapping("/promotion")
+    @AuditLog(action = "create_promotion", targetType = "promotion")
+    public R<Promotion> createPromotion(@Valid @RequestBody PromotionRequest req) {
+        return R.ok(promotionService.create(req));
+    }
+
+    @PutMapping("/promotion/{id}")
+    @AuditLog(action = "update_promotion", targetType = "promotion", targetArg = 0)
+    public R<Void> updatePromotion(@PathVariable("id") Long id, @Valid @RequestBody PromotionRequest req) {
+        promotionService.update(id, req);
+        return R.ok();
+    }
+
+    @DeleteMapping("/promotion/{id}")
+    @AuditLog(action = "delete_promotion", targetType = "promotion", targetArg = 0)
+    public R<Void> deletePromotion(@PathVariable("id") Long id) {
+        promotionService.disable(id);
+        return R.ok();
+    }
+
+    // ===== 系统公告（面向全量用户广播，userId=0） =====
+
+    @PostMapping("/notification")
+    @AuditLog(action = "create_announcement", targetType = "notification")
+    public R<Void> createAnnouncement(@Valid @RequestBody NotificationRequest req) {
+        notificationService.createNotification(0L, "SYSTEM_ANNOUNCEMENT", req.getTitle(), req.getContent(), null);
         return R.ok();
     }
 

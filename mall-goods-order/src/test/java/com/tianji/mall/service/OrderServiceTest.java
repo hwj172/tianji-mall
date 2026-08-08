@@ -49,6 +49,8 @@ class OrderServiceTest {
     @Mock
     private CouponService couponService;
     @Mock
+    private PromotionService promotionService;
+    @Mock
     private ProductSkuService skuService;
     @Mock
     private SeckillService seckillService;
@@ -61,7 +63,7 @@ class OrderServiceTest {
 
     @BeforeEach
     void setUp() throws InterruptedException {
-        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, redissonClient, rocketMQTemplate, seckillService, productMapper, memberService);
+        orderService = new OrderService(orderItemMapper, cartService, productService, skuService, addressService, couponService, promotionService, redissonClient, rocketMQTemplate, seckillService, productMapper, memberService);
         ReflectionTestUtils.setField(orderService, "baseMapper", orderMapper);
 
         // 分布式锁 mock：所有锁操作默认成功（lenient 避免非锁路径报 UnnecessaryStubbing）
@@ -69,6 +71,9 @@ class OrderServiceTest {
         lenient().when(mockLock.tryLock(anyLong(), anyLong(), any())).thenReturn(true);
         lenient().when(redissonClient.getLock(anyString())).thenReturn(mockLock);
         lenient().when(redissonClient.getMultiLock(any())).thenReturn(mockLock);
+
+        // 满减活动 mock：无活动时折扣为 0（lenient 避免非满减路径报 UnnecessaryStubbing）
+        lenient().when(promotionService.calculateDiscount(any())).thenReturn(BigDecimal.ZERO);
     }
 
     // ==================== createOrder ====================

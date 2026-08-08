@@ -25,6 +25,7 @@ public class Coupon {
     private LocalDateTime endTime;
     private Long applicableCategoryId;
     private Long applicableProductId;
+    private Integer isNewbie;      // 1=新人专享券（注册后自动发放）
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

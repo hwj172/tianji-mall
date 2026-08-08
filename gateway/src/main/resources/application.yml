@@ -95,6 +95,10 @@ spring:
           uri: lb://mall-goods-order
           predicates:
             - Path=/api/coupon/**
+        - id: mall-promotion
+          uri: lb://mall-goods-order
+          predicates:
+            - Path=/api/promotion/**
         - id: mall-favorite
           uri: lb://mall-goods-order
           predicates:

@@ -43,7 +43,9 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/group-buy",     // 拼团列表/详情公开；start/join/my 受保护
             "/api/home",
             "/api/review/product",
-            "/api/pay/notify"
+            "/api/pay/notify",
+            "/api/promotion",     // 满减活动（结算页展示当前有效活动）
+            "/api/coupon/list"    // 可用优惠券（购物车/下单页展示）
     );
 
     /** 命中公开前缀但仍需 JWT 的精确子路径（避免 /api/shop/register 与 /api/user/register 后缀冲突） */
@@ -67,7 +69,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/cart/internal",
             "/api/product/internal",
             "/api/user/internal",
-            "/api/pay/internal"
+            "/api/pay/internal",
+            "/api/coupon/internal"
     );
 
     @Value("${jwt.secret}")

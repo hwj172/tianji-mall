@@ -165,15 +165,23 @@ class ReviewServiceIntegrationTest {
         ReviewCreateRequest req2 = buildCreateRequest(orderId2, productId, 3, "一般");
         reviewService.createReview(userId, req2);
 
-        IPage<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10);
+        IPage<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10, "all");
 
         assertThat(reviews.getRecords()).hasSize(2);
         assertThat(reviews.getRecords()).extracting(ReviewResponse::getRating).containsExactlyInAnyOrder(5, 3);
+
+        // rating 筛选：good → 仅评分 ≥ 4
+        IPage<ReviewResponse> goodReviews = reviewService.getProductReviews(productId, 1, 10, "good");
+        assertThat(goodReviews.getRecords()).extracting(ReviewResponse::getRating).containsExactly(5);
+
+        // 中评：仅评分 = 3
+        IPage<ReviewResponse> middleReviews = reviewService.getProductReviews(productId, 1, 10, "middle");
+        assertThat(middleReviews.getRecords()).extracting(ReviewResponse::getRating).containsExactly(3);
     }
 
     @Test
     void shouldGetEmptyReviewsForProduct() {
-        IPage<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10);
+        IPage<ReviewResponse> reviews = reviewService.getProductReviews(productId, 1, 10, "all");
         assertThat(reviews.getRecords()).isEmpty();
     }
 

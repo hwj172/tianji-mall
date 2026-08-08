@@ -8,6 +8,8 @@
         <el-menu-item index="/admin/products"><el-icon><Goods /></el-icon> 商品管理</el-menu-item>
         <el-menu-item index="/admin/orders"><el-icon><Document /></el-icon> 订单管理</el-menu-item>
         <el-menu-item index="/admin/coupons"><el-icon><Discount /></el-icon> 优惠券管理</el-menu-item>
+        <el-menu-item index="/admin/promotions"><el-icon><Present /></el-icon> 满减活动</el-menu-item>
+        <el-menu-item index="/admin/announcement"><el-icon><Bell /></el-icon> 系统公告</el-menu-item>
         <el-menu-item index="/admin/shops"><el-icon><Shop /></el-icon> 店铺管理</el-menu-item>
         <el-menu-item index="/admin/users"><el-icon><User /></el-icon> 用户管理</el-menu-item>
       </el-menu>

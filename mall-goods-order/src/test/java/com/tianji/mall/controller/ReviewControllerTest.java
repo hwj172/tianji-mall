@@ -129,15 +129,30 @@ class ReviewControllerTest {
         resp.setId(1L);
         resp.setRating(5);
         resp.setContent("好评");
-        when(reviewService.getProductReviews(10L, 1, 20))
+        when(reviewService.getProductReviews(10L, 1, 20, "all"))
                 .thenReturn(new Page<ReviewResponse>().setRecords(List.of(resp)));
 
         mockMvc.perform(get("/api/review/product/10")
                         .param("page", "1")
-                        .param("size", "20"))
+                        .param("size", "20")
+                        .param("filter", "all"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.records[0].rating").value(5))
                 .andExpect(jsonPath("$.data.records[0].content").value("好评"));
+    }
+
+    @Test
+    void shouldGetProductReviewsWithRatingFilter() throws Exception {
+        ReviewResponse resp = new ReviewResponse();
+        resp.setId(1L);
+        resp.setRating(5);
+        when(reviewService.getProductReviews(10L, 1, 20, "good"))
+                .thenReturn(new Page<ReviewResponse>().setRecords(List.of(resp)));
+
+        mockMvc.perform(get("/api/review/product/10")
+                        .param("filter", "good"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records[0].rating").value(5));
     }
 
     @Test

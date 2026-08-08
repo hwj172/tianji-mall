@@ -1,18 +1,23 @@
 package com.tianji.mall.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.exception.BizErrorCode;
 import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.annotation.AuditLog;
+import com.tianji.mall.dto.ReviewReplyRequest;
+import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.dto.ShopUpdateRequest;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.entity.Review;
 import com.tianji.mall.entity.Shop;
 import com.tianji.mall.service.OrderService;
 import com.tianji.mall.service.ProductService;
+import com.tianji.mall.service.ReviewService;
 import com.tianji.mall.service.ShopService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -32,6 +37,7 @@ public class SellerController {
     private final ShopService shopService;
     private final ProductService productService;
     private final OrderService orderService;
+    private final ReviewService reviewService;
     private final JwtUtil jwtUtil;
 
     // ===== 店铺管理 =====
@@ -47,7 +53,7 @@ public class SellerController {
     public R<Void> updateShop(@RequestHeader("Authorization") String authHeader,
                                @Valid @RequestBody ShopUpdateRequest req) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        shopService.updateShopInfo(userId, req.getName(), req.getLogo(), req.getDescription());
+        shopService.updateShopInfo(userId, req.getName(), req.getLogo(), req.getDescription(), req.getNotice());
         return R.ok();
     }
 
@@ -134,6 +140,36 @@ public class SellerController {
             return R.fail(BizErrorCode.SHOP_NOT_OWNER);
         }
         orderService.shipOrder(id, body.getTrackingCompany(), body.getTrackingNumber());
+        return R.ok();
+    }
+
+    // ===== 评价管理 =====
+
+    @GetMapping("/review")
+    public R<IPage<ReviewResponse>> reviews(@RequestHeader("Authorization") String authHeader,
+                                             @RequestParam(defaultValue = "1") int page,
+                                             @RequestParam(defaultValue = "20") int size) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        Shop shop = shopService.getBySellerId(userId);
+        return R.ok(reviewService.getShopReviews(shop.getId(), page, size));
+    }
+
+    @PutMapping("/review/{id}/reply")
+    @AuditLog(action = "reply_review", targetType = "review", targetArg = 1)
+    public R<Void> replyReview(@RequestHeader("Authorization") String authHeader,
+                                @PathVariable("id") Long id,
+                                @RequestBody @Valid ReviewReplyRequest req) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        Shop shop = shopService.getBySellerId(userId);
+        Review review = reviewService.getById(id);
+        if (review == null) {
+            return R.fail(BizErrorCode.REVIEW_NOT_FOUND);
+        }
+        Product product = productService.getById(review.getProductId());
+        if (product == null || !shop.getId().equals(product.getShopId())) {
+            return R.fail(BizErrorCode.SHOP_NOT_OWNER);
+        }
+        reviewService.replyReview(id, req.getReply());
         return R.ok();
     }
 

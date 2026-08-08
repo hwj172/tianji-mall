@@ -32,8 +32,9 @@ public class ReviewController {
     @GetMapping("/product/{productId}")
     public R<IPage<ReviewResponse>> productReviews(@PathVariable("productId") Long productId,
                                                    @RequestParam(defaultValue = "1") int page,
-                                                   @RequestParam(defaultValue = "20") int size) {
-        return R.ok(reviewService.getProductReviews(productId, page, size));
+                                                   @RequestParam(defaultValue = "20") int size,
+                                                   @RequestParam(defaultValue = "all") String filter) {
+        return R.ok(reviewService.getProductReviews(productId, page, size, filter));
     }
 
     @GetMapping("/my")

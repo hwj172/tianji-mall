@@ -21,6 +21,12 @@
       </el-table-column>
       <el-table-column prop="totalQuantity" label="总量" width="70" />
       <el-table-column prop="usedQuantity" label="已用" width="70" />
+      <el-table-column label="新人券" width="80">
+        <template #default="{ row }">
+          <el-tag v-if="row.isNewbie === 1" type="warning" size="small">新人专享</el-tag>
+          <span v-else>—</span>
+        </template>
+      </el-table-column>
       <el-table-column label="有效期" width="200">
         <template #default="{ row }">{{ fmtTime(row.startTime) }} ~ {{ fmtTime(row.endTime) }}</template>
       </el-table-column>
@@ -64,6 +70,10 @@
             <el-option v-for="c in flatCategories" :key="c.id" :label="c.name" :value="c.id" />
           </el-select>
         </el-form-item>
+        <el-form-item label="新人专享">
+          <el-switch v-model="form.isNewbie" :active-value="1" :inactive-value="0" />
+          <span class="form-hint">开启后用户注册时自动发放</span>
+        </el-form-item>
       </el-form>
       <template #footer>
         <el-button @click="dialogVisible = false">取消</el-button>
@@ -89,7 +99,7 @@ const dialogVisible = ref(false)
 const editingId = ref(null)
 const form = reactive({
   name: '', discountType: 'FIXED', discountValue: 10, minOrderAmount: 0,
-  totalQuantity: 100, startTime: null, endTime: null, applicableCategoryId: null
+  totalQuantity: 100, startTime: null, endTime: null, applicableCategoryId: null, isNewbie: 0
 })
 
 onMounted(async () => {
@@ -128,13 +138,14 @@ function openDialog(row) {
     Object.assign(form, {
       name: row.name, discountType: row.discountType, discountValue: row.discountValue,
       minOrderAmount: row.minOrderAmount || 0, totalQuantity: row.totalQuantity,
-      startTime: row.startTime, endTime: row.endTime, applicableCategoryId: row.applicableCategoryId
+      startTime: row.startTime, endTime: row.endTime, applicableCategoryId: row.applicableCategoryId,
+      isNewbie: row.isNewbie || 0
     })
   } else {
     editingId.value = null
     Object.assign(form, {
       name: '', discountType: 'FIXED', discountValue: 10, minOrderAmount: 0,
-      totalQuantity: 100, startTime: null, endTime: null, applicableCategoryId: null
+      totalQuantity: 100, startTime: null, endTime: null, applicableCategoryId: null, isNewbie: 0
     })
   }
   dialogVisible.value = true

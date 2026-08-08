@@ -135,6 +135,16 @@
         </div>
       </div>
 
+      <!-- 评价分组筛选 -->
+      <div class="review-filter" v-if="detail.reviewStats?.count">
+        <span
+          v-for="f in reviewFilters"
+          :key="f.value"
+          :class="['rf-item', { active: reviewFilter === f.value }]"
+          @click="switchReviewFilter(f.value)"
+        >{{ f.label }}</span>
+      </div>
+
       <div v-loading="reviewLoading" class="review-list-container">
         <div v-if="reviews.length === 0 && !reviewLoading" class="review-empty">
           <el-empty description="暂无评价" :image-size="80" />
@@ -149,6 +159,12 @@
           <div class="review-content" v-if="r.content">{{ r.content }}</div>
           <div class="review-images" v-if="reviewImages(r).length">
             <img v-for="(img, i) in reviewImages(r)" :key="i" :src="img" class="review-img" loading="lazy" decoding="async" />
+          </div>
+          <!-- 商家回复 -->
+          <div class="review-reply" v-if="r.reply">
+            <span class="rr-label">商家回复：</span>
+            <span class="rr-content">{{ r.reply }}</span>
+            <span class="rr-time" v-if="r.replyTime">{{ fmtTime(r.replyTime, { dateOnly: true }) }}</span>
           </div>
         </div>
         <div class="review-load-more" v-if="reviewTotal > reviews.length">
@@ -190,6 +206,13 @@ const reviews = ref([])
 const reviewLoading = ref(false)
 const reviewPage = ref(1)
 const reviewTotal = ref(0)
+const reviewFilter = ref('all')
+const reviewFilters = [
+  { value: 'all', label: '全部' },
+  { value: 'good', label: '好评' },
+  { value: 'middle', label: '中评' },
+  { value: 'bad', label: '差评' }
+]
 
 const imageList = computed(() => {
   if (!product.value?.images) return []
@@ -344,7 +367,7 @@ async function loadReviews() {
   reviewLoading.value = true
   reviewPage.value = 1
   try {
-    const res = await getProductReviews(route.params.id, { page: 1, size: 5 })
+    const res = await getProductReviews(route.params.id, { page: 1, size: 5, filter: reviewFilter.value })
     if (res.data) {
       reviews.value = res.data.records || res.data || []
       reviewTotal.value = res.data.total || 0
@@ -354,6 +377,12 @@ async function loadReviews() {
   } finally {
     reviewLoading.value = false
   }
+}
+
+function switchReviewFilter(value) {
+  if (reviewFilter.value === value) return
+  reviewFilter.value = value
+  loadReviews()
 }
 
 function reviewImages(r) {
@@ -368,7 +397,7 @@ async function loadMoreReviews() {
   reviewLoading.value = true
   try {
     reviewPage.value++
-    const res = await getProductReviews(route.params.id, { page: reviewPage.value, size: 5 })
+    const res = await getProductReviews(route.params.id, { page: reviewPage.value, size: 5, filter: reviewFilter.value })
     if (res.data) {
       const list = res.data.records || res.data || []
       reviews.value = [...reviews.value, ...list]
@@ -530,6 +559,14 @@ function onThumbError(e) {
 .review-images { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .review-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #f0f0f0; }
 .review-load-more { text-align: center; padding: 16px 0; }
+.review-filter { display: flex; gap: 8px; margin-bottom: 12px; }
+.rf-item { font-size: 13px; color: #666; padding: 4px 14px; border-radius: 14px; border: 1px solid #e0e0e0; cursor: pointer; transition: all .2s; }
+.rf-item:hover { color: #ff5000; border-color: #ff5000; }
+.rf-item.active { color: #fff; background: #ff5000; border-color: #ff5000; }
+.review-reply { margin-top: 10px; background: #f7f8fa; border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
+.rr-label { color: #ff5000; font-weight: 500; }
+.rr-content { color: #333; }
+.rr-time { color: #999; font-size: 12px; margin-left: 8px; }
 
 /* 批次 C：SKU 提示条 + 秒杀倒计时 + 响应式 */
 .sku-hint { font-size: 13px; color: #ff5000; background: #fff5f0; border: 1px solid #ffd8c8; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; }

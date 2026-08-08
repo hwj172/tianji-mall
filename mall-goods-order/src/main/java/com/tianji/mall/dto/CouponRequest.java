@@ -34,4 +34,6 @@ public class CouponRequest {
     private Long applicableCategoryId; // NULL=全部
 
     private Long applicableProductId; // NULL=全部
+
+    private Integer isNewbie; // 1=新人专享券（注册后自动发放），默认 0
 }

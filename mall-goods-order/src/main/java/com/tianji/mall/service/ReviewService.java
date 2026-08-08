@@ -12,10 +12,12 @@ import com.tianji.mall.dto.ReviewCreateRequest;
 import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
+import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.Review;
 import com.tianji.mall.feign.UserFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.mapper.ReviewMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
 
@@ -32,11 +35,14 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
 
     private final OrderMapper orderMapper;
     private final OrderItemMapper orderItemMapper;
+    private final ProductMapper productMapper;
     private final UserFeignClient userFeignClient;
 
-    public ReviewService(OrderMapper orderMapper, OrderItemMapper orderItemMapper, UserFeignClient userFeignClient) {
+    public ReviewService(OrderMapper orderMapper, OrderItemMapper orderItemMapper,
+                         ProductMapper productMapper, UserFeignClient userFeignClient) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
+        this.productMapper = productMapper;
         this.userFeignClient = userFeignClient;
     }
 
@@ -84,13 +90,55 @@ public class ReviewService extends ServiceImpl<ReviewMapper, Review> {
         log.info("用户 {} 评价商品 {}，评分 {}", userId, req.getProductId(), req.getRating());
     }
 
-    public IPage<ReviewResponse> getProductReviews(Long productId, int page, int size) {
+    public IPage<ReviewResponse> getProductReviews(Long productId, int page, int size, String filter) {
+        LambdaQueryWrapper<Review> wrapper = new LambdaQueryWrapper<Review>()
+                .eq(Review::getProductId, productId)
+                .eq(Review::getStatus, 1)
+                .orderByDesc(Review::getCreateTime);
+        applyRatingFilter(wrapper, filter);
+        Page<Review> pageResult = page(new Page<>(page, size), wrapper);
+        return pageResult.convert(this::toResponse);
+    }
+
+    /**
+     * 按评价分组筛选：good=好评(≥4)、middle=中评(=3)、bad=差评(≤2)，其他值/all 返回全部。
+     */
+    private void applyRatingFilter(LambdaQueryWrapper<Review> wrapper, String filter) {
+        if (filter == null) return;
+        switch (filter) {
+            case "good" -> wrapper.ge(Review::getRating, 4);
+            case "middle" -> wrapper.eq(Review::getRating, 3);
+            case "bad" -> wrapper.le(Review::getRating, 2);
+            default -> { /* all */ }
+        }
+    }
+
+    /** 商家查看本店商品评价（按 shop 过滤） */
+    public IPage<ReviewResponse> getShopReviews(Long shopId, int page, int size) {
+        List<Long> productIds = productMapper.selectList(
+                        new LambdaQueryWrapper<Product>().eq(Product::getShopId, shopId))
+                .stream().map(Product::getId).toList();
+        if (productIds.isEmpty()) {
+            return new Page<>(page, size);
+        }
         Page<Review> pageResult = page(new Page<>(page, size),
                 new LambdaQueryWrapper<Review>()
-                        .eq(Review::getProductId, productId)
+                        .in(Review::getProductId, productIds)
                         .eq(Review::getStatus, 1)
                         .orderByDesc(Review::getCreateTime));
         return pageResult.convert(this::toResponse);
+    }
+
+    /** 商家回复评价（归属校验由调用方 SellerController 完成） */
+    public void replyReview(Long reviewId, String reply) {
+        Review review = getById(reviewId);
+        if (review == null) {
+            throw new BizException(BizErrorCode.REVIEW_NOT_FOUND);
+        }
+        review.setReply(reply);
+        review.setReplyTime(LocalDateTime.now());
+        updateById(review);
+        log.info("商家回复评价 {}：{}", reviewId, reply);
     }
 
     public List<ReviewResponse> getMyReviews(Long userId, int page, int size) {

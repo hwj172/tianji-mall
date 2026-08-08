@@ -9,6 +9,9 @@
           <el-rate :model-value="r.rating" disabled show-score size="small" />
         </div>
         <div class="rc-content" v-if="r.content">{{ r.content }}</div>
+        <div class="rc-reply" v-if="r.reply">
+          <span class="rc-reply-label">商家回复：</span>{{ r.reply }}
+        </div>
         <div class="rc-time">{{ fmtTime(r.createTime) }}</div>
       </div>
       <div class="load-more" v-if="hasMore">
@@ -42,5 +45,7 @@ onMounted(() => loadData())
 .rc-product { font-size: 14px; cursor: pointer; color: #333; }
 .rc-product:hover { color: #ff5000; }
 .rc-content { font-size: 14px; color: #333; line-height: 1.6; margin-bottom: 8px; }
+.rc-reply { margin-top: 10px; background: #f7f8fa; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #333; line-height: 1.6; }
+.rc-reply-label { color: #ff5000; font-weight: 500; }
 .rc-time { font-size: 12px; color: #999; }
 </style>

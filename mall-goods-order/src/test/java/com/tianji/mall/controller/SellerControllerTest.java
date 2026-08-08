@@ -1,8 +1,11 @@
 package com.tianji.mall.controller;
 
+import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.util.JwtUtil;
+import com.tianji.mall.dto.ReviewResponse;
 import com.tianji.mall.entity.Product;
+import com.tianji.mall.entity.Review;
 import com.tianji.mall.entity.Shop;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.service.*;
@@ -75,6 +78,9 @@ class SellerControllerTest {
 
     @MockBean
     private GroupBuyService groupBuyService;
+
+    @MockBean
+    private ReviewService reviewService;
 
     private Shop buildShop() {
         Shop shop = new Shop();
@@ -251,6 +257,70 @@ class SellerControllerTest {
                         .header("Authorization", "Bearer token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"trackingCompany\":\"顺丰\",\"trackingNumber\":\"SF123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(50002));
+    }
+
+    // ==================== 评价管理 ====================
+
+    @Test
+    void shouldGetShopReviews() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        ReviewResponse resp = new ReviewResponse();
+        resp.setId(1L);
+        resp.setProductId(10L);
+        resp.setRating(5);
+        resp.setContent("很好");
+        IPage<ReviewResponse> reviewPage = new Page<>(1, 20);
+        reviewPage.setRecords(List.of(resp));
+        when(reviewService.getShopReviews(1L, 1, 20)).thenReturn(reviewPage);
+
+        mockMvc.perform(get("/api/seller/review")
+                        .header("Authorization", "Bearer token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.records[0].productId").value(10))
+                .andExpect(jsonPath("$.data.records[0].rating").value(5));
+    }
+
+    @Test
+    void shouldReplyReview() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        Review review = new Review();
+        review.setId(1L);
+        review.setProductId(10L);
+        when(reviewService.getById(1L)).thenReturn(review);
+        Product product = new Product();
+        product.setId(10L);
+        product.setShopId(1L);
+        when(productService.getById(10L)).thenReturn(product);
+
+        mockMvc.perform(put("/api/seller/review/1/reply")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reply\":\"感谢支持\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldFailReplyReviewNotOwned() throws Exception {
+        when(jwtUtil.getUserId("token")).thenReturn(2L);
+        when(shopService.getBySellerId(2L)).thenReturn(buildShop());
+        Review review = new Review();
+        review.setId(1L);
+        review.setProductId(10L);
+        when(reviewService.getById(1L)).thenReturn(review);
+        Product foreign = new Product();
+        foreign.setId(10L);
+        foreign.setShopId(99L); // 非本店商品
+        when(productService.getById(10L)).thenReturn(foreign);
+
+        mockMvc.perform(put("/api/seller/review/1/reply")
+                        .header("Authorization", "Bearer token")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"reply\":\"感谢支持\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(50002));
     }

@@ -196,6 +196,58 @@ class CouponServiceTest {
         assertThat(count).isEqualTo(1);
     }
 
+    // ============ Newbie coupon (register auto-issue) ============
+
+    @Test
+    void shouldIssueNewbieCouponsOnRegister() {
+        when(couponMapper.selectList(any(LambdaQueryWrapper.class)))
+                .thenReturn(List.of(buildNewbieCoupon(1L, "新人专享券")));
+        when(couponMapper.selectById(1L)).thenReturn(buildNewbieCoupon(1L, "新人专享券"));
+        when(userCouponMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(couponMapper.incrementUsedQuantity(1L)).thenReturn(1);
+        when(userCouponMapper.insert(any(UserCoupon.class))).thenReturn(1);
+
+        int issued = couponService.issueNewbieCoupon(100L);
+
+        assertThat(issued).isEqualTo(1);
+        verify(userCouponMapper).insert(any(UserCoupon.class));
+    }
+
+    @Test
+    void shouldReturnZeroWhenNoNewbieCoupon() {
+        when(couponMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of());
+
+        int issued = couponService.issueNewbieCoupon(100L);
+
+        assertThat(issued).isZero();
+    }
+
+    @Test
+    void shouldSkipExhaustedOrDuplicateSilently() {
+        Coupon c1 = buildNewbieCoupon(1L, "新人券1");
+        Coupon c2 = buildNewbieCoupon(2L, "新人券2");
+        when(couponMapper.selectList(any(LambdaQueryWrapper.class))).thenReturn(List.of(c1, c2));
+        when(couponMapper.selectById(1L)).thenReturn(c1);
+        when(couponMapper.selectById(2L)).thenReturn(c2);
+        when(userCouponMapper.selectOne(any(LambdaQueryWrapper.class))).thenReturn(null);
+        when(couponMapper.incrementUsedQuantity(1L)).thenReturn(1);
+        when(couponMapper.incrementUsedQuantity(2L)).thenReturn(0); // 已领完
+        when(userCouponMapper.insert(any(UserCoupon.class))).thenReturn(1);
+
+        // 第 1 张发放成功，第 2 张领完静默跳过
+        int issued = couponService.issueNewbieCoupon(100L);
+
+        assertThat(issued).isEqualTo(1);
+    }
+
+    private Coupon buildNewbieCoupon(Long id, String name) {
+        Coupon c = buildCoupon(id, name, "FIXED", 20, 100);
+        c.setIsNewbie(1);
+        c.setStartTime(LocalDateTime.now().minusDays(1));
+        c.setEndTime(LocalDateTime.now().plusDays(7));
+        return c;
+    }
+
     // ============ Scope check ============
 
     @Test
