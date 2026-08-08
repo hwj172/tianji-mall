@@ -150,7 +150,7 @@ class ProductServiceTest {
 
     @Test
     void shouldCreateProduct() {
-        productService.createProduct("New Product", "desc", BigDecimal.valueOf(99.9), 100, 1L, "img.jpg");
+        productService.createProduct("New Product", "desc", BigDecimal.valueOf(99.9), 100, 1L, 1, "img.jpg");
 
         ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
         verify(productMapper).insert(captor.capture());

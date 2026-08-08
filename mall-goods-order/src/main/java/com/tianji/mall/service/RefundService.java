@@ -12,6 +12,7 @@ import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.entity.Refund;
 import com.tianji.mall.entity.RefundItem;
+import com.tianji.mall.entity.Shop;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
@@ -36,15 +37,17 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     private final RefundItemMapper refundItemMapper;
     private final OrderService orderService;
     private final PayFeignClient payFeignClient;
+    private final ShopService shopService;
 
     public RefundService(OrderMapper orderMapper, OrderItemMapper orderItemMapper,
                          RefundItemMapper refundItemMapper, OrderService orderService,
-                         PayFeignClient payFeignClient) {
+                         PayFeignClient payFeignClient, ShopService shopService) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.refundItemMapper = refundItemMapper;
         this.orderService = orderService;
         this.payFeignClient = payFeignClient;
+        this.shopService = shopService;
     }
 
     /**
@@ -81,10 +84,14 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
         List<RefundItem> refundItems = new ArrayList<>();
 
         for (RefundRequest.RefundItemRequest itemReq : req.getItems()) {
+            Long itemOrderItemId = itemReq.getOrderItemId();
+            if (itemOrderItemId == null) {
+                throw new BizException(BizErrorCode.REFUND_ITEM_NOT_FOUND, "orderItemId 缺失");
+            }
             OrderItem orderItem = allItems.stream()
-                    .filter(i -> i.getId().equals(itemReq.getOrderItemId()))
+                    .filter(i -> itemOrderItemId.equals(i.getId()))
                     .findFirst()
-                    .orElseThrow(() -> new BizException(BizErrorCode.REFUND_ITEM_NOT_FOUND, itemReq.getOrderItemId().toString()));
+                    .orElseThrow(() -> new BizException(BizErrorCode.REFUND_ITEM_NOT_FOUND, itemOrderItemId.toString()));
 
             int qty = itemReq.getQuantity() != null ? itemReq.getQuantity() : orderItem.getQuantity();
             if (qty <= 0 || qty > orderItem.getQuantity()) {
@@ -188,11 +195,11 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     }
 
     /**
-     * 退款详情（含商品明细）。
+     * 退款详情（含商品明细）。仅本人可查看（IDOR 防护）。
      */
-    public Map<String, Object> getRefundDetail(Long refundId) {
+    public Map<String, Object> getRefundDetail(Long userId, Long refundId) {
         Refund refund = getById(refundId);
-        if (refund == null) {
+        if (refund == null || !refund.getUserId().equals(userId)) {
             throw new BizException(BizErrorCode.REFUND_NOT_FOUND);
         }
         List<RefundItem> items = refundItemMapper.selectByRefundId(refundId);
@@ -203,12 +210,13 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     }
 
     /**
-     * 我的退款列表（分页）。
+     * 我的退款列表（分页，可按状态筛选）。
      */
-    public Page<Refund> getMyRefunds(Long userId, int page, int size) {
+    public Page<Refund> getMyRefunds(Long userId, int page, int size, String status) {
         return page(new Page<>(page, size),
                 new LambdaQueryWrapper<Refund>()
                         .eq(Refund::getUserId, userId)
+                        .eq(status != null && !status.isBlank(), Refund::getStatus, status)
                         .orderByDesc(Refund::getCreatedAt));
     }
 
@@ -217,6 +225,17 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
      */
     public Refund getRefundByOrderId(Long orderId) {
         return getOne(new LambdaQueryWrapper<Refund>().eq(Refund::getOrderId, orderId));
+    }
+
+    /**
+     * 卖家待确认收货的退货单（买家已寄回 SHIPPED 且处理中）。
+     */
+    public List<Refund> getSellerPendingRefunds(Long sellerId) {
+        Shop shop = shopService.getBySellerId(sellerId);
+        if (shop == null) {
+            return List.of();
+        }
+        return baseMapper.selectSellerPendingRefunds(shop.getId());
     }
 
     // ============ private ============

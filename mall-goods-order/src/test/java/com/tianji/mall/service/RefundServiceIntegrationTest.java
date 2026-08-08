@@ -240,7 +240,7 @@ class RefundServiceIntegrationTest {
         RefundRequest req = buildRefundRequest("查看详情", "REFUND_ONLY", orderItemId, null);
         Refund refund = refundService.requestRefund(userId, orderId, req);
 
-        Map<String, Object> detail = refundService.getRefundDetail(refund.getId());
+        Map<String, Object> detail = refundService.getRefundDetail(userId, refund.getId());
 
         assertThat(detail).containsKeys("refund", "items");
         assertThat(((Refund) detail.get("refund")).getId()).isEqualTo(refund.getId());
@@ -249,7 +249,18 @@ class RefundServiceIntegrationTest {
 
     @Test
     void shouldThrowWhenGetRefundDetailNotFound() {
-        assertThatThrownBy(() -> refundService.getRefundDetail(99999L))
+        assertThatThrownBy(() -> refundService.getRefundDetail(userId, 99999L))
+                .isInstanceOf(BizException.class)
+                .hasMessageContaining("退款");
+    }
+
+    @Test
+    void shouldThrowWhenGetOtherUserRefundDetail() {
+        RefundRequest req = buildRefundRequest("越权查看", "REFUND_ONLY", orderItemId, null);
+        Refund refund = refundService.requestRefund(userId, orderId, req);
+
+        // 他人 userId 查看自己的退款单 → 拒绝
+        assertThatThrownBy(() -> refundService.getRefundDetail(userId + 1, refund.getId()))
                 .isInstanceOf(BizException.class)
                 .hasMessageContaining("退款");
     }
@@ -267,7 +278,7 @@ class RefundServiceIntegrationTest {
         RefundRequest req2 = buildRefundRequest("第二笔", "RETURN_REFUND", itemId2, null);
         refundService.requestRefund(userId, orderId2, req2);
 
-        Page<Refund> page = refundService.getMyRefunds(userId, 1, 10);
+        Page<Refund> page = refundService.getMyRefunds(userId, 1, 10, null);
 
         assertThat(page.getTotal()).isEqualTo(2);
         assertThat(page.getRecords()).hasSize(2);
@@ -277,7 +288,7 @@ class RefundServiceIntegrationTest {
 
     @Test
     void shouldGetEmptyRefundsForNewUser() {
-        Page<Refund> page = refundService.getMyRefunds(99999L, 1, 10);
+        Page<Refund> page = refundService.getMyRefunds(99999L, 1, 10, null);
         assertThat(page.getTotal()).isEqualTo(0);
         assertThat(page.getRecords()).isEmpty();
     }

@@ -295,7 +295,7 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
 
         List<OrderItemResponse> itemResponses = orderItems.stream()
-                .map(i -> new OrderItemResponse(i.getProductId(), i.getProductName(), i.getPrice(), i.getQuantity(),
+                .map(i -> new OrderItemResponse(i.getId(), i.getProductId(), i.getProductName(), i.getPrice(), i.getQuantity(),
                         i.getSkuId(), i.getSkuSpecs()))
                 .toList();
 

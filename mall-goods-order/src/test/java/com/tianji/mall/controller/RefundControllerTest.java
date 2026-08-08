@@ -81,9 +81,9 @@ class RefundControllerTest {
     void shouldGetRefundDetail() throws Exception {
         Map<String, Object> detail = Map.of("id", 1L, "amount", BigDecimal.valueOf(6999),
                 "status", "processing");
-        when(refundService.getRefundDetail(1L)).thenReturn(detail);
+        when(refundService.getRefundDetail(eq(1L), eq(1L))).thenReturn(detail);
 
-        mockMvc.perform(get("/api/refund/1"))
+        mockMvc.perform(get("/api/refund/1").header("Authorization", "Bearer test-token"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200))
                 .andExpect(jsonPath("$.data.id").value(1))
@@ -101,7 +101,7 @@ class RefundControllerTest {
         Page<Refund> page = new Page<>(1, 20);
         page.setRecords(List.of(refund));
         page.setTotal(1);
-        when(refundService.getMyRefunds(1L, 1, 20)).thenReturn(page);
+        when(refundService.getMyRefunds(eq(1L), eq(1), eq(20), isNull())).thenReturn(page);
 
         mockMvc.perform(get("/api/refund/my")
                         .param("page", "1")
@@ -144,6 +144,31 @@ class RefundControllerTest {
     void shouldRejectConfirmReceiveForNonSeller() throws Exception {
         // 买家/无角色 header 不可确认收货退款
         mockMvc.perform(put("/api/refund/1/receive")
+                        .header("X-User-Role", "user"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(403));
+    }
+
+    // ==================== GET /api/refund/seller-pending ====================
+
+    @Test
+    void shouldGetSellerPendingRefunds() throws Exception {
+        Refund refund = new Refund();
+        refund.setId(1L);
+        when(refundService.getSellerPendingRefunds(1L)).thenReturn(java.util.List.of(refund));
+
+        mockMvc.perform(get("/api/refund/seller-pending")
+                        .header("Authorization", "Bearer test-token")
+                        .header("X-User-Role", "seller"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200))
+                .andExpect(jsonPath("$.data[0].id").value(1));
+    }
+
+    @Test
+    void shouldRejectSellerPendingForNonSeller() throws Exception {
+        mockMvc.perform(get("/api/refund/seller-pending")
+                        .header("Authorization", "Bearer test-token")
                         .header("X-User-Role", "user"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(403));

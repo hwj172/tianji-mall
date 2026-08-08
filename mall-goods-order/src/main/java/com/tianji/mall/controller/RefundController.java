@@ -12,6 +12,7 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -23,16 +24,30 @@ public class RefundController {
     private final JwtUtil jwtUtil;
 
     @GetMapping("/{id}")
-    public R<Map<String, Object>> detail(@PathVariable("id") Long id) {
-        return R.ok(refundService.getRefundDetail(id));
+    public R<Map<String, Object>> detail(@RequestHeader("Authorization") String authHeader,
+                                         @PathVariable("id") Long id) {
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        return R.ok(refundService.getRefundDetail(userId, id));
     }
 
     @GetMapping("/my")
     public R<Page<Refund>> myRefunds(@RequestHeader("Authorization") String authHeader,
                                       @RequestParam(defaultValue = "1") int page,
-                                      @RequestParam(defaultValue = "20") int size) {
+                                      @RequestParam(defaultValue = "20") int size,
+                                      @RequestParam(required = false) String status) {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
-        return R.ok(refundService.getMyRefunds(userId, page, size));
+        return R.ok(refundService.getMyRefunds(userId, page, size, status));
+    }
+
+    @GetMapping("/seller-pending")
+    public R<List<Refund>> sellerPending(@RequestHeader("Authorization") String authHeader,
+                                         @RequestHeader(value = "X-User-Role", required = false) String role) {
+        // 卖家/管理员确认退货：仅 seller / admin 可查看待确认退货单
+        if (role == null || (!"seller".equals(role) && !"admin".equals(role))) {
+            throw new BizException(BizErrorCode.FORBIDDEN);
+        }
+        Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+        return R.ok(refundService.getSellerPendingRefunds(userId));
     }
 
     @PutMapping("/{id}/ship")

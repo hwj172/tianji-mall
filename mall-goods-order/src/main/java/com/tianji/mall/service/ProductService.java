@@ -280,7 +280,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
 
     @Transactional
     public Product createProduct(String name, String description, BigDecimal price,
-                                  Integer stock, Long categoryId, String images) {
+                                  Integer stock, Long categoryId, Integer status, String images) {
         Product product = new Product();
         product.setName(name);
         product.setDescription(description);
@@ -288,7 +288,7 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         product.setStock(stock);
         product.setCategoryId(categoryId);
         product.setImages(images);
-        product.setStatus(1);
+        product.setStatus(status != null ? status : 1);
         save(product);
         syncVector(product.getId(), product.getName(), product.getDescription());
         return product;

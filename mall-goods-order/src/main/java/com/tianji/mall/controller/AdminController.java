@@ -134,6 +134,7 @@ public class AdminController {
                 body.getPrice(),
                 body.getStock(),
                 body.getCategoryId(),
+                body.getStatus(),
                 body.getImages());
         return R.ok();
     }

@@ -8,6 +8,7 @@ import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.entity.Refund;
 import com.tianji.mall.entity.RefundItem;
+import com.tianji.mall.entity.Shop;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
@@ -46,13 +47,15 @@ class RefundServiceTest {
     private OrderService orderService;
     @Mock
     private PayFeignClient payFeignClient;
+    @Mock
+    private ShopService shopService;
 
     private RefundService refundService;
 
     @BeforeEach
     void setUp() {
         refundService = new RefundService(orderMapper, orderItemMapper, refundItemMapper,
-                orderService, payFeignClient);
+                orderService, payFeignClient, shopService);
         ReflectionTestUtils.setField(refundService, "baseMapper", refundMapper);
     }
 
@@ -255,11 +258,12 @@ class RefundServiceTest {
         Refund refund = new Refund();
         refund.setId(1L);
         refund.setOrderId(10L);
+        refund.setUserId(100L);
         refund.setAmount(BigDecimal.valueOf(500));
         when(refundMapper.selectById(1L)).thenReturn(refund);
         when(refundItemMapper.selectByRefundId(1L)).thenReturn(List.of());
 
-        Map<String, Object> detail = refundService.getRefundDetail(1L);
+        Map<String, Object> detail = refundService.getRefundDetail(100L, 1L);
 
         assertThat(detail).containsKeys("refund", "items");
     }
@@ -273,9 +277,32 @@ class RefundServiceTest {
         mockPage.setRecords(List.of(new Refund()));
         when(refundMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
 
-        Page<Refund> result = refundService.getMyRefunds(100L, 1, 20);
+        Page<Refund> result = refundService.getMyRefunds(100L, 1, 20, null);
 
         assertThat(result.getRecords()).hasSize(1);
+    }
+
+    // ============ getSellerPendingRefunds ============
+
+    @Test
+    void shouldGetSellerPendingRefunds() {
+        Shop shop = new Shop();
+        shop.setId(5L);
+        when(shopService.getBySellerId(100L)).thenReturn(shop);
+        Refund refund = new Refund();
+        refund.setId(1L);
+        when(refundMapper.selectSellerPendingRefunds(5L)).thenReturn(List.of(refund));
+
+        List<Refund> result = refundService.getSellerPendingRefunds(100L);
+
+        assertThat(result).hasSize(1);
+    }
+
+    @Test
+    void shouldReturnEmptyWhenSellerHasNoShop() {
+        when(shopService.getBySellerId(100L)).thenReturn(null);
+
+        assertThat(refundService.getSellerPendingRefunds(100L)).isEmpty();
     }
 
     // ============ helpers ============

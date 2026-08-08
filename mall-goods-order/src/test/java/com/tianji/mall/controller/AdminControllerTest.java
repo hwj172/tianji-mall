@@ -248,7 +248,7 @@ class AdminControllerTest {
 
     @Test
     void shouldCreateProduct() throws Exception {
-        when(productService.createProduct(anyString(), anyString(), any(), anyInt(), anyLong(), anyString()))
+        when(productService.createProduct(anyString(), anyString(), any(), anyInt(), anyLong(), any(), anyString()))
                 .thenReturn(new Product());
 
         mockMvc.perform(post("/api/admin/product")
