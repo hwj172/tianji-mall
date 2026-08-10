@@ -76,8 +76,40 @@ public class VectorSearchService {
                     .withRpcDeadline(10, TimeUnit.SECONDS)
                     .build());
             initCollection();
+            preloadImageCollection();
         } catch (Exception e) {
             log.warn("Milvus 客户端初始化失败，向量搜索功能不可用: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * 启动时预加载图片向量集合（若已存在），避免首次搜索触发异步加载导致 collection not loaded。
+     */
+    private void preloadImageCollection() {
+        try {
+            R<Boolean> has = milvusClient.hasCollection(HasCollectionParam.newBuilder()
+                    .withCollectionName(IMAGE_COLLECTION)
+                    .build());
+            if (Boolean.TRUE.equals(has.getData())) {
+                milvusClient.loadCollection(LoadCollectionParam.newBuilder()
+                        .withCollectionName(IMAGE_COLLECTION)
+                        .build());
+                sleepBrief();
+                log.info("图片向量集合已预加载: {}", IMAGE_COLLECTION);
+            }
+        } catch (Exception e) {
+            log.warn("图片向量集合预加载失败: {}", e.getMessage());
+        }
+    }
+
+    /**
+     * Milvus loadCollection 为异步操作，加载小集合后短暂等待避免搜索报 collection not loaded。
+     */
+    private void sleepBrief() {
+        try {
+            Thread.sleep(3000);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
         }
     }
 
@@ -187,6 +219,13 @@ public class VectorSearchService {
         try {
             float[] vector = embeddingClient.embedImage(imageUrl);
             List<Float> queryVector = toFloatList(vector);
+
+            // 搜索前确保图片集合已加载（Milvus 重启后集合默认未加载，搜索会报 collection not loaded）
+            // loadCollection 是异步的，等待加载完成再搜索（Java SDK 无 wait API，sleep 兜底）
+            milvusClient.loadCollection(LoadCollectionParam.newBuilder()
+                    .withCollectionName(IMAGE_COLLECTION)
+                    .build());
+            sleepBrief();
 
             SearchParam searchParam = SearchParam.newBuilder()
                     .withCollectionName(IMAGE_COLLECTION)
