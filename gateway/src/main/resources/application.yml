@@ -48,7 +48,8 @@ spring:
     gateway:
       httpclient:
         connect-timeout: 3000
-        response-timeout: 30000
+        # SiliconFlow VL-Embedding / DeepSeek 生成耗时可达 60s+，默认 30s 会掐断图搜与 AI 聊天
+        response-timeout: 90000
         pool:
           type: elastic
           max-idle-time: 60s
