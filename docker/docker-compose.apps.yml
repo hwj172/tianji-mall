@@ -5,6 +5,7 @@ services:
       dockerfile: gateway/Dockerfile
     container_name: gateway
     environment:
+      - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=${JWT_SECRET}
       - NACOS_USERNAME=${NACOS_USERNAME:-nacos}
@@ -22,6 +23,7 @@ services:
       dockerfile: user-service/Dockerfile
     container_name: user-service
     environment:
+      - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=${JWT_SECRET}
       - MYSQL_USER=${MYSQL_USER:-root}
@@ -39,6 +41,7 @@ services:
       dockerfile: mall-goods-order/Dockerfile
     container_name: mall-goods-order
     environment:
+      - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=${JWT_SECRET}
       - MYSQL_USER=${MYSQL_USER:-root}
@@ -62,6 +65,7 @@ services:
       dockerfile: pay-service/Dockerfile
     container_name: pay-service
     environment:
+      - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=${JWT_SECRET}
       - MYSQL_USER=${MYSQL_USER:-root}
@@ -84,6 +88,7 @@ services:
       dockerfile: mcp-server/Dockerfile
     container_name: mcp-server
     environment:
+      - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=${JWT_SECRET}
       - MYSQL_USER=${MYSQL_USER:-root}
@@ -101,6 +106,7 @@ services:
       dockerfile: ai-chat-service/Dockerfile
     container_name: ai-chat-service
     environment:
+      - TZ=Asia/Shanghai
       - SPRING_PROFILES_ACTIVE=docker
       - JWT_SECRET=${JWT_SECRET}
       - MYSQL_USER=${MYSQL_USER:-root}
