@@ -143,8 +143,8 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                 return exchange.getResponse().setComplete();
             }
 
-            // seller 路径：必须有 seller 或 admin 角色，否则返回 403
-            if (path.startsWith(SELLER_PATH_PREFIX) && !"seller".equals(role) && !"admin".equals(role)) {
+            // seller 路径：仅 seller 角色可访问（管理员走 admin 后台，不拥有商家中心）
+            if (path.startsWith(SELLER_PATH_PREFIX) && !"seller".equals(role)) {
                 log.warn("非商家尝试访问 seller 路径: {}, role={}", path, role);
                 exchange.getResponse().setStatusCode(HttpStatus.FORBIDDEN);
                 return exchange.getResponse().setComplete();

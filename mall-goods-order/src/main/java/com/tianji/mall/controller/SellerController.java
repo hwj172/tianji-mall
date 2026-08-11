@@ -79,6 +79,8 @@ public class SellerController {
         Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
         Shop shop = shopService.getBySellerId(userId);
         product.setShopId(shop.getId());
+        // 卖家创建商品需 admin 审核后才上架（status 2=待审核）
+        product.setStatus(2);
         productService.save(product);
         return R.ok();
     }
@@ -96,6 +98,8 @@ public class SellerController {
         }
         product.setId(id);
         product.setShopId(shop.getId());
+        // 卖家编辑商品后重新进入待审核（防违规改标题/图后直接上架）
+        product.setStatus(2);
         productService.updateById(product);
         return R.ok();
     }

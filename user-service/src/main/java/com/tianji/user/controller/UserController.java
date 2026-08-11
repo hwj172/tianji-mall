@@ -93,6 +93,17 @@ public class UserController {
         return R.ok();
     }
 
+    @GetMapping("/internal/pending-profiles")
+    public R<List<User>> pendingProfiles() {
+        return R.ok(userService.getPendingProfiles());
+    }
+
+    @PutMapping("/internal/audit-profile/{id}")
+    public R<Void> auditProfile(@PathVariable("id") Long id, @RequestParam("approve") boolean approve) {
+        userService.auditProfile(id, approve);
+        return R.ok();
+    }
+
     @GetMapping("/internal/list")
     public R<Map<String, Object>> listUsers(
             @RequestParam(defaultValue = "1") int page,

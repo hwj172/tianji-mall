@@ -121,8 +121,9 @@ public class AdminController {
     public R<com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product>> listProducts(
             @RequestParam(value = "page", defaultValue = "1") int page,
             @RequestParam(value = "size", defaultValue = "10") int size,
-            @RequestParam(value = "categoryId", required = false) Long categoryId) {
-        return R.ok(productService.getProductPageAdmin(page, size, categoryId));
+            @RequestParam(value = "categoryId", required = false) Long categoryId,
+            @RequestParam(value = "status", required = false) Integer status) {
+        return R.ok(productService.getProductPageAdmin(page, size, categoryId, status));
     }
 
     @PostMapping("/product")
@@ -157,6 +158,22 @@ public class AdminController {
     @AuditLog(action = "delete_product", targetType = "product", targetArg = 0)
     public R<Void> deleteProduct(@PathVariable("id") Long id) {
         productService.deleteProduct(id);
+        return R.ok();
+    }
+
+    /** 商品上架审核：通过（待审核 2 → 上架 1） */
+    @PutMapping("/product/{id}/approve")
+    @AuditLog(action = "approve_product", targetType = "product", targetArg = 0)
+    public R<Void> approveProduct(@PathVariable("id") Long id) {
+        productService.updateProductStatus(id, 1);
+        return R.ok();
+    }
+
+    /** 商品上架审核：拒绝（待审核 2 → 下架 0） */
+    @PutMapping("/product/{id}/reject")
+    @AuditLog(action = "reject_product", targetType = "product", targetArg = 0)
+    public R<Void> rejectProduct(@PathVariable("id") Long id) {
+        productService.updateProductStatus(id, 0);
         return R.ok();
     }
 
@@ -360,6 +377,18 @@ public class AdminController {
     public R<Void> updateUserRole(@PathVariable("id") Long id,
                                    @RequestParam("role") String role) {
         return userFeignClient.updateUserRole(id, role);
+    }
+
+    @GetMapping("/user/pending-profiles")
+    public R<List<Map<String, Object>>> pendingProfiles() {
+        return userFeignClient.getPendingProfiles();
+    }
+
+    @PutMapping("/user/audit-profile/{id}")
+    @AuditLog(action = "audit_user_profile", targetType = "user", targetArg = 0)
+    public R<Void> auditProfile(@PathVariable("id") Long id,
+                                 @RequestParam("approve") boolean approve) {
+        return userFeignClient.auditProfile(id, approve);
     }
 
     // ==================== Banner 管理 ====================

@@ -94,7 +94,11 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         if (user == null) {
             throw new BizException(BizErrorCode.USER_NOT_FOUND);
         }
-        user.setUsername(username);
+        // 修改用户名需 admin 审核（防违规昵称），手机/邮箱直接生效
+        if (username != null && !username.equals(user.getUsername())) {
+            user.setPendingUsername(username);
+            user.setProfileStatus("pending");
+        }
         user.setPhone(phone);
         user.setEmail(email);
         updateById(user);
@@ -107,9 +111,33 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             throw new BizException(BizErrorCode.USER_NOT_FOUND);
         }
         String url = fileStorageService.saveFile(file);
-        user.setAvatar(url);
+        // 头像修改需 admin 审核（防违规头像），返回待审核头像供预览
+        user.setPendingAvatar(url);
+        user.setProfileStatus("pending");
         updateById(user);
         return url;
+    }
+
+    /** 待审核资料的用户列表（admin 审核用） */
+    public List<User> getPendingProfiles() {
+        return list(new LambdaQueryWrapper<User>().eq(User::getProfileStatus, "pending"));
+    }
+
+    /** 审核用户资料：通过则应用待审核的新值，拒绝则丢弃 */
+    @Transactional
+    public void auditProfile(Long userId, boolean approve) {
+        User user = getById(userId);
+        if (user == null || !"pending".equals(user.getProfileStatus())) {
+            throw new BizException(BizErrorCode.USER_NOT_FOUND);
+        }
+        if (approve) {
+            if (user.getPendingUsername() != null) user.setUsername(user.getPendingUsername());
+            if (user.getPendingAvatar() != null) user.setAvatar(user.getPendingAvatar());
+        }
+        user.setPendingUsername(null);
+        user.setPendingAvatar(null);
+        user.setProfileStatus("approved");
+        updateById(user);
     }
 
     public void updatePassword(Long userId, String oldPassword, String newPassword) {

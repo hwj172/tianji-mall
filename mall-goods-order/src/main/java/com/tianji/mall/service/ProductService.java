@@ -269,10 +269,13 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     /**
      * 后台商品分页查询（含已下架商品，可选分类过滤）
      */
-    public Page<Product> getProductPageAdmin(int page, int size, Long categoryId) {
+    public Page<Product> getProductPageAdmin(int page, int size, Long categoryId, Integer status) {
         LambdaQueryWrapper<Product> wrapper = new LambdaQueryWrapper<>();
         if (categoryId != null) {
             wrapper.eq(Product::getCategoryId, categoryId);
+        }
+        if (status != null) {
+            wrapper.eq(Product::getStatus, status);
         }
         wrapper.orderByDesc(Product::getCreateTime);
         return page(new Page<>(page, size), wrapper);
@@ -320,6 +323,17 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         product.setStatus(0);
+        updateById(product);
+    }
+
+    /**
+     * 更新商品状态（审核用：待审核 2 → 上架 1 / 拒绝 0）。
+     */
+    @CacheEvict(value = "product", key = "#id")
+    public void updateProductStatus(Long id, Integer status) {
+        Product product = new Product();
+        product.setId(id);
+        product.setStatus(status);
         updateById(product);
     }
 

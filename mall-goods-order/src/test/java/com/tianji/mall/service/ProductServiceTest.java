@@ -129,7 +129,7 @@ class ProductServiceTest {
         Page<Product> mockPage = new Page<>(1, 10);
         when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
 
-        Page<Product> result = productService.getProductPageAdmin(1, 10, null);
+        Page<Product> result = productService.getProductPageAdmin(1, 10, null, null);
 
         assertThat(result).isNotNull();
         verify(productMapper).selectPage(any(Page.class), any(LambdaQueryWrapper.class));
@@ -141,7 +141,7 @@ class ProductServiceTest {
         Page<Product> mockPage = new Page<>(1, 10);
         when(productMapper.selectPage(any(Page.class), any(LambdaQueryWrapper.class))).thenReturn(mockPage);
 
-        Page<Product> result = productService.getProductPageAdmin(1, 10, 1L);
+        Page<Product> result = productService.getProductPageAdmin(1, 10, 1L, null);
 
         assertThat(result).isNotNull();
     }

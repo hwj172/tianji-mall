@@ -20,8 +20,11 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import org.mockito.ArgumentCaptor;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -142,6 +145,11 @@ class SellerControllerTest {
                         .content("{\"name\":\"商品\",\"price\":99,\"stock\":10}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+
+        // 卖家创建商品必须进入待审核（status=2），由 admin 审核后才上架
+        ArgumentCaptor<Product> captor = ArgumentCaptor.forClass(Product.class);
+        verify(productService).save(captor.capture());
+        assertThat(captor.getValue().getStatus()).isEqualTo(2);
     }
 
     @Test

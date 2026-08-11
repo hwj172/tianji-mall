@@ -5,6 +5,7 @@ import com.tianji.mall.feign.fallback.UserFeignClientFallback;
 import org.springframework.cloud.openfeign.FeignClient;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @FeignClient(name = "user-service", fallbackFactory = UserFeignClientFallback.class)
@@ -12,6 +13,12 @@ public interface UserFeignClient {
 
     @GetMapping("/api/user/internal/{id}")
     R<Map<String, Object>> getUserById(@PathVariable("id") Long id);
+
+    @GetMapping("/api/user/internal/pending-profiles")
+    R<List<Map<String, Object>>> getPendingProfiles();
+
+    @PutMapping("/api/user/internal/audit-profile/{id}")
+    R<Void> auditProfile(@PathVariable("id") Long id, @RequestParam("approve") boolean approve);
 
     @GetMapping("/api/user/internal/count")
     R<Long> countUsers();

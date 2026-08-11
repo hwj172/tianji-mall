@@ -113,10 +113,46 @@ class UserServiceTest {
 
         userService.updateProfile(1L, "newname", "13900001111", "new@email.com");
 
-        assertThat(user.getUsername()).isEqualTo("newname");
+        // 姓名修改需审核：原值不变，新值进待审核
+        assertThat(user.getUsername()).isEqualTo("oldname");
+        assertThat(user.getPendingUsername()).isEqualTo("newname");
+        assertThat(user.getProfileStatus()).isEqualTo("pending");
         assertThat(user.getPhone()).isEqualTo("13900001111");
         assertThat(user.getEmail()).isEqualTo("new@email.com");
         verify(userMapper).updateById(user);
+    }
+
+    @Test
+    void shouldAuditProfileApprove() {
+        User user = buildUser(1L, "oldname", "pw");
+        user.setProfileStatus("pending");
+        user.setPendingUsername("newname");
+        user.setPendingAvatar("/uploads/new.jpg");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.auditProfile(1L, true);
+
+        assertThat(user.getUsername()).isEqualTo("newname");
+        assertThat(user.getAvatar()).isEqualTo("/uploads/new.jpg");
+        assertThat(user.getPendingUsername()).isNull();
+        assertThat(user.getPendingAvatar()).isNull();
+        assertThat(user.getProfileStatus()).isEqualTo("approved");
+    }
+
+    @Test
+    void shouldAuditProfileReject() {
+        User user = buildUser(1L, "oldname", "pw");
+        user.setProfileStatus("pending");
+        user.setPendingUsername("newname");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        when(userMapper.updateById(any(User.class))).thenReturn(1);
+
+        userService.auditProfile(1L, false);
+
+        assertThat(user.getUsername()).isEqualTo("oldname");
+        assertThat(user.getPendingUsername()).isNull();
+        assertThat(user.getProfileStatus()).isEqualTo("approved");
     }
 
     @Test
@@ -143,7 +179,10 @@ class UserServiceTest {
         String url = userService.updateAvatar(1L, file);
 
         assertThat(url).isEqualTo("/uploads/avatar_abc.jpg");
-        assertThat(user.getAvatar()).isEqualTo("/uploads/avatar_abc.jpg");
+        // 头像修改需审核：原头像不变，新头像进待审核
+        assertThat(user.getAvatar()).isNull();
+        assertThat(user.getPendingAvatar()).isEqualTo("/uploads/avatar_abc.jpg");
+        assertThat(user.getProfileStatus()).isEqualTo("pending");
         verify(userMapper).updateById(user);
     }
 

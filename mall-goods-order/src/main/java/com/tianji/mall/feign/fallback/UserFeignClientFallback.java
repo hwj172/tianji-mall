@@ -7,6 +7,7 @@ import org.springframework.cloud.openfeign.FallbackFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.Collections;
+import java.util.List;
 import java.util.Map;
 
 @Slf4j
@@ -47,6 +48,16 @@ public class UserFeignClientFallback implements FallbackFactory<UserFeignClient>
 
             @Override
             public R<Void> updateUserRole(Long id, String role) {
+                return R.fail(500, "用户服务暂不可用");
+            }
+
+            @Override
+            public R<List<Map<String, Object>>> getPendingProfiles() {
+                return R.ok(Collections.emptyList());
+            }
+
+            @Override
+            public R<Void> auditProfile(Long id, boolean approve) {
                 return R.fail(500, "用户服务暂不可用");
             }
         };

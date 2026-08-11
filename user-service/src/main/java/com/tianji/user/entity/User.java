@@ -22,6 +22,13 @@ public class User {
     private String role;
     private Integer status;
 
+    /** 资料审核状态：approved-正常 / pending-待审核 */
+    private String profileStatus;
+    /** 待审核的新用户名（用户修改后暂存，admin 审核通过才生效） */
+    private String pendingUsername;
+    /** 待审核的新头像 */
+    private String pendingAvatar;
+
     private LocalDateTime createTime;
     private LocalDateTime updateTime;
 }

@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -221,7 +222,7 @@ class AdminControllerTest {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product> page =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
         page.setTotal(0);
-        when(productService.getProductPageAdmin(1, 10, null)).thenReturn(page);
+        when(productService.getProductPageAdmin(1, 10, null, null)).thenReturn(page);
 
         mockMvc.perform(get("/api/admin/product")
                         .header("X-User-Role", "admin"))
@@ -235,7 +236,7 @@ class AdminControllerTest {
         com.baomidou.mybatisplus.extension.plugins.pagination.Page<Product> page =
                 new com.baomidou.mybatisplus.extension.plugins.pagination.Page<>(1, 10);
         page.setTotal(3);
-        when(productService.getProductPageAdmin(1, 10, 1L)).thenReturn(page);
+        when(productService.getProductPageAdmin(1, 10, 1L, null)).thenReturn(page);
 
         mockMvc.perform(get("/api/admin/product")
                         .header("X-User-Role", "admin")
@@ -295,6 +296,28 @@ class AdminControllerTest {
                         .header("X-User-Role", "admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldApproveProduct() throws Exception {
+        doNothing().when(productService).updateProductStatus(1L, 1);
+
+        mockMvc.perform(put("/api/admin/product/1/approve")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+        verify(productService).updateProductStatus(1L, 1);
+    }
+
+    @Test
+    void shouldRejectProduct() throws Exception {
+        doNothing().when(productService).updateProductStatus(1L, 0);
+
+        mockMvc.perform(put("/api/admin/product/1/reject")
+                        .header("X-User-Role", "admin"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+        verify(productService).updateProductStatus(1L, 0);
     }
 
     // ==================== GET /api/admin/order ====================
