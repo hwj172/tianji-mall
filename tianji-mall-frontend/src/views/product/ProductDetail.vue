@@ -1,4 +1,5 @@
 <template>
+  <div class="product-detail-root">
   <div v-if="loading && !product" v-loading="true" class="detail-loading-wrap"></div>
   <div class="product-detail-page" v-if="product">
     <div class="detail-main">
@@ -175,6 +176,7 @@
   </div>
 
   <el-empty v-else-if="!loading" description="商品不存在" />
+  </div>
 </template>
 
 <script setup>

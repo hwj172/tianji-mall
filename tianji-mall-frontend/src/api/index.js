@@ -159,6 +159,14 @@ export function updateAdminProduct(id, data) {
   return request.put(`/admin/product/${id}`, data)
 }
 
+export function approveAdminProduct(id) {
+  return request.put(`/admin/product/${id}/approve`)
+}
+
+export function rejectAdminProduct(id) {
+  return request.put(`/admin/product/${id}/reject`)
+}
+
 export function deleteAdminProduct(id) {
   return request.delete(`/admin/product/${id}`)
 }
@@ -221,6 +229,14 @@ export function updateUserStatus(id, status) {
 
 export function updateUserRole(id, role) {
   return request.put(`/admin/user/${id}/role`, null, { params: { role } })
+}
+
+export function getPendingProfiles() {
+  return request.get('/admin/user/pending-profiles')
+}
+
+export function auditProfile(id, approve) {
+  return request.put(`/admin/user/audit-profile/${id}`, null, { params: { approve } })
 }
 
 // 店铺管理

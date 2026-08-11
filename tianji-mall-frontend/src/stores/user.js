@@ -9,7 +9,8 @@ export const useUserStore = defineStore('user', () => {
 
   const isLoggedIn = computed(() => !!token.value)
   const isAdmin = computed(() => userInfo.value?.role === 'admin')
-  const isSeller = computed(() => userInfo.value?.role === 'seller' || userInfo.value?.role === 'admin')
+  // 商家中心仅 seller 专属（管理员走 admin 后台）
+  const isSeller = computed(() => userInfo.value?.role === 'seller')
 
   async function login(credentials) {
     const res = await request.post('/user/login', credentials)

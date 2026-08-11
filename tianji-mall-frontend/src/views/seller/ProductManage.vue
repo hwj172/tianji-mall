@@ -23,13 +23,14 @@
       <el-table-column prop="sales" label="销量" width="80" />
       <el-table-column label="状态" width="80">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '上架' : '下架' }}</el-tag>
+          <el-tag :type="row.status === 1 ? 'success' : (row.status === 2 ? 'warning' : 'info')" size="small">{{ row.status === 1 ? '上架' : (row.status === 2 ? '审核中' : '下架') }}</el-tag>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="160" fixed="right">
         <template #default="{ row }">
           <el-button size="small" text @click="openDialog(row)">编辑</el-button>
-          <el-button v-if="row.status === 0" size="small" text type="success" @click="handleRestore(row)">上架</el-button>
+          <el-button v-if="row.status === 2" size="small" text disabled>审核中</el-button>
+          <el-button v-else-if="row.status === 0" size="small" text type="success" @click="handleRestore(row)">上架</el-button>
           <el-button v-else size="small" text type="danger" @click="handleDelete(row)">下架</el-button>
         </template>
       </el-table-column>
@@ -94,6 +95,7 @@ const saving = ref(false)
 const query = reactive({ page: 1, size: 20, status: 1 })
 
 const statusTabs = [
+  { value: 2, label: '待审核' },
   { value: 1, label: '上架' },
   { value: 0, label: '下架' }
 ]
@@ -205,10 +207,10 @@ async function handleSave() {
     }
     if (editingId.value) {
       await updateSellerProduct(editingId.value, data)
-      ElMessage.success('已更新')
+      ElMessage.success('已更新，待管理员审核')
     } else {
       await createSellerProduct(data)
-      ElMessage.success('已创建')
+      ElMessage.success('已提交，待管理员审核上架')
     }
     dialogVisible.value = false
     await loadData()
@@ -227,9 +229,9 @@ async function handleDelete(row) {
 
 async function handleRestore(row) {
   try {
-    // updateById 只更新非 null 字段，仅传 status 即可恢复上架
+    // updateById 只更新非 null 字段，仅传 status 即可提交上架（后端置待审核）
     await updateSellerProduct(row.id, { status: 1 })
-    ElMessage.success('已上架')
+    ElMessage.success('已提交上架审核')
     await loadData()
   } catch { /* handle by interceptor */ }
 }

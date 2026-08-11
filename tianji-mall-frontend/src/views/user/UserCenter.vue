@@ -173,7 +173,7 @@ const quickGroups = computed(() => [
   {
     title: '账户',
     items: [
-      ...(userStore.isSeller ? [] : [{ label: '注册开店', icon: Shop, action: openRegisterShop }]),
+      ...(userStore.userInfo?.role === 'user' ? [{ label: '注册开店', icon: Shop, action: openRegisterShop }] : []),
       { label: '编辑资料', icon: User, action: openEditDialog },
       { label: '退出登录', icon: Close, action: handleLogout, danger: true }
     ]
@@ -311,10 +311,10 @@ async function handleAvatarChange(e) {
   try {
     const res = await uploadAvatar(file)
     if (res.data) {
+      // 头像修改需 admin 审核，先预览待审核头像，生效前仍显示原头像
       editForm.value.avatar = res.data
-      user.value.avatar = res.data
     }
-    ElMessage.success('头像已更新')
+    ElMessage.success('头像已提交审核，待管理员通过后生效')
   } catch { /* handle by interceptor */ }
   finally { uploading.value = false }
   e.target.value = ''
@@ -328,15 +328,21 @@ async function saveProfile() {
   }
   savingProfile.value = true
   try {
+    // 姓名修改需 admin 审核（防违规昵称），手机/邮箱直接生效
+    const nameChanged = editForm.value.username !== user.value.username
     await updateProfile({
       username: editForm.value.username,
       phone: editForm.value.phone,
       email: editForm.value.email
     })
-    user.value.username = editForm.value.username
     user.value.phone = editForm.value.phone
     user.value.email = editForm.value.email
-    ElMessage.success('保存成功')
+    if (nameChanged) {
+      ElMessage.success('保存成功，姓名修改待管理员审核')
+    } else {
+      user.value.username = editForm.value.username
+      ElMessage.success('保存成功')
+    }
     editVisible.value = false
   } catch { /* handle by interceptor */ }
   finally { savingProfile.value = false }

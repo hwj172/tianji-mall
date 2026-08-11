@@ -10,6 +10,11 @@
       <el-select v-model="filterCategoryId" placeholder="选择分类" clearable @change="loadData">
         <el-option v-for="c in flatCategories" :key="c.id" :label="c.prefix + c.name" :value="c.id" />
       </el-select>
+      <el-select v-model="filterStatus" placeholder="商品状态" clearable @change="loadData" style="margin-left: 8px">
+        <el-option label="待审核" :value="2" />
+        <el-option label="上架" :value="1" />
+        <el-option label="下架" :value="0" />
+      </el-select>
     </div>
 
     <el-table :data="products" stripe v-loading="loading">
@@ -22,12 +27,16 @@
       <el-table-column prop="sales" label="销量" width="80" />
       <el-table-column label="状态" width="80">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">{{ row.status === 1 ? '上架' : '下架' }}</el-tag>
+          <el-tag :type="row.status === 1 ? 'success' : (row.status === 2 ? 'warning' : 'info')" size="small">{{ row.status === 1 ? '上架' : (row.status === 2 ? '待审核' : '下架') }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="180" fixed="right">
+      <el-table-column label="操作" width="230" fixed="right">
         <template #default="{ row }">
           <el-button size="small" text @click="openDialog(row)">编辑</el-button>
+          <template v-if="row.status === 2">
+            <el-button size="small" text type="success" @click="handleApprove(row)">通过</el-button>
+            <el-button size="small" text type="danger" @click="handleReject(row)">拒绝</el-button>
+          </template>
           <el-button size="small" text type="danger" @click="handleDelete(row)">删除</el-button>
         </template>
       </el-table-column>
@@ -87,7 +96,7 @@
 <script setup>
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import { getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, uploadImage } from '@/api'
+import { getAdminProducts, createAdminProduct, updateAdminProduct, deleteAdminProduct, getAdminCategories, uploadImage, approveAdminProduct, rejectAdminProduct } from '@/api'
 
 const products = ref([])
 const total = ref(0)
@@ -97,6 +106,7 @@ const flatCategories = ref([])
 
 const query = reactive({ page: 1, size: 10 })
 const filterCategoryId = ref(null)
+const filterStatus = ref(null)
 
 const dialogVisible = ref(false)
 const editingId = ref(null)
@@ -158,6 +168,7 @@ async function loadData() {
   try {
     const params = { page: query.page, size: query.size }
     if (filterCategoryId.value) params.categoryId = filterCategoryId.value
+    if (filterStatus.value != null) params.status = filterStatus.value
     const res = await getAdminProducts(params)
     if (res.data) {
       products.value = res.data.records || []
@@ -210,6 +221,25 @@ async function handleSave() {
     await loadData()
   } catch { /* handle by interceptor */ }
   finally { saving.value = false }
+}
+
+async function handleApprove(row) {
+  try {
+    await approveAdminProduct(row.id)
+    ElMessage.success(`「${row.name}」已通过审核并上架`)
+    await loadData()
+  } catch { /* handle by interceptor */ }
+}
+
+async function handleReject(row) {
+  try {
+    await ElMessageBox.confirm(`确定拒绝「${row.name}」的上架申请？`, '提示', { type: 'warning' })
+  } catch { return }
+  try {
+    await rejectAdminProduct(row.id)
+    ElMessage.success('已拒绝，商品下架')
+    await loadData()
+  } catch { /* handle by interceptor */ }
 }
 
 async function handleDelete(row) {
