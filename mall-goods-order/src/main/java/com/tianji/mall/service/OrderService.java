@@ -186,6 +186,11 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             if (req.getCouponId() != null) {
                 discount = discount.add(couponService.applyCoupon(userId, req.getCouponId(), totalAmount));
             }
+            // 总优惠封顶到订单总额：满减与优惠券各自限额但叠加可能超过，
+            // 防止 totalAmount - discount 变 0 或负数（0 元订单/负金额）
+            if (discount.compareTo(totalAmount) > 0) {
+                discount = totalAmount;
+            }
 
             // 注意：拼团折扣不在此处由客户端传入（groupBuyDiscount 客户端可控，可构造 0 元购）。
             // 拼团订单在创建后由 GroupBuyService 服务端重算折扣并调用 applyGroupBuyDiscount 应用。

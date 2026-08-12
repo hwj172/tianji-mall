@@ -184,8 +184,10 @@ const couponDiscount = computed(() => {
   if (!c) return 0
   const total = Number(totalPrice)
   if (c.discountType === 'FIXED') return Math.min(Number(c.discountValue), total)
-  // PERCENT: 0.8 = 8折，优惠 = 金额 × (1 - 0.8)
-  return Math.round(total * (1 - Number(c.discountValue)) * 100) / 100
+  // PERCENT: 0.8 = 8折，优惠 = 金额 × (1 - 0.8)；兼容旧数据 discountValue=5（5折）→ 归一化 0.5
+  let rate = Number(c.discountValue)
+  if (rate > 1) rate = rate / 10
+  return Math.round(total * (1 - rate) * 100) / 100
 })
 
 // ====== 满减活动 ======

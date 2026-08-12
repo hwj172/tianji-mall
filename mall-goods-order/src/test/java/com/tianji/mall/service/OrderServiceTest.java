@@ -546,6 +546,30 @@ class OrderServiceTest {
     }
 
     @Test
+    void shouldCapDiscountWhenPromotionPlusCouponExceedsTotal() {
+        // 回归：满减 + 优惠券各自限额但叠加可能超过总额，createOrder 必须封顶，防 0 元/负金额订单
+        OrderCreateRequest req = new OrderCreateRequest();
+        req.setAddressId(1L);
+        req.setCartItemIds(List.of(1L));
+        req.setCouponId(5L);
+
+        when(addressService.getById(1L)).thenReturn(buildAddress(1L, 100L));
+        when(cartService.listByIds(List.of(1L))).thenReturn(List.of(buildCartItem(1L, 100L, 1L, 1)));
+        when(productService.listByIds(List.of(1L))).thenReturn(List.of(buildProduct(1L, "iPhone", 100, 1)));
+        // 商品总额 1000；满减 600 + 券 600 = 1200 > 1000 → 总优惠封顶到 1000
+        when(promotionService.calculateDiscount(BigDecimal.valueOf(1000))).thenReturn(BigDecimal.valueOf(600));
+        when(couponService.applyCoupon(100L, 5L, BigDecimal.valueOf(1000))).thenReturn(BigDecimal.valueOf(600));
+        when(orderMapper.insert(any(Order.class))).thenAnswer(inv -> { Order o = inv.getArgument(0); o.setId(9L); return 1; });
+        when(orderItemMapper.insert(any(OrderItem.class))).thenReturn(1);
+
+        Order order = orderService.createOrder(100L, req);
+
+        // 应付金额不为负（封顶到 0 是满减+券全免的合法结果，但绝不会为负）
+        assertThat(order.getTotalAmount().signum()).isGreaterThanOrEqualTo(0);
+        assertThat(order.getTotalAmount()).isEqualByComparingTo(BigDecimal.ZERO);
+    }
+
+    @Test
     void shouldThrowWhenSkuStockInsufficientForOrder() {
         OrderCreateRequest req = new OrderCreateRequest();
         req.setAddressId(1L);
