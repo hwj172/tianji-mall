@@ -173,7 +173,7 @@ const selectedCouponId = ref(null)
 
 // 未使用 + 满足最低消费门槛的券
 const availableCoupons = computed(() => {
-  const total = Number(totalPrice)
+  const total = Number(totalPrice.value)
   return coupons.value.filter(c =>
     c.status === 'UNUSED' && (!c.minOrderAmount || c.minOrderAmount <= total)
   )
@@ -182,7 +182,7 @@ const availableCoupons = computed(() => {
 const couponDiscount = computed(() => {
   const c = availableCoupons.value.find(x => x.userCouponId === selectedCouponId.value)
   if (!c) return 0
-  const total = Number(totalPrice)
+  const total = Number(totalPrice.value)
   if (c.discountType === 'FIXED') return Math.min(Number(c.discountValue), total)
   // PERCENT: 0.8 = 8折，优惠 = 金额 × (1 - 0.8)；兼容旧数据 discountValue=5（5折）→ 归一化 0.5
   let rate = Number(c.discountValue)
@@ -195,18 +195,18 @@ const promotions = ref([])
 
 // API 只返回当前有效活动，前端按门槛过滤
 const applicablePromotions = computed(() => {
-  const total = Number(totalPrice)
+  const total = Number(totalPrice.value)
   return promotions.value.filter(p => Number(p.threshold) <= total)
 })
 const notMetPromotions = computed(() => {
-  const total = Number(totalPrice)
+  const total = Number(totalPrice.value)
   return promotions.value.filter(p => Number(p.threshold) > total)
 })
 const availablePromotions = computed(() => promotions.value)
 
 // 满减自动应用：取满足门槛的最大减免，不超过订单金额（与后端 calculateDiscount 一致）
 const promotionDiscount = computed(() => {
-  const total = Number(totalPrice)
+  const total = Number(totalPrice.value)
   let best = 0
   for (const p of applicablePromotions.value) {
     best = Math.max(best, Math.min(Number(p.discount), total))
@@ -216,10 +216,10 @@ const promotionDiscount = computed(() => {
 
 // 满减 + 优惠券叠加后总优惠封顶到订单总额，避免合计超总额导致负数应付
 const totalDiscount = computed(() => {
-  const total = Number(totalPrice)
+  const total = Number(totalPrice.value)
   return Math.min(promotionDiscount.value + couponDiscount.value, total)
 })
-const payPrice = computed(() => (Number(totalPrice) - totalDiscount.value).toFixed(2))
+const payPrice = computed(() => (Number(totalPrice.value) - totalDiscount.value).toFixed(2))
 
 async function loadPromotions() {
   try {
