@@ -29,6 +29,9 @@ logs/
 # 账号密钥文档
 docs/credentials.md
 
+# Claude 技能目录（本地安装的技能，不提交）
+.claude/
+
 # Docker
 docker/volumes/
 natapp/
