@@ -12,6 +12,10 @@
         <el-menu-item index="/admin/announcement"><el-icon><Bell /></el-icon> 系统公告</el-menu-item>
         <el-menu-item index="/admin/shops"><el-icon><Shop /></el-icon> 店铺管理</el-menu-item>
         <el-menu-item index="/admin/users"><el-icon><User /></el-icon> 用户管理</el-menu-item>
+        <el-menu-item index="/admin/banner"><el-icon><Picture /></el-icon> Banner 管理</el-menu-item>
+        <el-menu-item index="/admin/skus"><el-icon><CollectionTag /></el-icon> SKU/属性管理</el-menu-item>
+        <el-menu-item index="/admin/seckill"><el-icon><AlarmClock /></el-icon> 秒杀管理</el-menu-item>
+        <el-menu-item index="/admin/group-buy"><el-icon><Connection /></el-icon> 拼团管理</el-menu-item>
       </el-menu>
     </el-aside>
     <el-container>

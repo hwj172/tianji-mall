@@ -174,6 +174,64 @@ export function deleteAdminProduct(id) {
   return request.delete(`/admin/product/${id}`)
 }
 
+// Banner
+export function getAdminBanners() {
+  return request.get('/admin/banner')
+}
+export function createAdminBanner(data) {
+  return request.post('/admin/banner', data)
+}
+export function updateAdminBanner(id, data) {
+  return request.put(`/admin/banner/${id}`, data)
+}
+export function deleteAdminBanner(id) {
+  return request.delete(`/admin/banner/${id}`)
+}
+
+// SKU
+export function getProductSkus(productId) {
+  return request.get(`/admin/product/${productId}/sku`)
+}
+export function createProductSku(productId, data) {
+  return request.post(`/admin/product/${productId}/sku`, data)
+}
+export function updateProductSku(productId, id, data) {
+  return request.put(`/admin/product/${productId}/sku/${id}`, data)
+}
+export function deleteProductSku(productId, id) {
+  return request.delete(`/admin/product/${productId}/sku/${id}`)
+}
+
+// 属性
+export function getProductAttributes(productId) {
+  return request.get(`/admin/product/${productId}/attribute`)
+}
+export function createProductAttribute(productId, data) {
+  return request.post(`/admin/product/${productId}/attribute`, data)
+}
+export function updateProductAttribute(productId, id, data) {
+  return request.put(`/admin/product/${productId}/attribute/${id}`, data)
+}
+export function deleteProductAttribute(productId, id) {
+  return request.delete(`/admin/product/${productId}/attribute/${id}`)
+}
+
+// 秒杀
+export function setProductSeckill(id, data) {
+  return request.post(`/admin/product/${id}/seckill`, data)
+}
+export function clearProductSeckill(id) {
+  return request.delete(`/admin/product/${id}/seckill`)
+}
+
+// 拼团活动（admin）
+export function createGroupBuy(data) {
+  return request.post('/admin/group-buy', data)
+}
+export function updateGroupBuy(id, data) {
+  return request.put(`/admin/group-buy/${id}`, data)
+}
+
 // 订单管理
 export function getAdminOrders(params) {
   return request.get('/admin/order', { params })

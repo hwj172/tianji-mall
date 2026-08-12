@@ -45,6 +45,10 @@ const routes = [
       { path: 'announcement', name: 'adminAnnouncement', component: () => import('@/views/admin/AnnouncementManage.vue'), meta: { title: '系统公告' } },
       { path: 'users', name: 'adminUsers', component: () => import('@/views/admin/UserManage.vue'), meta: { title: '用户管理' } },
       { path: 'shops', name: 'adminShops', component: () => import('@/views/admin/ShopManage.vue'), meta: { title: '店铺管理' } },
+      { path: 'banner', name: 'adminBanner', component: () => import('@/views/admin/BannerManage.vue'), meta: { title: 'Banner 管理' } },
+      { path: 'skus', name: 'adminSkus', component: () => import('@/views/admin/SkuManage.vue'), meta: { title: 'SKU/属性管理' } },
+      { path: 'seckill', name: 'adminSeckill', component: () => import('@/views/admin/SeckillManage.vue'), meta: { title: '秒杀管理' } },
+      { path: 'group-buy', name: 'adminGroupBuy', component: () => import('@/views/admin/GroupBuyManage.vue'), meta: { title: '拼团管理' } },
     ]
   },
   {
