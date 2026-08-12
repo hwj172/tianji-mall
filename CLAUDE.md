@@ -96,7 +96,7 @@ tianji-mall (父 POM)
 - `utils/image.js` — `getFirstImage(images)`、`imageOnError(e, size)`（SVG 占位）
 - `utils/date.js` — `fmtTime(t, {dateOnly})`（兼容 LocalDateTime 数组与 ISO）
 - `utils/order.js` — `ORDER_STATUS_MAP`、`orderStatusText/Tag`
-- `utils/discount.js` — `formatDiscount(d)`（0.9→"9折"）
+- `utils/discount.js` — `formatDiscount(d)`（0.9→"9折"，兼容旧数据 >1 归一化：5→"5折"，与后端 applyCoupon 一致）
 - `composables/useProductBatch.js` — 商品批量回填（FavoriteList/BrowsingHistory）
 - `composables/usePagedList.js` — 加载更多分页（MyReviews/PendingReviews）
 
@@ -109,6 +109,8 @@ tianji-mall (父 POM)
 - **开店角色链路**：`POST /api/shop/register` 成功后 DB 角色提升为 seller，但 **JWT 的 role claim 不刷新**（网关 `X-User-Role` 按 JWT 鉴权）→ 前端必须提示并**强制重新登录**签发新 token，否则商家中心返回 403
 - **AI 客服历史**：走后端 `getChatHistory(sessionId)`；localStorage 只存 sessionId 字符串（读取需兼容旧对象格式 `{sessionId, messages}`）
 - 顶栏入口：logo/🏠 回首页、🏪 商家中心（`isSeller` 显示）、🛒 购物车、🤖 AI导购、用户下拉
+- **Admin 后台管理页**（`views/admin/`，侧栏菜单在 `AdminLayout.vue`）：Dashboard / CategoryManage / ProductManage（含待审核筛选+通过/拒绝）/ OrderManage / CouponManage / PromotionManage / AnnouncementManage / ShopManage / UserManage（含待审核资料 tab）/ **BannerManage** / **SkuManage**（选商品管 SKU+属性）/ **SeckillManage**（设置/清除秒杀窗口）/ **GroupBuyManage**（拼团活动阶梯编辑）；路由在 `router/index.js` admin 子路由
+- **用户中心**：账户区含「修改密码」弹窗（`PUT /user/password`，新密码 6-32 位 + 两次一致校验）；编辑资料改姓名/头像提示需 admin 审核（生效前显示原值）
 
 ## 常用命令
 
@@ -142,7 +144,7 @@ mvn package -DskipTests
 
 ## 测试约定
 
-**当前测试总数：626 (Common 39 + Gateway 42 + User 37 + Mall-Goods-Order 407 + Pay 27 + MCP 34 + AI-Chat 40)，7 个模块全覆盖。**
+**当前测试总数：711 (Common 39 + Gateway 42 + User 40 + Mall-Goods-Order 487 + Pay 28 + MCP 34 + AI-Chat 41)，7 个模块全覆盖。**
 
 ### 测试分层
 
@@ -199,7 +201,7 @@ mvn package -DskipTests
 | 模块 | 测试类 | Tests | 覆盖 |
 |------|--------|-------|------|
 | user-service | UserControllerTest | 12 | register/login/info/profile/avatar/password + @Valid + 缺 Auth + 内部端点 |
-| mall-goods-order | ProductControllerTest | 12 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 + 浏览足迹端点 + 搜索热词 |
+| mall-goods-order | ProductControllerTest | 15 | 公开端点（无需 JWT）+ BizException + 内部回填端点 + 推荐端点 + 浏览足迹端点 + 搜索热词 + 待审核商品不可见 |
 | mall-goods-order | RegionControllerTest | 2 | 省市区树形数据 + 31 省结构验证 |
 | mall-goods-order | CartControllerTest | 9 | CRUD + @Valid + 内部端点 + 缺 Auth |
 | mall-goods-order | AddressControllerTest | 5 | CRUD + 缺 Auth |
@@ -210,7 +212,7 @@ mvn package -DskipTests
 | mall-goods-order | UserCenterControllerTest | 2 | 用户中心聚合 + user-service 降级 |
 | pay-service | PayControllerTest | 5 | create/notify/query + 回调异常 + 缺 Auth |
 | mcp-server | ToolControllerTest | 6 | JWT 手动提取 + 工具路由（search_products/get_product/get_orders/get_order_detail/get_cart/add_to_cart/create_order/pay_order）+ 未知工具 + 未授权 |
-| gateway | AuthGlobalFilterTest | 35 | 公开路径/内部路径/JWT 鉴权/seller 鉴权/非 API 路径/边界 + Mock WebFlux |
+| gateway | AuthGlobalFilterTest | 38 | 公开路径/内部路径/JWT 鉴权/seller 鉴权/非 API 路径/边界 + Mock WebFlux |
 | gateway | CorsConfigTest | 4 | CORS 过滤器 Bean 创建 + 预检/GET/无 Origin |
 
 ## 关键约定
@@ -249,8 +251,9 @@ mvn package -DskipTests
 - **LoadBalancer**：所有使用 OpenFeign 的服务必须引入 `spring-cloud-starter-loadbalancer`
 - **Sentinel**：Gateway 使用 `spring-cloud-alibaba-sentinel-gateway`（WebFlux 适配）+ 显式引入 `sentinel-transport-simple-http`（WebFlux 适配器不含传输层），业务模块使用 `spring-cloud-starter-alibaba-sentinel`（MVC 适配）。Gateway 需 `SentinelInitConfig`（手动 `InitExecutor.doInit()`）和显式 `transport.port: 8724`。版本由父 POM dependencyManagement 指定（2023.0.1.0）。测试中 `spring.cloud.sentinel.enabled: false`。规则通过 Nacos 持久化（`SENTINEL_GROUP`，dataId=`${spring.application.name}-flow-rules`/`-degrade-rules`），Dashboard 重启后自动加载。
 - **SkyWalking**：纯 javaagent 挂载，零代码依赖。Agent 下载和 IDEA VM Options 见 `skywalking/README.md`。
-- **管理员鉴权**：User 表 `role` 字段（user/seller/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin，对 `/api/seller/**` 路径校验 role=seller 或 admin。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
-- **商家角色**：用户可注册开店（`POST /api/shop/register`），成功后 user-service 通过内部端点 `PUT /api/user/internal/promote` 将角色提升为 seller（best-effort，失败不阻塞开店）。seller 可管理自己店铺的商品和订单。网关鉴权：`/api/seller/**` 需要 role=seller 或 admin。
+- **管理员鉴权**：User 表 `role` 字段（user/seller/admin），JWT 中携带 role claim。Gateway `AuthGlobalFilter` 对 `/api/admin/**` 路径校验 role=admin，对 `/api/seller/**` 路径校验 role=seller（**仅 seller，管理员无商家中心**，admin 访问返回 403）。mall-goods-order 侧 `@RequireAdmin` 注解 + `AdminInterceptor` 做二次鉴权（检查 `X-User-Role: admin` 请求头）。
+- **网关头注入**：`AuthGlobalFilter` 解析 JWT 后必须 `request.mutate().headers(h -> { h.remove + h.add })` **重建 exchange 传下游**（仅改 builder 副本不生效），注入 `X-User-Id` / `X-User-Role` 覆盖客户端伪造值；`/api/product/internal` 等内部路径检查先于公开前缀匹配；拼团 `join/start/my` 及 `/{id}/follow` 动态子路径强制 JWT（`isPublicPath` 加 `suffix + "/.+"` 正则）
+- **商家角色**：用户可注册开店（`POST /api/shop/register`），成功后 user-service 通过内部端点 `PUT /api/user/internal/promote` 将角色提升为 seller（best-effort，失败不阻塞开店）。seller 可管理自己店铺的商品和订单。网关鉴权：`/api/seller/**` 仅 role=seller（管理员不拥有商家中心）。
 - **店铺系统**：`shop` 表（id, name, logo, description, sellerId UNIQUE, status）。`ShopService` 继承 `ServiceImpl<ShopMapper, Shop>`，提供 register/getBySellerId/updateShopInfo。`UserFeignClient` 注入使用 `@Autowired(required = false)`（测试环境 Feign 被排除，无 FeignClientFactory bean）。`Product` 表增加 `shop_id BIGINT DEFAULT NULL`（NULL=平台商品，非 NULL=店铺商品）。`ProductService.getProductPage` 新增第 6 个参数 `Long shopId`（非 null 时过滤店铺商品）。`ShopController`（`/api/shop`）公开端点：`GET /api/shop/{id}`（店铺详情+商品列表）。`SellerController`（`/api/seller`）商家后台：`GET /shop`/`PUT /shop`/`GET /products`/`POST /product`/`PUT /product/{id}`/`DELETE /product/{id}`/`GET /orders`/`PUT /order/{id}/ship`/`GET /dashboard`。Admin 管理端点：`GET /api/admin/shop/list` + `PUT /api/admin/shop/{id}/status` + `DELETE /api/admin/shop/{id}`。`ShopServiceTest` 5 个单元测试（MockitoExtension），`ShopControllerTest` 6 个端点测试 + `SellerControllerTest` 5 个端点测试（@SpringBootTest）。`ShopFollowService`（`shop_follow` 表，toggle/isFollowing/countFollowers/listFollowing 方法，`POST /api/shop/{id}/follow` 关注/取关 + `GET /api/shop/following` 我的关注，JWT 手动提取无需 Gateway 改动）。`ShopController.detail` 返回 `followerCount` + `isFollowing`（JWT 可选，无 JWT 时 isFollowing=false）。`ShopFollowServiceTest` 5 个单元测试。
 - **后台管理**：`AdminController`（`/api/admin`）提供分类/商品/订单 CRUD + SKU/属性管理 + 优惠券管理 + 用户管理（`GET /api/admin/user/list` / `PUT /api/admin/user/{id}/status` / `PUT /api/admin/user/{id}/role`，通过 `UserFeignClient` 调用 user-service 内部端点）。分类管理含树形结构查询 + 子分类保护（有子分类不可删）+ 商品数量检查。商品管理含分页查询/创建/更新/软删除（status=0）。订单管理含分页查询/发货（status 2→3）/完成（status 3→4）。`UserDTO`（tianji-common）不含 password 字段，跨模块安全传输。
 - **数据看板**：`GET /api/admin/dashboard`（`AdminController.getDashboard` → `DashboardService.getDashboard()`）聚合 GMV/订单数/用户数 + 今日/本周/本月趋势 + Top 10 热销商品 + 订单状态分布 + 分类销售额。GMV 只统计 status 2/3/4（已付款/已发货/已完成）。用户数通过 OpenFeign 调用 user-service `/api/user/internal/count`，失败时降级为 0。`DashboardServiceTest` 5 个单元测试 Mock Mapper 和 Feign 客户端。
@@ -260,7 +263,7 @@ mvn package -DskipTests
 - **订单状态**：1=待付款、2=已付款、3=已发货、4=已完成、5=已取消。退款状态独立在 `refund` 表（processing/success/fail）。
 - **订单收货**：用户侧 `PUT /api/order/{id}/receive`（`OrderService.confirmReceive`）——校验所有权 + status=3，设 status=4 + receiveTime。
 - **按商品退款**：`POST /api/order/{id}/refund`（JWT 鉴权），body 为 `RefundRequest`（reason + refundType + items[]），每项指定 orderItemId/productId/skuId/quantity。`RefundService.requestRefund()` 校验订单（status 2-4 + 所有权）+ 防重复（`ORDER BY id` DESC 取最新一条处理中退款）+ 逐项验证（明细存在 + 数量合法）+ 计算金额 + 创建 `Refund` + `RefundItem` 记录。REFUND_ONLY 类型直接调用 pay-service 退款；RETURN_REFUND 类型等待买家退货。`refund` 表新增 `refund_type`/`return_status`/`tracking_number`/`tracking_company` 字段，`refund_item` 表记录退款商品明细。
-- **退货流程**：买家填写快递 `PUT /api/refund/{id}/ship`（JWT 鉴权，body: trackingNumber + trackingCompany），校验 refundType=RETURN_REFUND + status=processing，设 returnStatus=SHIPPED。卖家确认收货 `PUT /api/refund/{id}/receive`（无 JWT 检查，网关层 admin/seller 鉴权），校验 returnStatus=SHIPPED，设 returnStatus=RECEIVED 后执行退款。退款详情 `GET /api/refund/{id}` 返回 refund + items 列表。
+- **退货流程**：买家填写快递 `PUT /api/refund/{id}/ship`（JWT 鉴权，body: trackingNumber + trackingCompany），校验 refundType=RETURN_REFUND + status=processing，设 returnStatus=SHIPPED。卖家确认收货 `PUT /api/refund/{id}/receive`（解析 JWT + 网关 X-User-Role 双重校验，仅 seller/admin）：seller 需校验退款商品属于自己店铺（RefundService.confirmReceive 带 shopId 参数，`refund_item→product.shop_id` 比对，admin 传 null 跳过归属校验），设 returnStatus=RECEIVED 后执行退款。退款详情 `GET /api/refund/{id}` 返回 refund + items 列表。
 - **退款端点**：`RefundController`（`@RequestMapping("/api/refund")`），Gateway 新增路由 `Path=/api/refund/** → lb://mall-goods-order`。`RefundServiceTest` 12 个单元测试（6 个 requestRefund + 2 个 returnShip + 2 个 confirmReceive + getRefundDetail + getMyRefunds）。`getMyRefunds` 返回 `Page<Refund>`（用 `page()` 不用 `list()`——`ServiceImpl.list()` Mockito 匹配不可靠）。
 - **超时取消**：下单时 RocketMQ 延迟消息（delayLevel 16=30min，tag:TIMEOUT_CHECK），`OrderTimeoutConsumer` 消费检查订单状态，PENDING→CANCELLED + 恢复库存。best-effort（发送失败不阻塞主流程）。
 - **PayFeignClient**：mall-goods-order → pay-service Feign 调用（退款），测试中需 `@MockBean PayFeignClient`。
@@ -277,9 +280,23 @@ mvn package -DskipTests
 - **领券中心**：`GET /api/coupon/center`（JWT 鉴权）返回所有可用优惠券列表，每条含 `claimed`（是否已领取）和 `expiringSoon`（24 小时内过期）标记，响应汇总 `total` 和 `unclaimedCount`。`GET /api/coupon/count`（JWT 鉴权）返回未领数量徽章 `{"unclaimed": N}`。`GET /api/coupon/my` 返回 `List<Map<String, Object>>`（含优惠券详情）。`CouponService` 新增 `getCouponCenter(userId)`/`getAvailableCount(userId)`/`isApplicable(coupon, categoryId, productId)` 方法。
 - **优惠券适用范围**：`coupon` 表新增 `applicable_category_id` 和 `applicable_product_id`（NULL=全适用）。`CouponRequest` 同步新增对应字段，admin CRUD 通过 `BeanUtils.copyProperties` 自动复制无需改动。`CouponService.isApplicable()` 校验订单分类/商品是否在优惠券范围内。`CouponServiceTest` 新增 3 个适用范围测试 + 2 个领券中心测试。
 - **优惠券自动过期**：`CouponService.markExpiredCoupons()` 使用 `@Scheduled(cron = "0 7 * * * *")`（每小时第 7 分钟，避整点高峰），扫描 status='UNUSED' 且 endTime 已过的 `UserCoupon`，原子更新为 EXPIRED。`MallApplication` 已有 `@EnableScheduling`，无需额外配置。
-- **user-service**：新增 `GET /api/user/internal/{id}` 返回用户信息 Map（id/username/avatar/phone/role，不含 password）。`UserFeignClient` 新增 `getUserById(Long id)`。
+- **user-service**：`GET /api/user/internal/{id}` 返回用户信息 Map（id/username/avatar/phone/**email**/role，不含 password）。`UserFeignClient` 新增 `getUserById(Long id)`。`register` 设 `profile_status='approved'`；`updateProfile` 仅更新非空字段（防局部更新清空 email/phone），改用户名存 `pending_username` + `profile_status='pending'`；`updateAvatar` 存 `pending_avatar`；`getPendingProfiles` 密码哈希置空；`auditProfile` 通过前校验待审核用户名未被他人占用。
 - **5 个 Mapper 计数方法**：`UserCouponMapper/FavoriteMapper/CartItemMapper/BrowsingHistoryMapper/ShopFollowMapper` 各加 `selectCountByUserId(Long userId)` @Select。`OrderMapper` 加 `selectOrderStats(Long userId)` 按 status 分组统计。
 - **Gateway 路由**：`/api/user/center` 路由到 mall-goods-order（在 `/api/user/**` 之前匹配，否则被 user-service 吞掉）。
+- **商品上架审核**：Product.status 新增 2=待审核。`SellerController.createProduct/updateProduct` 强制 `setStatus(2)`（待审核），前台 `getProductById`/`getProductPage` 只查 status=1（待审核对用户不可见）。`AdminController` `PUT /admin/product/{id}/approve|reject` → `ProductService.updateProductStatus` 用原子 CAS（`ProductMapper.updateStatusIfPendingAudit` — `UPDATE WHERE id=? AND status=2`），重复审核/非待审核返回 `PRODUCT_NOT_PENDING_AUDIT(20007)`。
+- **下单安全**：`OrderService.createOrder` 校验商品 status=1（含 SKU status=1，待审核/下架不可下单）；满减 + 优惠券叠加后 `discount = min(discount, totalAmount)` 封顶（防 0 元/负金额订单）；**拼团折扣不信任客户端 `groupBuyDiscount`**——由 `GroupBuyService` 服务端重算后调用 `orderService.applyGroupBuyDiscount(orderId, discount)` 应用（下限保护）。
+- **payOrder 原子**：`OrderService.payOrder` 用 `baseMapper.updateStatusIfPending(orderId, 2)` 原子 CAS + 幂等（status=2 视为成功，防并发重复支付/通知）。
+- **支付回调幂等重试**：`PayService.handleNotify` 检查 `orderFeignClient.payOrder` 返回 `R.code==200`，失败抛系统异常让支付宝重试；`doMarkPaid` 重复回调幂等返回 payment 继续通知订单服务（订单服务 payOrder 幂等，防丢通知）。
+- **退款按实付分摊**：`RefundService.requestRefund` 计算 `paidRatio = order.totalAmount / 原价总额`，退款金额 = 原价×数量×paidRatio（满减/券后按比例分摊，防超退）。
+- **GMV 剔除退款**：`OrderMapper.selectTotalGmv/selectGmvByTimeRange` 减去 `refund WHERE status='success'` 总额。
+- **积分原子**：`UserMemberMapper.incrementPoints/updateLevel`（原子累加，防并发读-改-写丢积分）；`MemberService.addPoints` 并发建会员 catch `DuplicateKeyException`。
+- **拼团防自刷**：`GroupBuyService.joinGroup` 拒绝团主参自己团（`GROUP_BUY_SELF_JOIN`）+ 防重复参团（`participantMapper.countByUserAndGroup`，`GROUP_BUY_ALREADY_JOINED`）；`getMyGroups` 只返回自己的团。
+- **优惠券并发**：`CouponService.applyCoupon` 检查 `markUsed` 返回值（affected=0 抛 `COUPON_USED_OR_EXPIRED`）；`user_coupon` 表 `uk_user_coupon(user_id, coupon_id)` 唯一约束（test schema + sql/init.sql，**VM MySQL 需 ALTER 迁移**）。
+- **评价统计**：`ProductService.getProductDetail` 聚合值用大小写不敏感 + null 兜底取值（`statLong/statDouble`），防无评价商品详情页 NPE。
+- **AI 事务外呼**：`AiChatService.chat` **不加 `@Transactional`**（内含 Embedding/Milvus/DeepSeek/Feign 外呼，事务内会长期占用 DB 连接）；消息落库单条独立提交。
+- **头像共享存储**：user-service 上传头像存本地，但 `/uploads` 静态访问由网关路由到 mall-goods-order → **VM compose 给 user-service 挂载 `uploads-data:/app/uploads` 共享 volume**（与 mall 同一存储，否则头像 URL 404）。
+- **内部所有权端点**：`GET /api/order/internal/{id}/owned?userId=` 返回校验所有权的订单详情（mcp-server `get_order_detail` 用，防 IDOR）；mcp `get_order_detail` 传 JWT 真实 userId。
+- **前端结算教训**：CheckoutPage computed 内部必须用 `Number(totalPrice.value)`（`Number(totalPrice)` 把 Vue ref 对象转 NaN → totalDiscount=NaN → payPrice=NaN 显示 0 元，且 `minAmount<=NaN` 恒 false 导致券/满减全被过滤不显示）；金额统一 `fmtPrice`。
 
 ## 行为准则
 
