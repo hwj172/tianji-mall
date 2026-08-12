@@ -4,7 +4,12 @@ import request from '@/api/request'
 import router from '@/router'
 
 export const useUserStore = defineStore('user', () => {
-  const token = ref(localStorage.getItem('token') || '')
+  // localStorage 在隐私模式/禁用存储时可能抛异常，安全读取避免 store 初始化崩溃
+  let storedToken = ''
+  try {
+    storedToken = localStorage.getItem('token') || ''
+  } catch { /* ignore */ }
+  const token = ref(storedToken)
   const userInfo = ref(null)
 
   const isLoggedIn = computed(() => !!token.value)

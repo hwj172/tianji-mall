@@ -121,6 +121,9 @@ export function uploadAvatar(file) {
   fd.append('file', file)
   return request.put('/user/avatar', fd, { headers: { 'Content-Type': 'multipart/form-data' } })
 }
+export function updatePassword(data) {
+  return request.put('/user/password', data)
+}
 
 // ========== 管理后台 ==========
 

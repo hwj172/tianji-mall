@@ -89,6 +89,25 @@
         <el-button type="primary" :loading="registeringShop" @click="submitRegisterShop">开店</el-button>
       </template>
     </el-dialog>
+
+    <!-- 修改密码 Dialog -->
+    <el-dialog v-model="passwordVisible" title="修改密码" width="460px">
+      <el-form ref="passwordFormRef" :model="passwordForm" :rules="passwordRules" label-width="80px">
+        <el-form-item label="原密码" prop="oldPassword">
+          <el-input v-model="passwordForm.oldPassword" type="password" show-password placeholder="请输入原密码" />
+        </el-form-item>
+        <el-form-item label="新密码" prop="newPassword">
+          <el-input v-model="passwordForm.newPassword" type="password" show-password placeholder="6-32 位新密码" />
+        </el-form-item>
+        <el-form-item label="确认新密码" prop="confirmPassword">
+          <el-input v-model="passwordForm.confirmPassword" type="password" show-password placeholder="再次输入新密码" />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="passwordVisible = false">取消</el-button>
+        <el-button type="primary" :loading="savingPassword" @click="submitPassword">确认修改</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -98,9 +117,9 @@ import { useRouter } from 'vue-router'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import {
   CreditCard, Box, Van, Stamp,
-  ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close, Shop, Medal
+  ShoppingCart, Ticket, MapLocation, Document, Star, Clock, Service, Bell, User, Close, Shop, Medal, Lock
 } from '@element-plus/icons-vue'
-import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar, uploadImage, registerShop } from '@/api'
+import { getUserCenter, getUnreadCount, updateProfile, uploadAvatar, uploadImage, registerShop, updatePassword } from '@/api'
 import { useUserStore } from '@/stores/user'
 
 const router = useRouter()
@@ -175,6 +194,7 @@ const quickGroups = computed(() => [
     items: [
       ...(userStore.userInfo?.role === 'user' ? [{ label: '注册开店', icon: Shop, action: openRegisterShop }] : []),
       { label: '编辑资料', icon: User, action: openEditDialog },
+      { label: '修改密码', icon: Lock, action: openPasswordDialog },
       { label: '退出登录', icon: Close, action: handleLogout, danger: true }
     ]
   }
@@ -346,6 +366,52 @@ async function saveProfile() {
     editVisible.value = false
   } catch { /* handle by interceptor */ }
   finally { savingProfile.value = false }
+}
+
+// ========== 修改密码 ==========
+
+const passwordVisible = ref(false)
+const savingPassword = ref(false)
+const passwordFormRef = ref(null)
+const passwordForm = ref({ oldPassword: '', newPassword: '', confirmPassword: '' })
+
+const passwordRules = {
+  oldPassword: [{ required: true, message: '请输入原密码', trigger: 'blur' }],
+  newPassword: [
+    { required: true, message: '请输入新密码', trigger: 'blur' },
+    { min: 6, max: 32, message: '密码长度需在 6-32 位之间', trigger: 'blur' }
+  ],
+  confirmPassword: [{
+    validator: (rule, value, callback) => {
+      if (!value) return callback(new Error('请再次输入新密码'))
+      if (value !== passwordForm.value.newPassword) return callback(new Error('两次输入的密码不一致'))
+      callback()
+    },
+    trigger: 'blur'
+  }]
+}
+
+function openPasswordDialog() {
+  passwordForm.value = { oldPassword: '', newPassword: '', confirmPassword: '' }
+  passwordVisible.value = true
+}
+
+async function submitPassword() {
+  if (passwordFormRef.value) {
+    try {
+      await passwordFormRef.value.validate()
+    } catch { return }
+  }
+  savingPassword.value = true
+  try {
+    await updatePassword({
+      oldPassword: passwordForm.value.oldPassword,
+      newPassword: passwordForm.value.newPassword
+    })
+    ElMessage.success('密码修改成功，下次登录请使用新密码')
+    passwordVisible.value = false
+  } catch { /* handle by interceptor */ }
+  finally { savingPassword.value = false }
 }
 </script>
 

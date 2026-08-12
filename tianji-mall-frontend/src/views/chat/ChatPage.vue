@@ -108,8 +108,11 @@ const quickPrompts = [
 
 onMounted(async () => {
   loadSessions()
-  // 恢复上次会话的 sessionId，历史走后端加载（兼容旧 localStorage 对象格式）
-  let saved = localStorage.getItem('chat_session')
+  // 恢复上次会话的 sessionId，历史走后端加载（兼容旧 localStorage 对象格式；localStorage 不可用时静默跳过）
+  let saved = null
+  try {
+    saved = localStorage.getItem('chat_session')
+  } catch { /* localStorage 不可用 */ }
   if (saved) {
     try {
       const parsed = JSON.parse(saved)

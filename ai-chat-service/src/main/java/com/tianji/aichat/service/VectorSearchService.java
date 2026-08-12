@@ -5,6 +5,7 @@ import io.milvus.client.MilvusServiceClient;
 import io.milvus.grpc.DataType;
 import io.milvus.grpc.MutationResult;
 import io.milvus.grpc.SearchResults;
+import io.milvus.grpc.LoadState;
 import io.milvus.param.ConnectParam;
 import io.milvus.param.IndexType;
 import io.milvus.param.MetricType;
@@ -13,6 +14,8 @@ import io.milvus.param.collection.CreateCollectionParam;
 import io.milvus.param.collection.FieldType;
 import io.milvus.param.collection.HasCollectionParam;
 import io.milvus.param.collection.LoadCollectionParam;
+import io.milvus.grpc.GetLoadStateResponse;
+import io.milvus.param.collection.GetLoadStateParam;
 import io.milvus.param.dml.InsertParam;
 import io.milvus.param.dml.SearchParam;
 import io.milvus.param.dml.UpsertParam;
@@ -94,7 +97,7 @@ public class VectorSearchService {
                 milvusClient.loadCollection(LoadCollectionParam.newBuilder()
                         .withCollectionName(IMAGE_COLLECTION)
                         .build());
-                sleepBrief();
+                waitForCollectionLoaded(IMAGE_COLLECTION);
                 log.info("图片向量集合已预加载: {}", IMAGE_COLLECTION);
             }
         } catch (Exception e) {
@@ -103,14 +106,26 @@ public class VectorSearchService {
     }
 
     /**
-     * Milvus loadCollection 为异步操作，加载小集合后短暂等待避免搜索报 collection not loaded。
+     * 等待 Milvus 集合加载完成：轮询加载状态（替代固定 sleep），
+     * 小集合立即就绪、大集合最多等待 10s，避免固定 3s 空等或等待不足。
      */
-    private void sleepBrief() {
-        try {
-            Thread.sleep(3000);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
+    private void waitForCollectionLoaded(String collection) {
+        long deadline = System.currentTimeMillis() + 10_000;
+        while (System.currentTimeMillis() < deadline) {
+            try {
+                R<GetLoadStateResponse> st = milvusClient.getLoadState(GetLoadStateParam.newBuilder()
+                        .withCollectionName(collection)
+                        .build());
+                if (st.getData() != null && st.getData().getState() == LoadState.LoadStateLoaded) {
+                    return;
+                }
+                Thread.sleep(300);
+            } catch (Exception e) {
+                log.warn("查询集合加载状态失败: {}", e.getMessage());
+                return; // 查询失败不阻塞，直接继续
+            }
         }
+        log.warn("等待集合加载超时（10s）: {}", collection);
     }
 
     /**
@@ -221,11 +236,11 @@ public class VectorSearchService {
             List<Float> queryVector = toFloatList(vector);
 
             // 搜索前确保图片集合已加载（Milvus 重启后集合默认未加载，搜索会报 collection not loaded）
-            // loadCollection 是异步的，等待加载完成再搜索（Java SDK 无 wait API，sleep 兜底）
+            // loadCollection 是异步的，轮询加载状态等待完成再搜索
             milvusClient.loadCollection(LoadCollectionParam.newBuilder()
                     .withCollectionName(IMAGE_COLLECTION)
                     .build());
-            sleepBrief();
+            waitForCollectionLoaded(IMAGE_COLLECTION);
 
             SearchParam searchParam = SearchParam.newBuilder()
                     .withCollectionName(IMAGE_COLLECTION)
