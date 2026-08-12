@@ -193,7 +193,8 @@ CREATE TABLE IF NOT EXISTS user_coupon (
     used_time     TIMESTAMP,
     used_order_id BIGINT,
     create_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    update_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    update_time   TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    CONSTRAINT uk_user_coupon UNIQUE (user_id, coupon_id)
 );
 
 CREATE TABLE IF NOT EXISTS favorite (

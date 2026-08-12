@@ -13,9 +13,11 @@ import com.tianji.mall.entity.OrderItem;
 import com.tianji.mall.entity.Refund;
 import com.tianji.mall.entity.RefundItem;
 import com.tianji.mall.entity.Shop;
+import com.tianji.mall.entity.Product;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.mapper.RefundItemMapper;
 import com.tianji.mall.mapper.RefundMapper;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +25,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -38,16 +41,19 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
     private final OrderService orderService;
     private final PayFeignClient payFeignClient;
     private final ShopService shopService;
+    private final ProductMapper productMapper;
 
     public RefundService(OrderMapper orderMapper, OrderItemMapper orderItemMapper,
                          RefundItemMapper refundItemMapper, OrderService orderService,
-                         PayFeignClient payFeignClient, ShopService shopService) {
+                         PayFeignClient payFeignClient, ShopService shopService,
+                         ProductMapper productMapper) {
         this.orderMapper = orderMapper;
         this.orderItemMapper = orderItemMapper;
         this.refundItemMapper = refundItemMapper;
         this.orderService = orderService;
         this.payFeignClient = payFeignClient;
         this.shopService = shopService;
+        this.productMapper = productMapper;
     }
 
     /**
@@ -79,6 +85,16 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
         List<OrderItem> allItems = orderItemMapper.selectList(
                 new LambdaQueryWrapper<OrderItem>().eq(OrderItem::getOrderId, orderId));
 
+        // 分摊基准：订单原价总额（Σ price×qty）
+        BigDecimal orderOriginalTotal = allItems.stream()
+                .map(i -> (i.getPrice() == null ? BigDecimal.ZERO : i.getPrice())
+                        .multiply(BigDecimal.valueOf(i.getQuantity())))
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        // 实付/原价 比例：订单用优惠券/满减后实付低于原价，退款按比例分摊防超退
+        BigDecimal paidRatio = orderOriginalTotal.signum() <= 0 || order.getTotalAmount() == null
+                ? BigDecimal.ONE
+                : order.getTotalAmount().divide(orderOriginalTotal, 4, RoundingMode.HALF_UP);
+
         // 计算退款金额
         BigDecimal totalRefund = BigDecimal.ZERO;
         List<RefundItem> refundItems = new ArrayList<>();
@@ -98,7 +114,11 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
                 throw new BizException(BizErrorCode.REFUND_QUANTITY_INVALID, orderItem.getProductName());
             }
 
-            BigDecimal itemAmount = orderItem.getPrice().multiply(BigDecimal.valueOf(qty));
+            // 原价 × 数量 × 实付比例，四舍五入到分
+            BigDecimal itemAmount = orderItem.getPrice()
+                    .multiply(BigDecimal.valueOf(qty))
+                    .multiply(paidRatio)
+                    .setScale(2, RoundingMode.HALF_UP);
             totalRefund = totalRefund.add(itemAmount);
 
             RefundItem ri = new RefundItem();
@@ -175,9 +195,11 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
 
     /**
      * 卖家确认收到退货，执行退款。
+     *
+     * @param shopId 卖家店铺 ID；admin 操作时传 null（跳过归属校验）
      */
     @Transactional
-    public void confirmReceive(Long refundId) {
+    public void confirmReceive(Long refundId, Long shopId) {
         Refund refund = getById(refundId);
         if (refund == null) {
             throw new BizException(BizErrorCode.REFUND_NOT_FOUND);
@@ -188,10 +210,23 @@ public class RefundService extends ServiceImpl<RefundMapper, Refund> {
         if (!"SHIPPED".equals(refund.getReturnStatus())) {
             throw new BizException(BizErrorCode.REFUND_NOT_SHIPPED_BACK);
         }
+        // 店铺归属校验：退款商品必须属于该卖家店铺（防卖家确认他人退款单）
+        if (shopId != null) {
+            List<RefundItem> items = refundItemMapper.selectByRefundId(refundId);
+            List<Long> productIds = items.stream().map(RefundItem::getProductId).distinct().toList();
+            if (!productIds.isEmpty()) {
+                List<Product> products = productMapper.selectBatchIds(productIds);
+                for (Product product : products) {
+                    if (product == null || product.getShopId() == null || !product.getShopId().equals(shopId)) {
+                        throw new BizException(BizErrorCode.SHOP_NOT_OWNER);
+                    }
+                }
+            }
+        }
         refund.setReturnStatus("RECEIVED");
         updateById(refund);
         executeRefund(refund);
-        log.info("卖家确认收货，执行退款: refundId={}", refundId);
+        log.info("卖家确认收货，执行退款: refundId={}, shopId={}", refundId, shopId);
     }
 
     /**

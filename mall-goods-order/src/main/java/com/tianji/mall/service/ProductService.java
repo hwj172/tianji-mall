@@ -143,7 +143,8 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
     // 导致调用方 ClassCastException（与 getProductPage 同源）。商品量小，直接查库。
     public Product getProductById(Long id) {
         Product product = getById(id);
-        if (product == null || product.getStatus() == 0) {
+        // 仅上架(status=1)对用户可见；待审核(2)/下架(0)均视为不存在
+        if (product == null || product.getStatus() == null || product.getStatus() != 1) {
             throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND);
         }
         return product;
@@ -331,10 +332,11 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
      */
     @CacheEvict(value = "product", key = "#id")
     public void updateProductStatus(Long id, Integer status) {
-        Product product = new Product();
-        product.setId(id);
-        product.setStatus(status);
-        updateById(product);
+        // 原子 CAS：仅待审核(status=2)商品可审核，防并发/重复审核覆盖
+        int affected = baseMapper.updateStatusIfPendingAudit(id, status);
+        if (affected == 0) {
+            throw new BizException(BizErrorCode.PRODUCT_NOT_PENDING_AUDIT);
+        }
     }
 
     /**

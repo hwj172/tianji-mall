@@ -201,6 +201,7 @@ class PayServiceTest {
             Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1);
             when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
             when(paymentMapper.markPaid("PAY202407160001", "20240716220010001")).thenReturn(1);
+            when(orderFeignClient.payOrder(10L, 1L)).thenReturn(R.ok());
 
             Map<String, String> params = new HashMap<>();
             params.put("out_trade_no", "PAY202407160001");
@@ -255,15 +256,16 @@ class PayServiceTest {
     }
 
     @Test
-    void shouldReturnWhenDuplicateMarkPaid() {
+    void shouldRetryNotifyOrderServiceWhenDuplicateMarkPaid() {
         try (MockedStatic<AlipaySignature> mockedSignature = mockStatic(AlipaySignature.class)) {
             mockedSignature.when(() -> AlipaySignature.rsaCheckV1(anyMap(), anyString(), anyString(), anyString()))
                     .thenReturn(true);
 
             Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1);
             when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
-            // markPaid 返回 0 表示重复处理（幂等）
+            // markPaid 返回 0 表示重复回调（上次通知订单服务可能失败丢失）→ 幂等重试通知
             when(paymentMapper.markPaid("PAY202407160001", "20240716220010001")).thenReturn(0);
+            when(orderFeignClient.payOrder(10L, 1L)).thenReturn(R.ok());
 
             Map<String, String> params = new HashMap<>();
             params.put("out_trade_no", "PAY202407160001");
@@ -272,7 +274,30 @@ class PayServiceTest {
 
             payService.handleNotify(params);
 
-            verify(orderFeignClient, never()).payOrder(anyLong(), anyLong());
+            // 重复回调仍会通知订单服务（订单服务 payOrder 幂等），避免丢通知
+            verify(orderFeignClient).payOrder(10L, 1L);
+        }
+    }
+
+    @Test
+    void shouldThrowWhenOrderServiceRejectsPay() {
+        try (MockedStatic<AlipaySignature> mockedSignature = mockStatic(AlipaySignature.class)) {
+            mockedSignature.when(() -> AlipaySignature.rsaCheckV1(anyMap(), anyString(), anyString(), anyString()))
+                    .thenReturn(true);
+
+            Payment payment = buildPayment(1L, "PAY202407160001", 10L, 1L, 1);
+            when(paymentMapper.selectOne(any(Wrapper.class), anyBoolean())).thenReturn(payment);
+            when(paymentMapper.markPaid("PAY202407160001", "20240716220010001")).thenReturn(1);
+            // 订单服务返回业务失败（如订单已取消）→ 抛系统异常触发支付宝重试
+            when(orderFeignClient.payOrder(10L, 1L)).thenReturn(R.fail("订单状态无效"));
+
+            Map<String, String> params = new HashMap<>();
+            params.put("out_trade_no", "PAY202407160001");
+            params.put("trade_no", "20240716220010001");
+            params.put("trade_status", "TRADE_SUCCESS");
+
+            assertThatThrownBy(() -> payService.handleNotify(params))
+                    .isInstanceOf(IllegalStateException.class);
         }
     }
 

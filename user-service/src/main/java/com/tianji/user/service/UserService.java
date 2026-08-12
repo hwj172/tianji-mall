@@ -51,6 +51,7 @@ public class UserService extends ServiceImpl<UserMapper, User> {
         user.setPhone(req.getPhone());
         user.setEmail(req.getEmail());
         user.setStatus(1);
+        user.setProfileStatus("approved"); // 新注册用户无需审核
 
         try {
             save(user);
@@ -99,8 +100,13 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             user.setPendingUsername(username);
             user.setProfileStatus("pending");
         }
-        user.setPhone(phone);
-        user.setEmail(email);
+        // 仅更新传入的非空字段，避免前端局部更新时误清空手机/邮箱
+        if (phone != null) {
+            user.setPhone(phone);
+        }
+        if (email != null) {
+            user.setEmail(email);
+        }
         updateById(user);
     }
 
@@ -120,7 +126,10 @@ public class UserService extends ServiceImpl<UserMapper, User> {
 
     /** 待审核资料的用户列表（admin 审核用） */
     public List<User> getPendingProfiles() {
-        return list(new LambdaQueryWrapper<User>().eq(User::getProfileStatus, "pending"));
+        List<User> users = list(new LambdaQueryWrapper<User>().eq(User::getProfileStatus, "pending"));
+        // 密码哈希脱敏，避免泄露
+        users.forEach(u -> u.setPassword(null));
+        return users;
     }
 
     /** 审核用户资料：通过则应用待审核的新值，拒绝则丢弃 */
@@ -131,7 +140,16 @@ public class UserService extends ServiceImpl<UserMapper, User> {
             throw new BizException(BizErrorCode.USER_NOT_FOUND);
         }
         if (approve) {
-            if (user.getPendingUsername() != null) user.setUsername(user.getPendingUsername());
+            // 通过前校验待审核用户名未被他人占用（防撞名/覆盖他人用户名）
+            if (user.getPendingUsername() != null && !user.getPendingUsername().equals(user.getUsername())) {
+                long dup = count(new LambdaQueryWrapper<User>()
+                        .eq(User::getUsername, user.getPendingUsername())
+                        .ne(User::getId, user.getId()));
+                if (dup > 0) {
+                    throw new BizException(BizErrorCode.USERNAME_EXISTS);
+                }
+                user.setUsername(user.getPendingUsername());
+            }
             if (user.getPendingAvatar() != null) user.setAvatar(user.getPendingAvatar());
         }
         user.setPendingUsername(null);

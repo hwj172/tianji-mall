@@ -10,7 +10,7 @@
         <div class="rc-info">
           <router-link :to="`/product/${item.productId}`" class="rc-name">{{ item.productName }}</router-link>
           <span class="rc-spec" v-if="item.skuSpecs">{{ item.skuSpecs }}</span>
-          <span class="rc-price">¥{{ item.price }}</span>
+          <span class="rc-price">¥{{ fmtPrice(item.price) }}</span>
         </div>
         <div class="rc-action">
           <el-button type="primary" size="small" @click="openReview(item)">评价</el-button>
@@ -54,6 +54,7 @@ import { Plus } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getPendingReviews, createReview, uploadImage } from '@/api'
 import { imageOnError } from '@/utils/image'
+import { fmtPrice } from '@/utils/format'
 import { usePagedList } from '@/composables/usePagedList'
 
 const { list: items, loading, loadingMore, hasMore, loadData, loadMore } = usePagedList(

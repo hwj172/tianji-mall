@@ -226,8 +226,8 @@ class RefundServiceIntegrationTest {
         assertThat(shipped.getTrackingNumber()).isEqualTo("SF1234567890");
         assertThat(shipped.getTrackingCompany()).isEqualTo("顺丰速运");
 
-        // 卖家确认收货
-        refundService.confirmReceive(refund.getId());
+        // 卖家确认收货（admin 视角 shopId=null 跳过归属校验）
+        refundService.confirmReceive(refund.getId(), null);
         Refund completed = refundService.getById(refund.getId());
         assertThat(completed.getReturnStatus()).isEqualTo("RECEIVED");
         assertThat(completed.getStatus()).isEqualTo("success");

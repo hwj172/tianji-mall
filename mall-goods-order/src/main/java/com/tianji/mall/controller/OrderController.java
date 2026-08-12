@@ -100,6 +100,13 @@ public class OrderController {
         return R.ok(orderService.getById(id));
     }
 
+    /** 内部端点：按所有权校验后的订单详情（mcp-server 工具用，防 IDOR） */
+    @GetMapping("/internal/{id}/owned")
+    public R<OrderDetailResponse> getOrderDetailOwned(@PathVariable("id") Long id,
+                                                      @RequestParam("userId") Long userId) {
+        return R.ok(orderService.getOrderDetail(userId, id));
+    }
+
     @GetMapping("/internal/list/{userId}")
     public R<List<Order>> listInternal(@PathVariable("userId") Long userId) {
         return R.ok(orderService.getOrderList(userId));

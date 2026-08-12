@@ -116,10 +116,11 @@ public class GroupBuyService {
 
         GroupBuyTier tier = findTier(activity, targetCount);
         BigDecimal discount = calculateDiscount(activity, tier);
-        orderReq.setGroupBuyDiscount(discount);
 
         // 创建订单（锁+库存+coupon 全包）
         Order order = orderService.createOrder(userId, orderReq);
+        // 拼团折扣服务端应用（不依赖客户端传入的 groupBuyDiscount）
+        orderService.applyGroupBuyDiscount(order.getId(), discount);
 
         // 创建团
         String groupId = UUID.randomUUID().toString().replace("-", "").substring(0, 8);
@@ -154,15 +155,24 @@ public class GroupBuyService {
             groupBuyOrderMapper.updateById(gbo);
             throw new BizException(BizErrorCode.GROUP_BUY_EXPIRED);
         }
+        // 防自刷：团主不能参自己的团
+        if (gbo.getUserId() != null && gbo.getUserId().equals(userId)) {
+            throw new BizException(BizErrorCode.GROUP_BUY_SELF_JOIN);
+        }
+        // 防重复参团：同一用户同一团只能参一次
+        if (participantMapper.countByUserAndGroup(gbo.getId(), userId) > 0) {
+            throw new BizException(BizErrorCode.GROUP_BUY_ALREADY_JOINED);
+        }
 
         GroupBuy activity = groupBuyMapper.selectByProductId(gbo.getProductId());
         GroupBuyTier tier = findTier(activity, gbo.getTargetTier());
         BigDecimal discount = calculateDiscount(activity, tier);
         orderReq.setGroupBuyGroupId(groupId);
-        orderReq.setGroupBuyDiscount(discount);
 
         // 创建订单
         Order order = orderService.createOrder(userId, orderReq);
+        // 拼团折扣服务端应用（不依赖客户端传入的 groupBuyDiscount）
+        orderService.applyGroupBuyDiscount(order.getId(), discount);
 
         // 原子参团（CAS: current_count < target_tier AND status = 'OPEN'）
         int affected = groupBuyOrderMapper.incrementCount(gbo.getId());
@@ -181,7 +191,8 @@ public class GroupBuyService {
     }
 
     public List<GroupBuyOrder> getMyGroups(Long userId) {
-        return groupBuyOrderMapper.selectAllOpen();
+        // 只返回自己的拼团记录（防 IDOR 泄露他人拼团）
+        return groupBuyOrderMapper.selectByUserId(userId);
     }
 
     // ==================== 辅助 ====================

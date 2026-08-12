@@ -13,4 +13,7 @@ public interface GroupBuyParticipantMapper extends BaseMapper<GroupBuyParticipan
 
     @Select("SELECT * FROM group_buy_participant WHERE group_buy_order_id = #{gboId}")
     List<GroupBuyParticipant> selectByGroupBuyOrderId(@Param("gboId") Long gboId);
+
+    @Select("SELECT COUNT(*) FROM group_buy_participant WHERE group_buy_order_id = #{gboId} AND user_id = #{userId}")
+    long countByUserAndGroup(@Param("gboId") Long gboId, @Param("userId") Long userId);
 }

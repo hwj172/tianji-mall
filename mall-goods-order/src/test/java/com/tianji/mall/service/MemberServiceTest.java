@@ -128,7 +128,6 @@ class MemberServiceTest {
         UserMember member = buildMember(1L, 10, 10);
         when(userMemberMapper.selectOne(any())).thenReturn(member);
         when(signInMapper.insert(any(SignIn.class))).thenReturn(1);
-        when(userMemberMapper.updateById(any(UserMember.class))).thenReturn(1);
         when(pointsLogMapper.insert(any(PointsLog.class))).thenReturn(1);
 
         SignInResponse res = memberService.signIn(1L);
@@ -136,8 +135,8 @@ class MemberServiceTest {
         assertThat(res.getSigned()).isTrue();
         assertThat(res.getTodaySigned()).isTrue();
         assertThat(res.getPoints()).isEqualTo(5);
-        assertThat(member.getPoints()).isEqualTo(15);
-        assertThat(member.getTotalPoints()).isEqualTo(15);
+        // 积分原子累加（不依赖读-改-写）
+        verify(userMemberMapper).incrementPoints(1L, 5);
 
         ArgumentCaptor<PointsLog> captor = ArgumentCaptor.forClass(PointsLog.class);
         verify(pointsLogMapper).insert(captor.capture());
@@ -152,7 +151,6 @@ class MemberServiceTest {
         when(userMemberMapper.selectOne(any())).thenReturn(null);
         when(signInMapper.insert(any(SignIn.class))).thenReturn(1);
         when(userMemberMapper.insert(any(UserMember.class))).thenReturn(1);
-        when(userMemberMapper.updateById(any(UserMember.class))).thenReturn(1);
         when(pointsLogMapper.insert(any(PointsLog.class))).thenReturn(1);
 
         SignInResponse res = memberService.signIn(1L);
@@ -162,12 +160,8 @@ class MemberServiceTest {
 
         // 首次签到创建会员行
         verify(userMemberMapper).insert(any(UserMember.class));
-        // 发放 5 积分并落到会员行（updateById 参数为发放后状态）
-        ArgumentCaptor<UserMember> updCaptor = ArgumentCaptor.forClass(UserMember.class);
-        verify(userMemberMapper).updateById(updCaptor.capture());
-        assertThat(updCaptor.getValue().getUserId()).isEqualTo(1L);
-        assertThat(updCaptor.getValue().getPoints()).isEqualTo(5);
-        assertThat(updCaptor.getValue().getTotalPoints()).isEqualTo(5);
+        // 发放 5 积分：原子累加
+        verify(userMemberMapper).incrementPoints(1L, 5);
     }
 
     @Test
@@ -211,14 +205,12 @@ class MemberServiceTest {
     void shouldAwardPointsByOrderAmount() {
         UserMember member = buildMember(1L, 0, 0);
         when(userMemberMapper.selectOne(any())).thenReturn(member);
-        when(userMemberMapper.updateById(any(UserMember.class))).thenReturn(1);
         when(pointsLogMapper.insert(any(PointsLog.class))).thenReturn(1);
 
         memberService.addPointsForOrder(1L, BigDecimal.valueOf(123.45));
 
-        assertThat(member.getPoints()).isEqualTo(123);
-        assertThat(member.getTotalPoints()).isEqualTo(123);
-        assertThat(member.getLevel()).isEqualTo(2); // 123 >= 100 → 白银
+        // 积分按订单金额原子累加
+        verify(userMemberMapper).incrementPoints(1L, 123);
 
         ArgumentCaptor<PointsLog> captor = ArgumentCaptor.forClass(PointsLog.class);
         verify(pointsLogMapper).insert(captor.capture());
@@ -231,20 +223,14 @@ class MemberServiceTest {
     void shouldCreateMemberWhenAwardingOrderPoints() {
         when(userMemberMapper.selectOne(any())).thenReturn(null);
         when(userMemberMapper.insert(any(UserMember.class))).thenReturn(1);
-        when(userMemberMapper.updateById(any(UserMember.class))).thenReturn(1);
         when(pointsLogMapper.insert(any(PointsLog.class))).thenReturn(1);
 
         memberService.addPointsForOrder(1L, BigDecimal.valueOf(100));
 
         // 首次发放订单积分创建会员行
         verify(userMemberMapper).insert(any(UserMember.class));
-        // 按订单金额发放 100 积分（updateById 参数为发放后状态）
-        ArgumentCaptor<UserMember> updCaptor = ArgumentCaptor.forClass(UserMember.class);
-        verify(userMemberMapper).updateById(updCaptor.capture());
-        assertThat(updCaptor.getValue().getUserId()).isEqualTo(1L);
-        assertThat(updCaptor.getValue().getPoints()).isEqualTo(100);
-        assertThat(updCaptor.getValue().getTotalPoints()).isEqualTo(100);
-        assertThat(updCaptor.getValue().getLevel()).isEqualTo(2); // 100 分 → 白银
+        // 积分原子累加 100 分
+        verify(userMemberMapper).incrementPoints(1L, 100);
     }
 
     private UserMember buildMember(Long userId, int points, int totalPoints) {

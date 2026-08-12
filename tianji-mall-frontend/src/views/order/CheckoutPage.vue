@@ -212,7 +212,11 @@ const promotionDiscount = computed(() => {
   return best
 })
 
-const totalDiscount = computed(() => promotionDiscount.value + couponDiscount.value)
+// 满减 + 优惠券叠加后总优惠封顶到订单总额，避免合计超总额导致负数应付
+const totalDiscount = computed(() => {
+  const total = Number(totalPrice)
+  return Math.min(promotionDiscount.value + couponDiscount.value, total)
+})
 const payPrice = computed(() => (Number(totalPrice) - totalDiscount.value).toFixed(2))
 
 async function loadPromotions() {

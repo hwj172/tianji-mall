@@ -159,7 +159,7 @@ class ToolControllerTest {
     void shouldRouteToGetOrderDetail() throws Exception {
         when(jwtUtil.getUserId("test-token")).thenReturn(1L);
         ToolResponse mockResp = ToolResponse.ok(Map.of("id", 100, "orderNo", "TEST001"));
-        when(orderTools.getOrderDetail(100L)).thenReturn(mockResp);
+        when(orderTools.getOrderDetail(1L, 100L)).thenReturn(mockResp);
 
         mockMvc.perform(post("/api/tool/execute")
                         .header("Authorization", "Bearer test-token")

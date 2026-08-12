@@ -7,7 +7,9 @@ import com.tianji.common.result.R;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.dto.ShipRequest;
 import com.tianji.mall.entity.Refund;
+import com.tianji.mall.entity.Shop;
 import com.tianji.mall.service.RefundService;
+import com.tianji.mall.service.ShopService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +24,7 @@ public class RefundController {
 
     private final RefundService refundService;
     private final JwtUtil jwtUtil;
+    private final ShopService shopService;
 
     @GetMapping("/{id}")
     public R<Map<String, Object>> detail(@RequestHeader("Authorization") String authHeader,
@@ -60,13 +63,21 @@ public class RefundController {
     }
 
     @PutMapping("/{id}/receive")
-    public R<Void> confirmReceive(@RequestHeader(value = "X-User-Role", required = false) String role,
+    public R<Void> confirmReceive(@RequestHeader(value = "Authorization", required = false) String authHeader,
+                                  @RequestHeader(value = "X-User-Role", required = false) String role,
                                   @PathVariable("id") Long id) {
         // 卖家确认收货退款：仅 seller / admin 可操作（网关已注入 X-User-Role；无 header 视为未认证）
         if (role == null || (!"seller".equals(role) && !"admin".equals(role))) {
             throw new BizException(BizErrorCode.FORBIDDEN);
         }
-        refundService.confirmReceive(id);
+        // 归属校验：seller 需确认退款商品属于自己店铺；admin 跳过
+        Long shopId = null;
+        if ("seller".equals(role)) {
+            Long userId = jwtUtil.getUserId(authHeader.replace("Bearer ", ""));
+            Shop shop = shopService.getBySellerId(userId);
+            shopId = shop != null ? shop.getId() : null;
+        }
+        refundService.confirmReceive(id, shopId);
         return R.ok();
     }
 }

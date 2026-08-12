@@ -303,8 +303,11 @@ public class CouponService extends ServiceImpl<CouponMapper, Coupon> {
             discount = orderAmount;
         }
 
-        // 原子标记已使用
-        userCouponMapper.markUsed(userCouponId, null);
+        // 原子标记已使用；affected=0 说明并发下已被其他订单抢先使用 → 拒绝本次下单
+        int affected = userCouponMapper.markUsed(userCouponId, null);
+        if (affected == 0) {
+            throw new BizException(BizErrorCode.COUPON_USED_OR_EXPIRED);
+        }
         log.info("订单使用优惠券: userCouponId={}, discount={}", userCouponId, discount);
         return discount;
     }

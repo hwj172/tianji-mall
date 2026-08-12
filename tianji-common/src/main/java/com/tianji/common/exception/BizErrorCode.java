@@ -50,6 +50,7 @@ public enum BizErrorCode {
     SKU_NOT_FOUND(20004, "SKU不存在"),
     SKU_STOCK_INSUFFICIENT(20005, "SKU库存不足"),
     SKU_HAS_STOCK_CANNOT_DELETE(20006, "库存不为0，无法删除SKU"),
+    PRODUCT_NOT_PENDING_AUDIT(20007, "商品不在待审核状态"),
 
     // ==================== 订单 / 购物车 (30xxx) ====================
     ORDER_NOT_FOUND(30001, "订单不存在"),
@@ -99,6 +100,8 @@ public enum BizErrorCode {
     GROUP_BUY_DUPLICATE(70006, "该商品已有进行中的拼团活动"),
     GROUP_BUY_SECKILL_CONFLICT(70007, "该商品正在参与秒杀，不能设置拼团"),
     GROUP_BUY_INVALID_HOURS(70008, "过期小时数必须大于0"),
+    GROUP_BUY_SELF_JOIN(70009, "不能参加自己发起的团"),
+    GROUP_BUY_ALREADY_JOINED(70010, "您已参与该团"),
 
     // ==================== 秒杀 (80xxx) ====================
     SECKILL_NOT_ACTIVE(80001, "秒杀活动未开始或已结束"),

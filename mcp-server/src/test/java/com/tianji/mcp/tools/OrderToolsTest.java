@@ -47,10 +47,10 @@ class OrderToolsTest {
 
     @Test
     void shouldGetOrderDetailSuccessfully() {
-        when(mallFeignClient.getOrder(anyLong()))
+        when(mallFeignClient.getOrderDetailOwned(eq(100L), eq(1L)))
                 .thenReturn(Map.of("data", Map.of("id", 100, "orderNo", "TEST001")));
 
-        ToolResponse result = orderTools.getOrderDetail(100L);
+        ToolResponse result = orderTools.getOrderDetail(1L, 100L);
 
         assertThat(result.isSuccess()).isTrue();
         assertThat(result.getData()).isNotNull();
@@ -125,9 +125,9 @@ class OrderToolsTest {
     void shouldHandleFeignExceptionOnGetOrderDetail() {
         FeignException fe = mock(FeignException.class);
         when(fe.status()).thenReturn(503);
-        when(mallFeignClient.getOrder(anyLong())).thenThrow(fe);
+        when(mallFeignClient.getOrderDetailOwned(eq(100L), eq(1L))).thenThrow(fe);
 
-        ToolResponse result = orderTools.getOrderDetail(100L);
+        ToolResponse result = orderTools.getOrderDetail(1L, 100L);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getError()).contains("暂不可用");
@@ -146,10 +146,10 @@ class OrderToolsTest {
 
     @Test
     void shouldHandleGeneralExceptionOnGetOrderDetail() {
-        when(mallFeignClient.getOrder(anyLong()))
+        when(mallFeignClient.getOrderDetailOwned(eq(100L), eq(1L)))
                 .thenThrow(new RuntimeException("订单不存在"));
 
-        ToolResponse result = orderTools.getOrderDetail(100L);
+        ToolResponse result = orderTools.getOrderDetail(1L, 100L);
 
         assertThat(result.isSuccess()).isFalse();
         assertThat(result.getError()).contains("失败");

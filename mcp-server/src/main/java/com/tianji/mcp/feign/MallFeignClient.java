@@ -18,8 +18,9 @@ public interface MallFeignClient {
     @GetMapping("/api/order/internal/list/{userId}")
     Map<String, Object> getOrderList(@PathVariable("userId") Long userId);
 
-    @GetMapping("/api/order/internal/{id}")
-    Map<String, Object> getOrder(@PathVariable("id") Long id);
+    @GetMapping("/api/order/internal/{id}/owned")
+    Map<String, Object> getOrderDetailOwned(@PathVariable("id") Long id,
+                                            @RequestParam("userId") Long userId);
 
     @GetMapping("/api/cart/internal/list")
     Map<String, Object> getCartList(@RequestParam("userId") Long userId);

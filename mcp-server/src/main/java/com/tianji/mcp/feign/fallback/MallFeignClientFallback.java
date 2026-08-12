@@ -32,7 +32,7 @@ public class MallFeignClientFallback implements FallbackFactory<MallFeignClient>
             }
 
             @Override
-            public Map<String, Object> getOrder(Long id) {
+            public Map<String, Object> getOrderDetailOwned(Long id, Long userId) {
                 return Map.of("error", "订单服务暂不可用");
             }
 

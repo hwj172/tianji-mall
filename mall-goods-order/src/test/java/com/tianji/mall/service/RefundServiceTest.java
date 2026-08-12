@@ -6,12 +6,14 @@ import com.tianji.common.exception.BizException;
 import com.tianji.mall.dto.RefundRequest;
 import com.tianji.mall.entity.Order;
 import com.tianji.mall.entity.OrderItem;
+import com.tianji.mall.entity.Product;
 import com.tianji.mall.entity.Refund;
 import com.tianji.mall.entity.RefundItem;
 import com.tianji.mall.entity.Shop;
 import com.tianji.mall.feign.PayFeignClient;
 import com.tianji.mall.mapper.OrderItemMapper;
 import com.tianji.mall.mapper.OrderMapper;
+import com.tianji.mall.mapper.ProductMapper;
 import com.tianji.mall.mapper.RefundItemMapper;
 import com.tianji.mall.mapper.RefundMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -49,13 +51,15 @@ class RefundServiceTest {
     private PayFeignClient payFeignClient;
     @Mock
     private ShopService shopService;
+    @Mock
+    private ProductMapper productMapper;
 
     private RefundService refundService;
 
     @BeforeEach
     void setUp() {
         refundService = new RefundService(orderMapper, orderItemMapper, refundItemMapper,
-                orderService, payFeignClient, shopService);
+                orderService, payFeignClient, shopService, productMapper);
         ReflectionTestUtils.setField(refundService, "baseMapper", refundMapper);
     }
 
@@ -64,6 +68,8 @@ class RefundServiceTest {
     @Test
     void shouldRequestPerItemRefund() {
         Order order = buildOrder(1L, 100L, 2);
+        // 无优惠订单：实付等于明细原价总额（price 500 × qty 2 = 1000），分摊比例 1:1
+        order.setTotalAmount(BigDecimal.valueOf(1000));
         when(orderMapper.selectByIdForUpdate(1L)).thenReturn(order);
         when(refundMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(0L);
 
@@ -232,10 +238,62 @@ class RefundServiceTest {
         when(refundMapper.selectById(1L)).thenReturn(refund);
         when(refundMapper.updateById(any(Refund.class))).thenReturn(1);
 
-        refundService.confirmReceive(1L);
+        // admin 操作（shopId=null）跳过归属校验
+        refundService.confirmReceive(1L, null);
 
         // called twice: returnStatus update + executeRefund status update
         verify(refundMapper, times(2)).updateById(any(Refund.class));
+    }
+
+    @Test
+    void shouldConfirmReceiveWithOwnedShop() {
+        Refund refund = new Refund();
+        refund.setId(1L);
+        refund.setUserId(100L);
+        refund.setOrderId(10L);
+        refund.setAmount(BigDecimal.valueOf(500));
+        refund.setRefundType("RETURN_REFUND");
+        refund.setReturnStatus("SHIPPED");
+        refund.setStatus("processing");
+        when(refundMapper.selectById(1L)).thenReturn(refund);
+        when(refundMapper.updateById(any(Refund.class))).thenReturn(1);
+
+        // 退款商品属于该店铺 → 通过校验
+        RefundItem item = new RefundItem();
+        item.setRefundId(1L);
+        item.setProductId(100L);
+        when(refundItemMapper.selectByRefundId(1L)).thenReturn(List.of(item));
+        Product product = new Product();
+        product.setId(100L);
+        product.setShopId(9L);
+        when(productMapper.selectBatchIds(List.of(100L))).thenReturn(List.of(product));
+
+        refundService.confirmReceive(1L, 9L);
+
+        verify(refundMapper, times(2)).updateById(any(Refund.class));
+    }
+
+    @Test
+    void shouldThrowWhenConfirmReceiveForeignShop() {
+        Refund refund = new Refund();
+        refund.setId(1L);
+        refund.setRefundType("RETURN_REFUND");
+        refund.setReturnStatus("SHIPPED");
+        when(refundMapper.selectById(1L)).thenReturn(refund);
+
+        // 退款商品属于其他店铺 → 拒绝
+        RefundItem item = new RefundItem();
+        item.setRefundId(1L);
+        item.setProductId(100L);
+        when(refundItemMapper.selectByRefundId(1L)).thenReturn(List.of(item));
+        Product product = new Product();
+        product.setId(100L);
+        product.setShopId(99L);
+        when(productMapper.selectBatchIds(List.of(100L))).thenReturn(List.of(product));
+
+        assertThatThrownBy(() -> refundService.confirmReceive(1L, 9L))
+                .isInstanceOf(BizException.class)
+                .hasMessage("订单不属于本店");
     }
 
     @Test
@@ -246,7 +304,7 @@ class RefundServiceTest {
         refund.setReturnStatus(null);
         when(refundMapper.selectById(1L)).thenReturn(refund);
 
-        assertThatThrownBy(() -> refundService.confirmReceive(1L))
+        assertThatThrownBy(() -> refundService.confirmReceive(1L, null))
                 .isInstanceOf(BizException.class)
                 .hasMessage("买家尚未寄回商品");
     }

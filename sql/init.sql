@@ -19,6 +19,9 @@ CREATE TABLE IF NOT EXISTS `user` (
   `phone`       VARCHAR(20)  DEFAULT NULL COMMENT '手机号',
   `email`       VARCHAR(128) DEFAULT NULL COMMENT '邮箱',
   `avatar`      VARCHAR(512) DEFAULT NULL COMMENT '头像URL',
+  `profile_status` VARCHAR(20) NOT NULL DEFAULT 'approved' COMMENT '资料审核状态：approved/pending',
+  `pending_username` VARCHAR(64) DEFAULT NULL COMMENT '待审核的新用户名',
+  `pending_avatar` VARCHAR(512) DEFAULT NULL COMMENT '待审核的新头像URL',
   `status`      TINYINT      NOT NULL DEFAULT 1 COMMENT '状态：1-正常 0-禁用',
   `role`        VARCHAR(20)  NOT NULL DEFAULT 'user' COMMENT '用户角色：user-普通用户 admin-管理员',
   `create_time` DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
@@ -220,7 +223,8 @@ CREATE TABLE IF NOT EXISTS `user_coupon` (
   `update_time`   DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   PRIMARY KEY (`id`),
   KEY `idx_user_id` (`user_id`),
-  KEY `idx_coupon_id` (`coupon_id`)
+  KEY `idx_coupon_id` (`coupon_id`),
+  UNIQUE KEY `uk_user_coupon` (`user_id`, `coupon_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户优惠券表';
 
 -- 14. 用户收藏表

@@ -11,9 +11,12 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.server.reactive.ServerHttpRequest;
 import org.springframework.stereotype.Component;
 import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
+
+import java.util.regex.Pattern;
 
 import javax.crypto.SecretKey;
 import java.nio.charset.StandardCharsets;
@@ -127,14 +130,24 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-            // 将 userId 和 role 写入请求头，下游服务可直接使用
+            // 将 userId 和 role 写入请求头（覆盖客户端伪造值，避免下游信任伪造角色），
+            // 注意必须 build() 并重建 exchange 传下游，否则 header 不生效
             String userId = claims.getSubject();
             String role = (String) claims.get("role");
             if (role == null || role.isEmpty()) {
                 role = "user";
             }
-            exchange.getRequest().mutate().header("X-User-Id", userId);
-            exchange.getRequest().mutate().header("X-User-Role", role);
+            final String injectUserId = userId;
+            final String injectRole = role;
+            ServerHttpRequest newRequest = exchange.getRequest().mutate()
+                    .headers(h -> {
+                        h.remove("X-User-Id");
+                        h.remove("X-User-Role");
+                        h.add("X-User-Id", injectUserId);
+                        h.add("X-User-Role", injectRole);
+                    })
+                    .build();
+            exchange = exchange.mutate().request(newRequest).build();
 
             // admin 路径：必须有 admin 角色，否则返回 403
             if (path.startsWith(ADMIN_PATH_PREFIX) && !"admin".equals(role)) {
@@ -169,7 +182,19 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
         }
         // 命中公开前缀但属于需要登录的子路径 → 不算公开（网关返回 401 而非透传后端 400）
         boolean protectedExact = PROTECTED_PATHS.stream().anyMatch(path::startsWith);
-        return !protectedExact && PROTECTED_SUFFIXES.stream().noneMatch(path::endsWith);
+        if (protectedExact) {
+            return false;
+        }
+        // 静态尾段（/start、/my）或动态子路径（/join/{id}、/{id}/follow）都需登录
+        for (String suffix : PROTECTED_SUFFIXES) {
+            if (path.endsWith(suffix)) {
+                return false;
+            }
+            if (path.matches(".*" + Pattern.quote(suffix) + "/.+")) {
+                return false;
+            }
+        }
+        return true;
     }
 
     private boolean isInternalPath(String path) {

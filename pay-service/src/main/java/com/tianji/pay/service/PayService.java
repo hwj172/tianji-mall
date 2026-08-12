@@ -131,7 +131,16 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
         }
 
         // 3. 通知订单服务（事务外，避免 Feign 占用 DB 连接）
-        orderFeignClient.payOrder(payment.getOrderId(), payment.getUserId());
+        R<Void> result = orderFeignClient.payOrder(payment.getOrderId(), payment.getUserId());
+        if (result == null || result.getCode() != 200) {
+            // 订单服务未确认支付：抛系统异常让支付宝重试。
+            // doMarkPaid 幂等返回 payment，重试回调会再次通知订单服务，最终一致。
+            log.error("通知订单服务支付结果失败: paymentNo={}, orderId={}, code={}, msg={}",
+                    paymentNo, payment.getOrderId(),
+                    result != null ? result.getCode() : -1,
+                    result != null ? result.getMessage() : "null");
+            throw new IllegalStateException("订单服务未确认支付, paymentNo=" + paymentNo);
+        }
         log.info("支付成功: paymentNo={}, tradeNo={}", paymentNo, tradeNo);
     }
 
@@ -147,8 +156,10 @@ public class PayService extends ServiceImpl<PaymentMapper, Payment> {
         }
         int rows = paymentMapper.markPaid(paymentNo, tradeNo);
         if (rows == 0) {
-            log.info("支付回调重复处理: paymentNo={}", paymentNo);
-            return null;
+            // 重复回调：支付记录已标为已支付，但订单服务可能上次通知失败丢失。
+            // 幂等返回 payment，让上层再次通知订单服务（订单服务 payOrder 幂等）。
+            log.info("支付回调重复处理（幂等通知订单服务）: paymentNo={}", paymentNo);
+            return payment;
         }
         return payment;
     }

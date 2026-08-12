@@ -130,7 +130,8 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
             List<OrderItem> orderItems = new ArrayList<>();
             for (OrderLine line : lines) {
                 Product product = productMap.get(line.productId());
-                if (product == null || product.getStatus() == 0) {
+                // 仅上架商品(status=1)可下单；待审核(2)/下架(0)均拦截
+                if (product == null || product.getStatus() == null || product.getStatus() != 1) {
                     throw new BizException(BizErrorCode.PRODUCT_NOT_FOUND, product != null ? product.getName() : "未知");
                 }
 
@@ -141,6 +142,9 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                     // SKU 商品：用 SKU 价格和库存
                     ProductSku sku = skuService.getById(line.skuId());
                     if (sku == null || !sku.getProductId().equals(line.productId())) {
+                        throw new BizException(BizErrorCode.SKU_NOT_FOUND, product.getName());
+                    }
+                    if (sku.getStatus() == null || sku.getStatus() != 1) {
                         throw new BizException(BizErrorCode.SKU_NOT_FOUND, product.getName());
                     }
                     if (sku.getStock() < line.quantity()) {
@@ -183,10 +187,8 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
                 discount = discount.add(couponService.applyCoupon(userId, req.getCouponId(), totalAmount));
             }
 
-            // 6.5 拼团折扣（锁内，与优惠券叠加）
-            if (req.getGroupBuyDiscount() != null) {
-                discount = discount.add(req.getGroupBuyDiscount());
-            }
+            // 注意：拼团折扣不在此处由客户端传入（groupBuyDiscount 客户端可控，可构造 0 元购）。
+            // 拼团订单在创建后由 GroupBuyService 服务端重算折扣并调用 applyGroupBuyDiscount 应用。
 
             // 7. 生成订单号
             String orderNo = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
@@ -354,12 +356,17 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
         if (!order.getUserId().equals(userId)) {
             throw new BizException(BizErrorCode.ORDER_NOT_OWNER);
         }
-        if (order.getStatus() != 1) {
+        // 原子 CAS：仅当仍为待付款(status=1)时置为已付款(2)，避免并发重复支付
+        int affected = baseMapper.updateStatusIfPending(orderId, 2);
+        if (affected == 0) {
+            // 幂等：已支付状态视为成功（支付回调/前端重复通知场景）
+            if (order.getStatus() != null && order.getStatus() == 2) {
+                return;
+            }
             throw new BizException(BizErrorCode.ORDER_STATUS_INVALID);
         }
         order.setStatus(2); // 已付款
         order.setPayType(1); // 支付宝
-        updateById(order);
 
         // 发放订单积分（best-effort，失败不阻塞支付主流程）
         try {
@@ -370,6 +377,30 @@ public class OrderService extends ServiceImpl<OrderMapper, Order> {
 
         // 发送订单支付事件
         publishOrderEvent(order, "PAID");
+    }
+
+    /**
+     * 拼团折扣应用：由 GroupBuyService 服务端重算后调用（不信任客户端传入的折扣金额）。
+     * 订单创建后调整 totalAmount，下限保护（不为负、不超原价）。
+     */
+    @Transactional
+    public void applyGroupBuyDiscount(Long orderId, BigDecimal discount) {
+        if (discount == null || discount.signum() <= 0) {
+            return;
+        }
+        Order order = getById(orderId);
+        if (order == null) {
+            throw new BizException(BizErrorCode.ORDER_NOT_FOUND);
+        }
+        if (order.getStatus() != 1) {
+            return; // 仅待付款订单可调整（已支付/取消则不生效）
+        }
+        // 折扣不能超过原总额（防服务端计算偏差导致负金额）
+        if (discount.compareTo(order.getTotalAmount()) > 0) {
+            discount = order.getTotalAmount();
+        }
+        order.setTotalAmount(order.getTotalAmount().subtract(discount));
+        updateById(order);
     }
 
     // ==================== 后台管理方法 ====================

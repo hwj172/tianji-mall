@@ -15,10 +15,13 @@ import java.util.Map;
 @Mapper
 public interface OrderMapper extends BaseMapper<Order> {
 
-    @Select("SELECT COALESCE(SUM(total_amount), 0) FROM `order` WHERE status IN (2,3,4)")
+    // GMV 剔除已成功退款的金额，避免退款订单全额虚计
+    @Select("SELECT COALESCE(SUM(total_amount), 0) - COALESCE((SELECT SUM(amount) FROM refund WHERE status = 'success'), 0) "
+            + "FROM `order` WHERE status IN (2,3,4)")
     BigDecimal selectTotalGmv();
 
-    @Select("SELECT COALESCE(SUM(total_amount), 0) FROM `order` WHERE status IN (2,3,4) AND create_time >= #{startTime}")
+    @Select("SELECT COALESCE(SUM(total_amount), 0) - COALESCE((SELECT SUM(amount) FROM refund WHERE status = 'success'), 0) "
+            + "FROM `order` WHERE status IN (2,3,4) AND create_time >= #{startTime}")
     BigDecimal selectGmvByTimeRange(@Param("startTime") LocalDateTime startTime);
 
     @Select("SELECT COUNT(*) FROM `order` WHERE status IN (2,3,4)")

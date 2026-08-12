@@ -132,20 +132,31 @@ public class MemberService {
         UserMember member = userMemberMapper.selectOne(
                 new LambdaQueryWrapper<UserMember>().eq(UserMember::getUserId, userId));
         if (member == null) {
-            member = new UserMember();
-            member.setUserId(userId);
-            member.setLevel(1);
-            member.setPoints(0);
-            member.setTotalPoints(0);
-            member.setCreateTime(LocalDateTime.now());
-            member.setUpdateTime(LocalDateTime.now());
-            userMemberMapper.insert(member);
+            try {
+                member = new UserMember();
+                member.setUserId(userId);
+                member.setLevel(1);
+                member.setPoints(0);
+                member.setTotalPoints(0);
+                member.setCreateTime(LocalDateTime.now());
+                member.setUpdateTime(LocalDateTime.now());
+                userMemberMapper.insert(member);
+            } catch (org.springframework.dao.DuplicateKeyException e) {
+                // 并发同时创建会员，忽略（下方原子累加会作用于已存在的行）
+            }
         }
-        member.setPoints((member.getPoints() == null ? 0 : member.getPoints()) + points);
-        member.setTotalPoints((member.getTotalPoints() == null ? 0 : member.getTotalPoints()) + points);
-        member.setLevel(calcLevel(member.getTotalPoints()));
-        member.setUpdateTime(LocalDateTime.now());
-        userMemberMapper.updateById(member);
+        // 原子累加积分，防并发读-改-写丢积分
+        userMemberMapper.incrementPoints(userId, points);
+        // 读最新累计积分更新等级（仅更新 level 字段，不覆盖 points）
+        UserMember fresh = userMemberMapper.selectOne(
+                new LambdaQueryWrapper<UserMember>().eq(UserMember::getUserId, userId));
+        if (fresh != null) {
+            int total = fresh.getTotalPoints() == null ? 0 : fresh.getTotalPoints();
+            int newLevel = calcLevel(total);
+            if (newLevel != (fresh.getLevel() == null ? 1 : fresh.getLevel())) {
+                userMemberMapper.updateLevel(userId, newLevel);
+            }
+        }
 
         PointsLog logEntry = new PointsLog();
         logEntry.setUserId(userId);

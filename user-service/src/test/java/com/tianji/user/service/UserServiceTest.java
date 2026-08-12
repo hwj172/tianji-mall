@@ -156,6 +156,20 @@ class UserServiceTest {
     }
 
     @Test
+    void shouldRejectAuditProfileWithDuplicateUsername() {
+        User user = buildUser(1L, "oldname", "pw");
+        user.setProfileStatus("pending");
+        user.setPendingUsername("taken_name");
+        when(userMapper.selectById(1L)).thenReturn(user);
+        // 新用户名已被他人占用
+        when(userMapper.selectCount(any(LambdaQueryWrapper.class))).thenReturn(1L);
+
+        assertThatThrownBy(() -> userService.auditProfile(1L, true))
+                .isInstanceOf(BizException.class)
+                .hasMessage("用户名已存在");
+    }
+
+    @Test
     void shouldThrowWhenUpdateProfileUserNotFound() {
         when(userMapper.selectById(999L)).thenReturn(null);
 

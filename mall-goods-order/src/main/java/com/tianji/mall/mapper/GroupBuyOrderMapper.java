@@ -31,4 +31,7 @@ public interface GroupBuyOrderMapper extends BaseMapper<GroupBuyOrder> {
 
     @Select("SELECT * FROM group_buy_order WHERE status = 'OPEN' ORDER BY create_time DESC")
     List<GroupBuyOrder> selectAllOpen();
+
+    @Select("SELECT * FROM group_buy_order WHERE user_id = #{userId} ORDER BY create_time DESC")
+    List<GroupBuyOrder> selectByUserId(@Param("userId") Long userId);
 }

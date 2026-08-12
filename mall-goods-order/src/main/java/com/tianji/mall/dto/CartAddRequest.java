@@ -1,5 +1,6 @@
 package com.tianji.mall.dto;
 
+import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
@@ -12,6 +13,7 @@ public class CartAddRequest {
 
     @NotNull(message = "数量不能为空")
     @Min(value = 1, message = "数量至少为1")
+    @Max(value = 999, message = "单次购买数量不能超过999")
     private Integer quantity;
 
     private Long skuId;

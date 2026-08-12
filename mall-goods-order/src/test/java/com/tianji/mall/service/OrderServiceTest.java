@@ -251,7 +251,8 @@ class OrderServiceTest {
     void shouldPayOrder() {
         Order order = buildOrder(1L, 100L, 1);
         when(orderMapper.selectById(1L)).thenReturn(order);
-        when(orderMapper.updateById(order)).thenReturn(1);
+        // 原子 CAS：status=1 → 2
+        when(orderMapper.updateStatusIfPending(1L, 2)).thenReturn(1);
 
         orderService.payOrder(1L, 100L);
 
@@ -262,13 +263,15 @@ class OrderServiceTest {
     }
 
     @Test
-    void shouldThrowWhenPayNonPendingOrder() {
+    void shouldBeIdempotentWhenPayAlreadyPaidOrder() {
         Order order = buildOrder(1L, 100L, 2); // already paid
         when(orderMapper.selectById(1L)).thenReturn(order);
+        // CAS 未命中（状态已非待付款），但订单已是已付款 → 幂等成功不抛异常
+        when(orderMapper.updateStatusIfPending(1L, 2)).thenReturn(0);
 
-        assertThatThrownBy(() -> orderService.payOrder(1L, 100L))
-                .isInstanceOf(BizException.class)
-                .hasMessage("订单状态不允许支付");
+        orderService.payOrder(1L, 100L);
+
+        verify(orderMapper).updateStatusIfPending(1L, 2);
     }
 
     @Test

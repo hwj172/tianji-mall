@@ -29,9 +29,10 @@ public class OrderTools {
         }
     }
 
-    public ToolResponse getOrderDetail(Long orderId) {
+    public ToolResponse getOrderDetail(Long userId, Long orderId) {
         try {
-            Map<String, Object> result = mallFeignClient.getOrder(orderId);
+            // 用 JWT 真实 userId 调带所有权校验的内部端点，防 IDOR
+            Map<String, Object> result = mallFeignClient.getOrderDetailOwned(orderId, userId);
             return ToolResponse.ok(result.get("data"));
         } catch (FeignException e) {
             log.error("订单详情 Feign 调用失败: status={}", e.status(), e);

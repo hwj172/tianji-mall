@@ -3,6 +3,7 @@ package com.tianji.mall.controller;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.tianji.common.util.JwtUtil;
 import com.tianji.mall.entity.Refund;
+import com.tianji.mall.entity.Shop;
 import com.tianji.mall.service.RefundService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -132,10 +133,26 @@ class RefundControllerTest {
 
     @Test
     void shouldConfirmReceive() throws Exception {
-        doNothing().when(refundService).confirmReceive(1L);
+        Shop shop = new Shop();
+        shop.setId(9L);
+        when(jwtUtil.getUserId(anyString())).thenReturn(1L);
+        when(shopService.getBySellerId(1L)).thenReturn(shop);
+        doNothing().when(refundService).confirmReceive(1L, 9L);
 
         mockMvc.perform(put("/api/refund/1/receive")
+                        .header("Authorization", "Bearer test-token")
                         .header("X-User-Role", "seller"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code").value(200));
+    }
+
+    @Test
+    void shouldConfirmReceiveAsAdminSkipsOwnership() throws Exception {
+        doNothing().when(refundService).confirmReceive(1L, null);
+
+        mockMvc.perform(put("/api/refund/1/receive")
+                        .header("Authorization", "Bearer test-token")
+                        .header("X-User-Role", "admin"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.code").value(200));
     }

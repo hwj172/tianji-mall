@@ -53,7 +53,8 @@ public class AiChatService extends ServiceImpl<AiConversationMapper, AiConversat
     /**
      * 处理用户对话消息，返回 AI 回复（含推荐商品列表）
      */
-    @Transactional
+    // 注意：不加 @Transactional —— chat 内含大量外部调用（Embedding/Milvus/DeepSeek/Feign 工具循环），
+    // 若在事务内执行会长期占用 DB 连接/事务，有连接池耗尽风险。消息落库单条独立提交。
     public ChatResponse chat(Long userId, String sessionId, String message) {
         if (sessionId == null || sessionId.isEmpty()) {
             sessionId = UUID.randomUUID().toString().replace("-", "");

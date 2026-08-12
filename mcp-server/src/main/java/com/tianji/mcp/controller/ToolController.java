@@ -48,7 +48,7 @@ public class ToolController {
                 case "get_orders" -> orderTools.getOrders(realUserId);
                 case "get_order_detail" -> {
                     Long orderId = toLong(req.getParameters().get("orderId"));
-                    yield orderTools.getOrderDetail(orderId);
+                    yield orderTools.getOrderDetail(realUserId, orderId);
                 }
                 case "get_cart" -> cartTools.getCart(realUserId);
                 case "add_to_cart" -> cartTools.addToCart(realUserId, req.getParameters());

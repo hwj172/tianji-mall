@@ -79,19 +79,16 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
         Product product = productService.getProductById(req.getProductId());
 
         // SKU 商品：校验 SKU 存在 + 库存
+        int availableStock;
         if (req.getSkuId() != null) {
             ProductSku sku = skuService.getById(req.getSkuId());
             if (sku == null || !sku.getProductId().equals(req.getProductId())) {
                 throw new BizException(BizErrorCode.SKU_NOT_FOUND);
             }
-            if (sku.getStock() < req.getQuantity()) {
-                throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
-            }
+            availableStock = sku.getStock();
         } else {
             // 无 SKU：使用商品级库存（向后兼容）
-            if (product.getStock() < req.getQuantity()) {
-                throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
-            }
+            availableStock = product.getStock() == null ? 0 : product.getStock();
         }
 
         // 去重：productId + skuId 相同则合并数量
@@ -105,9 +102,17 @@ public class CartService extends ServiceImpl<CartItemMapper, CartItem> {
         }
         CartItem existing = getOne(wrapper);
         if (existing != null) {
-            existing.setQuantity(existing.getQuantity() + req.getQuantity());
+            // 合并后总量不能超库存（每次加购少量绕过单次库存校验）
+            int total = existing.getQuantity() + req.getQuantity();
+            if (total > availableStock) {
+                throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
+            }
+            existing.setQuantity(total);
             updateById(existing);
             return;
+        }
+        if (req.getQuantity() > availableStock) {
+            throw new BizException(BizErrorCode.STOCK_INSUFFICIENT);
         }
 
         CartItem item = new CartItem();

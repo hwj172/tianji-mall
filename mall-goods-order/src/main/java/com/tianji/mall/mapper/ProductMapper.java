@@ -28,6 +28,10 @@ public interface ProductMapper extends BaseMapper<Product> {
     @Update("UPDATE product SET seckill_stock = seckill_stock + #{quantity} WHERE id = #{productId}")
     int restoreSeckillStock(@Param("productId") Long productId, @Param("quantity") int quantity);
 
+    /** 原子审核：仅待审核(status=2)商品可改为目标状态，防并发重复审核覆盖 */
+    @Update("UPDATE product SET status = #{targetStatus} WHERE id = #{id} AND status = 2")
+    int updateStatusIfPendingAudit(@Param("id") Long id, @Param("targetStatus") Integer targetStatus);
+
     @Update("UPDATE product SET seckill_price = NULL, seckill_stock = NULL, seckill_start_time = NULL, seckill_end_time = NULL WHERE id = #{productId}")
     int clearSeckill(@Param("productId") Long productId);
 
