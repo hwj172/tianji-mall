@@ -155,13 +155,13 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
         List<ProductSku> skus = skuService.listByProductId(id);
         List<ProductAttribute> attrs = attributeService.listByProductId(id);
 
-        // 评价统计
+        // 评价统计（兼容 MyBatis Map key 大小写与 NULL 聚合值，避免无评价商品每次详情 NPE）
         Map<String, Object> reviewStats = new LinkedHashMap<>();
         try {
             Map<String, Object> stats = reviewMapper.selectStatsByProductId(id);
-            long count = ((Number) stats.get("count")).longValue();
-            double avgRating = ((Number) stats.get("avgRating")).doubleValue();
-            long goodCount = ((Number) stats.get("goodCount")).longValue();
+            long count = statLong(stats, "count");
+            double avgRating = statDouble(stats, "avgRating");
+            long goodCount = statLong(stats, "goodCount");
             reviewStats.put("count", count);
             reviewStats.put("avgRating", Math.round(avgRating * 10.0) / 10.0);
             reviewStats.put("goodRate", count > 0 ? Math.round(goodCount * 100.0 / count) / 100.0 : 0.0);
@@ -197,6 +197,34 @@ public class ProductService extends ServiceImpl<ProductMapper, Product> {
             result.put("skuMatrix", null);
         }
         return result;
+    }
+
+    /** 从 MyBatis 聚合结果 Map 安全取 long（兼容 key 大小写与 null 值，缺省 0） */
+    private long statLong(Map<String, Object> map, String key) {
+        Object v = getCaseInsensitive(map, key);
+        return v instanceof Number ? ((Number) v).longValue() : 0L;
+    }
+
+    /** 从 MyBatis 聚合结果 Map 安全取 double（兼容 key 大小写与 null 值，缺省 0） */
+    private double statDouble(Map<String, Object> map, String key) {
+        Object v = getCaseInsensitive(map, key);
+        return v instanceof Number ? ((Number) v).doubleValue() : 0.0;
+    }
+
+    private Object getCaseInsensitive(Map<String, Object> map, String key) {
+        if (map == null) {
+            return null;
+        }
+        Object v = map.get(key);
+        if (v == null) {
+            for (java.util.Map.Entry<String, Object> e : map.entrySet()) {
+                if (e.getKey() != null && e.getKey().equalsIgnoreCase(key)) {
+                    v = e.getValue();
+                    break;
+                }
+            }
+        }
+        return v;
     }
 
     @CacheEvict(value = "product", key = "#productId")
