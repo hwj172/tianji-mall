@@ -145,19 +145,19 @@ async function handleReceive(order) {
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
 .status-tabs { display: flex; gap: 0; background: #1b1b1e; border-radius: 8px; padding: 0 16px; margin-bottom: 12px; }
-.tab-item { padding: 14px 20px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: #8b96ab; transition: all .2s; }
+.tab-item { padding: 14px 20px; font-size: 14px; cursor: pointer; border-bottom: 2px solid transparent; color: #71717a; transition: all .2s; }
 .tab-item:hover { color: #ff5000; }
 .tab-item.active { color: #ff5000; border-color: #ff5000; font-weight: 600; }
 
 .order-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; margin-bottom: 12px; cursor: pointer; transition: box-shadow .2s; }
 .order-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 .oc-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.08); }
-.oc-no { font-size: 13px; color: #8b96ab; flex: 1; }
-.oc-time { font-size: 12px; color: #5c6a82; }
+.oc-no { font-size: 13px; color: #71717a; flex: 1; }
+.oc-time { font-size: 12px; color: #52525b; }
 
 .oc-body { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; }
 .oc-amount { font-size: 20px; font-weight: 700; color: #ff5000; margin-right: 10px; }
-.oc-pay { font-size: 12px; color: #5c6a82; }
+.oc-pay { font-size: 12px; color: #52525b; }
 .oc-actions { display: flex; gap: 8px; }
 
 .pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }

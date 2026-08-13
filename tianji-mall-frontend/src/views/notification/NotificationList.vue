@@ -145,7 +145,7 @@ async function handleMarkAllRead() {
 .np-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .page-title { font-size: 20px; font-weight: 600; margin: 0; }
 .np-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-.np-tab { font-size: 13px; color: #8b96ab; padding: 5px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
+.np-tab { font-size: 13px; color: #71717a; padding: 5px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
 .np-tab:hover { color: #ff5000; border-color: #ff5000; }
 .np-tab.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 
@@ -157,9 +157,9 @@ async function handleMarkAllRead() {
 .nc-icon { font-size: 28px; flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 
 .nc-body { flex: 1; min-width: 0; }
-.nc-title { font-size: 15px; font-weight: 600; color: #c3cbda; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.nc-content { font-size: 13px; color: #8b96ab; line-height: 1.5; margin-bottom: 6px; }
-.nc-time { font-size: 12px; color: #5c6a82; }
+.nc-title { font-size: 15px; font-weight: 600; color: #a1a1aa; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.nc-content { font-size: 13px; color: #71717a; line-height: 1.5; margin-bottom: 6px; }
+.nc-time { font-size: 12px; color: #52525b; }
 
 .pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }
 </style>

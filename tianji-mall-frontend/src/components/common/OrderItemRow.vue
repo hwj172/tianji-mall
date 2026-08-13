@@ -29,8 +29,8 @@ defineProps({
 .item-info { flex: 1; min-width: 0; }
 .item-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .item-name:hover { color: #ff5000; }
-.item-spec { font-size: 12px; color: #5c6a82; }
+.item-spec { font-size: 12px; color: #52525b; }
 .item-price, .item-qty, .item-subtotal { width: 90px; text-align: center; font-size: 14px; }
-.item-price { color: #c3cbda; }
+.item-price { color: #a1a1aa; }
 .item-subtotal { color: #ff5000; font-weight: 600; }
 </style>

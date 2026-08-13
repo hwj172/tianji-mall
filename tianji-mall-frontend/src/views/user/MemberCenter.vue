@@ -176,7 +176,7 @@ async function loadLogs() {
 }
 .mc-head { display: flex; justify-content: space-between; align-items: flex-start; }
 .mc-level { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
-.mc-sign-btn { background: rgba(255, 255, 255, .92); color: #c3cbda; border: none; font-weight: 600; }
+.mc-sign-btn { background: rgba(255, 255, 255, .92); color: #a1a1aa; border: none; font-weight: 600; }
 .mc-sign-btn:hover:not(:disabled) { background: #1b1b1e; }
 .mc-sign-btn:disabled { background: rgba(255, 255, 255, .35); color: #fff; border-color: transparent; }
 

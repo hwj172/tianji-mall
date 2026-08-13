@@ -169,5 +169,5 @@ async function handleSave() {
 .ap-header h2 { font-size: 18px; font-weight: 600; }
 .tier-tag { display: inline-block; margin-right: 6px; background: #fff3e8; color: #ff5000; border-radius: 4px; padding: 2px 8px; font-size: 12px; }
 .tier-row { display: flex; align-items: center; gap: 4px; margin-bottom: 6px; }
-.tier-x { color: #5c6a82; font-size: 12px; margin: 0 4px; }
+.tier-x { color: #52525b; font-size: 12px; margin: 0 4px; }
 </style>

@@ -81,7 +81,7 @@ function onImgError(e) { imageOnError(e, 80) }
 .gb-name { font-size: 15px; font-weight: 600; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gb-tiers { display: flex; gap: 8px; }
 .tier-item { background: rgba(34, 211, 238, .1); border: 1px solid rgba(34, 211, 238, .35); border-radius: 6px; padding: 4px 12px; display: flex; align-items: baseline; gap: 6px; }
-.tier-count { font-size: 12px; color: #8b96ab; }
+.tier-count { font-size: 12px; color: #71717a; }
 .tier-discount { font-size: 15px; font-weight: 700; color: #22d3ee; font-family: var(--font-tech); }
-.gb-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: 12px; color: #5c6a82; flex-shrink: 0; }
+.gb-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; font-size: 12px; color: #52525b; flex-shrink: 0; }
 </style>

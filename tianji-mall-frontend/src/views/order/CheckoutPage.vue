@@ -416,7 +416,7 @@ async function submitOrder() {
 .address-list .addr-card.active .addr-radio { border-color: #ff5000; }
 .radio-dot { width: 10px; height: 10px; background: #ff5000; border-radius: 50%; }
 .addr-contact { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 4px; }
-.addr-text { font-size: 13px; color: #8b96ab; }
+.addr-text { font-size: 13px; color: #71717a; }
 .add-addr-btn { margin-top: 10px; }
 
 /* 商品明细：行内结构与样式已收敛到公共组件 OrderItemRow */
@@ -424,11 +424,11 @@ async function submitOrder() {
 
 /* 底部 */
 .checkout-footer { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
-.footer-summary { font-size: 14px; color: #8b96ab; }
+.footer-summary { font-size: 14px; color: #71717a; }
 .footer-summary b { color: #ff5000; }
 .footer-total { font-size: 24px; font-weight: 700; color: #ff5000; }
 .submit-btn { background: #ff5000; border-color: #ff5000; padding: 12px 48px; font-size: 16px; }
-.footer-original { color: #5c6a82; text-decoration: line-through; font-size: 13px; }
+.footer-original { color: #52525b; text-decoration: line-through; font-size: 13px; }
 .footer-coupon { color: #ff5000; font-size: 13px; }
 
 /* 优惠券票样式：左面额大数字 + 虚线分隔 + 右券信息 */
@@ -440,8 +440,8 @@ async function submitOrder() {
 .co-currency { font-size: 13px; }
 .co-num { font-size: 22px; font-weight: 700; }
 .co-body { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
-.co-name { font-size: 13px; font-weight: 600; color: #c3cbda; }
-.co-cond { font-size: 12px; color: #5c6a82; }
+.co-name { font-size: 13px; font-weight: 600; color: #a1a1aa; }
+.co-cond { font-size: 12px; color: #52525b; }
 
 /* 满减活动（自动应用） */
 .promotion-options { display: flex; flex-wrap: wrap; gap: 12px; }
@@ -449,7 +449,7 @@ async function submitOrder() {
 .promotion-option.active { border-color: #ff5000; background: rgba(255, 80, 0, .12); }
 .po-name { font-size: 14px; font-weight: 600; }
 .po-value { color: #ff5000; font-weight: 700; font-size: 14px; }
-.po-hint { font-size: 12px; color: #5c6a82; }
+.po-hint { font-size: 12px; color: #52525b; }
 
 .region-row { display: flex; gap: 8px; }
 .region-input { flex: 1; }

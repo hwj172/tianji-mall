@@ -220,21 +220,21 @@ async function showDetail(id) {
 .refund-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 
 .rc-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; }
-.rc-id { color: #c3cbda; font-weight: 500; }
-.rc-order { color: #8b96ab; flex: 1; }
-.rc-time { font-size: 12px; color: #5c6a82; }
+.rc-id { color: #a1a1aa; font-weight: 500; }
+.rc-order { color: #71717a; flex: 1; }
+.rc-time { font-size: 12px; color: #52525b; }
 
 .rc-body { display: flex; justify-content: space-between; align-items: center; padding-top: 12px; }
 .rc-amount { font-size: 20px; font-weight: 700; color: #ff5000; }
 .rc-actions { display: flex; gap: 8px; }
 
-.rc-logistics { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 10px; font-size: 13px; color: #8b96ab; }
+.rc-logistics { margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,.08); display: flex; align-items: center; gap: 10px; font-size: 13px; color: #71717a; }
 
-.refund-item { display: flex; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; color: #c3cbda; }
+.refund-item { display: flex; gap: 12px; align-items: center; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; color: #a1a1aa; }
 .refund-item:last-child { border-bottom: none; }
 .ri-img { width: 48px; height: 48px; border-radius: 6px; flex-shrink: 0; }
-.ri-name { font-size: 13px; color: #c3cbda; }
-.ri-meta { font-size: 12px; color: #5c6a82; margin-top: 2px; }
+.ri-name { font-size: 13px; color: #a1a1aa; }
+.ri-meta { font-size: 12px; color: #52525b; margin-top: 2px; }
 
 .pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }
 </style>

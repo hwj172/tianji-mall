@@ -134,8 +134,8 @@ async function handleClaim(c) {
 
 .cc-right { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 .cc-name { font-size: 16px; font-weight: 600; }
-.cc-cond { font-size: 13px; color: #8b96ab; }
-.cc-time { font-size: 12px; color: #5c6a82; }
+.cc-cond { font-size: 13px; color: #71717a; }
+.cc-time { font-size: 12px; color: #52525b; }
 
 .cc-action { display: flex; align-items: center; padding: 0 20px; }
 </style>

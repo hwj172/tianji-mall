@@ -148,7 +148,7 @@ async function handleDelete(addr) {
 
 .addr-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 .ac-contact { display: flex; align-items: center; gap: 10px; font-size: 15px; margin-bottom: 6px; }
-.ac-text { font-size: 13px; color: #8b96ab; }
+.ac-text { font-size: 13px; color: #71717a; }
 .ac-actions { display: flex; gap: 4px; }
 
 </style>

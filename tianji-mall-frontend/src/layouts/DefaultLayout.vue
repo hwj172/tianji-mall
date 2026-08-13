@@ -149,10 +149,10 @@ function search() {
 .search-btn { background: #ff5000; border-color: transparent; border-radius: 0 20px 20px 0; }
 .suggest-item { display: flex; align-items: center; gap: 8px; width: 100%; }
 .suggest-icon { font-size: 12px; }
-.suggest-text { flex: 1; font-size: 13px; color: #c3cbda; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.suggest-tag { font-size: 11px; color: #5c6a82; background: rgba(255,255,255,.08); border-radius: 3px; padding: 1px 6px; }
+.suggest-text { flex: 1; font-size: 13px; color: #a1a1aa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest-tag { font-size: 11px; color: #52525b; background: rgba(255,255,255,.08); border-radius: 3px; padding: 1px 6px; }
 .header-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
-.user-name { cursor: pointer; color: #8b96ab; }
+.user-name { cursor: pointer; color: #71717a; }
 .main { max-width: 1200px; margin: 12px auto; min-height: calc(100vh - 200px); }
-.footer { text-align: center; color: #5c6a82; padding: 24px; font-size: 12px; }
+.footer { text-align: center; color: #52525b; padding: 24px; font-size: 12px; }
 </style>

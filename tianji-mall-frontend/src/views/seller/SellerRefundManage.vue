@@ -59,15 +59,15 @@ async function confirmReceive(r) {
 
 <style scoped>
 .seller-refund-page h2 { margin-bottom: 8px; }
-.sub-tip { font-size: 13px; color: #5c6a82; margin-bottom: 16px; }
+.sub-tip { font-size: 13px; color: #52525b; margin-bottom: 16px; }
 .refund-list { display: flex; flex-direction: column; gap: 12px; }
 .refund-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; }
 .rc-header { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
-.rc-id { font-weight: 600; color: #c3cbda; }
-.rc-order { color: #8b96ab; flex: 1; font-size: 13px; }
-.rc-type { font-size: 12px; color: #5c6a82; }
+.rc-id { font-weight: 600; color: #a1a1aa; }
+.rc-order { color: #71717a; flex: 1; font-size: 13px; }
+.rc-type { font-size: 12px; color: #52525b; }
 .rc-amount { font-size: 18px; font-weight: 700; color: #ff5000; }
-.rc-meta { font-size: 13px; color: #8b96ab; margin-top: 10px; }
-.rc-reason { font-size: 13px; color: #5c6a82; margin-top: 6px; }
+.rc-meta { font-size: 13px; color: #71717a; margin-top: 10px; }
+.rc-reason { font-size: 13px; color: #52525b; margin-top: 6px; }
 .rc-actions { margin-top: 12px; display: flex; justify-content: flex-end; }
 </style>

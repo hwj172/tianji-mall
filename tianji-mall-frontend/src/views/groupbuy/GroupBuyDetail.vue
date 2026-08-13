@@ -208,7 +208,7 @@ async function handleJoin() {
 .gb-info { flex: 1; min-width: 0; }
 .gb-info h2 { font-size: 20px; margin-bottom: 8px; }
 .gb-price { color: #ff5000; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-.gb-time { font-size: 13px; color: #5c6a82; }
+.gb-time { font-size: 13px; color: #52525b; }
 .gb-start-btn { flex-shrink: 0; }
 
 .gb-section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
@@ -224,5 +224,5 @@ async function handleJoin() {
 .group-list { display: flex; flex-direction: column; gap: 10px; }
 .group-row { display: flex; align-items: center; gap: 12px; background: #232327; border-radius: 6px; padding: 12px 16px; }
 .gr-count { font-size: 14px; font-weight: 600; flex: 1; }
-.gr-time { font-size: 12px; color: #5c6a82; }
+.gr-time { font-size: 12px; color: #52525b; }
 </style>

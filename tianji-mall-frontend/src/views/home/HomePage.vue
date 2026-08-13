@@ -201,10 +201,10 @@ onMounted(async () => {
 .home-page { max-width: 1200px; margin: 0 auto; }
 .home-hero { display: flex; gap: 12px; margin-bottom: 20px; }
 .category-sidebar { width: 200px; background: #1b1b1e; border-radius: 8px; padding: 4px 0; flex-shrink: 0; border: 1px solid rgba(255,255,255,.07); }
-.category-title { padding: 10px 16px 12px; font-weight: 600; font-size: 14px; color: #e6eaf2; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 4px; }
+.category-title { padding: 10px 16px 12px; font-weight: 600; font-size: 14px; color: #f4f4f5; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 4px; }
 .category-label { display: inline-flex; align-items: center; gap: 8px; }
-.category-icon { color: #8b96ab; font-size: 15px; }
-.category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #c3cbda; cursor: pointer; transition: background .12s, color .12s; }
+.category-icon { color: #71717a; font-size: 15px; }
+.category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #a1a1aa; cursor: pointer; transition: background .12s, color .12s; }
 .category-item:hover { color: #ff5000; background: rgba(255, 255, 255, .04); }
 .category-item.active { color: #ff5000; background: rgba(255, 80, 0, .08); }
 .hero-banner { flex: 1; }
@@ -232,14 +232,14 @@ onMounted(async () => {
 .quick-icon { font-size: 20px; color: #ff5000; margin-bottom: 4px; }
 /* AI 导购用科技青标识，区分于品牌橙 */
 .quick-item:last-child .quick-icon { color: var(--tianji-cyan); }
-.quick-label { font-size: 11px; color: #c3cbda; }
+.quick-label { font-size: 11px; color: #a1a1aa; }
 .hero-notice { background: #1b1b1e; border-radius: 8px; padding: 12px; flex: 1; border: 1px solid rgba(255,255,255,.07); }
-.hero-notice h4 { font-size: 13px; margin-bottom: 8px; color: #e6eaf2; }
-.hero-notice p { font-size: 12px; color: #8b96ab; padding: 3px 0; }
+.hero-notice h4 { font-size: 13px; margin-bottom: 8px; color: #f4f4f5; }
+.hero-notice p { font-size: 12px; color: #71717a; padding: 3px 0; }
 .home-section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.07); }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.section-header h3 { font-size: 17px; color: #e6eaf2; }
-.section-more { font-size: 13px; color: #8b96ab; cursor: pointer; }
+.section-header h3 { font-size: 17px; color: #f4f4f5; }
+.section-more { font-size: 13px; color: #71717a; cursor: pointer; }
 .section-more:hover { color: #ff5000; }
 .product-grid { display: grid; gap: 16px; }
 .product-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }

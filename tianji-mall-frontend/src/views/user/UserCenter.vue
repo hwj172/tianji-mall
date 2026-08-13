@@ -435,25 +435,25 @@ async function submitPassword() {
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .section-header h3 { font-size: 16px; font-weight: 600; }
 .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-.view-all { font-size: 13px; color: #5c6a82; }
+.view-all { font-size: 13px; color: #52525b; }
 
 /* 订单统计 */
 .order-stats { display: flex; justify-content: space-around; }
 .stat-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; position: relative; padding: 10px 20px; border-radius: 8px; transition: background .2s; }
 .stat-item:hover { background: rgba(255, 80, 0, .12); }
 .stat-icon { color: #ff5000; }
-.stat-label { font-size: 13px; color: #8b96ab; }
+.stat-label { font-size: 13px; color: #71717a; }
 .stat-count { position: absolute; top: 2px; right: 8px; background: #ff5000; color: #fff; font-size: 11px; min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 9px; padding: 0 5px; }
 
 /* 快捷入口 */
-.ql-group-title { font-size: 13px; color: #5c6a82; margin: 14px 0 8px; }
+.ql-group-title { font-size: 13px; color: #52525b; margin: 14px 0 8px; }
 .ql-group:first-child .ql-group-title { margin-top: 0; }
 .quick-links { display: grid; gap: 12px; }
 .quick-links.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .quick-links.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .quick-links.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .quick-links.cols-5 { grid-template-columns: repeat(5, 1fr); }
-.ql-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 8px; cursor: pointer; transition: all .2s; position: relative; color: #c3cbda; }
+.ql-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 8px; cursor: pointer; transition: all .2s; position: relative; color: #a1a1aa; }
 .ql-item:hover { background: rgba(255, 80, 0, .12); color: #ff5000; }
 .ql-item span { font-size: 13px; }
 .ql-item.ql-danger { color: #f56c6c; }

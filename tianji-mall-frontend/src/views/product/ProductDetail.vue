@@ -500,26 +500,26 @@ function onThumbError(e) {
 
 .detail-info { flex: 1; }
 .product-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-.product-subtitle { font-size: 13px; color: #5c6a82; margin-bottom: 12px; }
+.product-subtitle { font-size: 13px; color: #52525b; margin-bottom: 12px; }
 
 .price-box { background: rgba(255, 80, 0, .08); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255, 80, 0, .25); }
 .price-row { display: flex; align-items: baseline; gap: 12px; }
-.price-label { font-size: 13px; color: #5c6a82; }
+.price-label { font-size: 13px; color: #52525b; }
 .price-current { color: #ff5000; font-size: 28px; font-weight: 700; }
-.price-original { color: #5c6a82; font-size: 14px; text-decoration: line-through; }
+.price-original { color: #52525b; font-size: 14px; text-decoration: line-through; }
 .price-tags { margin-top: 8px; }
 
 .sku-section { margin-bottom: 8px; }
 .sku-row { display: flex; align-items: flex-start; margin-bottom: 10px; }
-.sku-label { width: 50px; font-size: 13px; color: #5c6a82; line-height: 32px; flex-shrink: 0; }
+.sku-label { width: 50px; font-size: 13px; color: #52525b; line-height: 32px; flex-shrink: 0; }
 .sku-values { display: flex; flex-wrap: wrap; gap: 8px; }
 .sku-tag { padding: 7px 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 6px; font-size: 13px; cursor: pointer; user-select: none; transition: border-color .15s, color .15s, box-shadow .15s, background .15s; }
 .sku-tag:hover { border-color: #ff5000; color: #ff5000; }
 .sku-tag.active { border-color: #ff5000; background: rgba(255,80,0,.14); color: #ff5000; font-weight: 600; box-shadow: 0 0 12px rgba(255, 80, 0, .3); }
-.sku-tag.disabled { color: #414d63; border-color: rgba(255,255,255,.06); cursor: not-allowed; }
+.sku-tag.disabled { color: #3f3f46; border-color: rgba(255,255,255,.06); cursor: not-allowed; }
 
-.stock-info { font-size: 13px; color: #8b96ab; margin-bottom: 12px; display: flex; gap: 20px; }
-.sales-info { color: #5c6a82; }
+.stock-info { font-size: 13px; color: #71717a; margin-bottom: 12px; display: flex; gap: 20px; }
+.sales-info { color: #52525b; }
 
 .qty-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 
@@ -536,7 +536,7 @@ function onThumbError(e) {
 .review-summary { text-align: center; padding: 16px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; }
 .review-summary h4 { font-size: 14px; margin-bottom: 8px; }
 .review-score { font-size: 32px; color: #ff5000; font-weight: 700; }
-.review-summary p { font-size: 12px; color: #5c6a82; margin-top: 8px; }
+.review-summary p { font-size: 12px; color: #52525b; margin-top: 8px; }
 
 .detail-bottom { background: #1b1b1e; border-radius: 8px; padding: 24px; min-height: 400px; }
 .description-content { max-width: 800px; }
@@ -544,13 +544,13 @@ function onThumbError(e) {
 
 .attr-table { width: 100%; border-collapse: collapse; }
 .attr-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; }
-.attr-name { width: 120px; color: #5c6a82; background: #232327; }
+.attr-name { width: 120px; color: #52525b; background: #232327; }
 
 /* 评价区 */
 .review-section { background: #1b1b1e; border-radius: 8px; padding: 24px; margin-top: 16px; }
 .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .review-header h3 { font-size: 16px; font-weight: 600; }
-.review-stats-summary { font-size: 13px; color: #8b96ab; display: flex; gap: 16px; }
+.review-stats-summary { font-size: 13px; color: #71717a; display: flex; gap: 16px; }
 .review-good-rate { color: #ff5000; }
 .review-list-container { min-height: 100px; }
 .review-empty { padding: 20px 0; }
@@ -558,20 +558,20 @@ function onThumbError(e) {
 .review-item:last-child { border-bottom: none; }
 .review-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .review-avatar { font-size: 20px; }
-.review-username { font-size: 13px; color: #8b96ab; }
-.review-time { font-size: 12px; color: #5c6a82; margin-left: auto; }
-.review-content { font-size: 14px; line-height: 1.6; color: #c3cbda; }
+.review-username { font-size: 13px; color: #71717a; }
+.review-time { font-size: 12px; color: #52525b; margin-left: auto; }
+.review-content { font-size: 14px; line-height: 1.6; color: #a1a1aa; }
 .review-images { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
 .review-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,.08); }
 .review-load-more { text-align: center; padding: 16px 0; }
 .review-filter { display: flex; gap: 8px; margin-bottom: 12px; }
-.rf-item { font-size: 13px; color: #8b96ab; padding: 4px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
+.rf-item { font-size: 13px; color: #71717a; padding: 4px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
 .rf-item:hover { color: #ff5000; border-color: #ff5000; }
 .rf-item.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 .review-reply { margin-top: 10px; background: #232327; border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
 .rr-label { color: #ff5000; font-weight: 500; }
-.rr-content { color: #c3cbda; }
-.rr-time { color: #5c6a82; font-size: 12px; margin-left: 8px; }
+.rr-content { color: #a1a1aa; }
+.rr-time { color: #52525b; font-size: 12px; margin-left: 8px; }
 
 /* 批次 C：SKU 提示条 + 秒杀倒计时 + 响应式 */
 .sku-hint { font-size: 13px; color: #ff5000; background: rgba(255,80,0,.12); border: 1px solid rgba(255,80,0,.4); border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; }

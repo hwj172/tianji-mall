@@ -42,10 +42,10 @@ onMounted(() => loadData())
 
 .review-card { background: #1b1b1e; border-radius: 8px; padding: 16px; margin-bottom: 10px; }
 .rc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.rc-product { font-size: 14px; cursor: pointer; color: #c3cbda; }
+.rc-product { font-size: 14px; cursor: pointer; color: #a1a1aa; }
 .rc-product:hover { color: #ff5000; }
-.rc-content { font-size: 14px; color: #c3cbda; line-height: 1.6; margin-bottom: 8px; }
-.rc-reply { margin-top: 10px; background: #232327; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #c3cbda; line-height: 1.6; }
+.rc-content { font-size: 14px; color: #a1a1aa; line-height: 1.6; margin-bottom: 8px; }
+.rc-reply { margin-top: 10px; background: #232327; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #a1a1aa; line-height: 1.6; }
 .rc-reply-label { color: #ff5000; font-weight: 500; }
-.rc-time { font-size: 12px; color: #5c6a82; }
+.rc-time { font-size: 12px; color: #52525b; }
 </style>

@@ -116,5 +116,5 @@ async function handleReply() {
 .seller-page h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
 .pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
 .reply-origin { background: #232327; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.reply-origin-content { font-size: 13px; color: #c3cbda; margin-top: 8px; line-height: 1.6; }
+.reply-origin-content { font-size: 13px; color: #a1a1aa; margin-top: 8px; line-height: 1.6; }
 </style>

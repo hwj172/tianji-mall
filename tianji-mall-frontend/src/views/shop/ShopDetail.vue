@@ -163,8 +163,8 @@ async function handleFollow() {
 .shop-header { background: #1b1b1e; border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .sh-left { display: flex; align-items: center; gap: 16px; }
 .sh-info h2 { font-size: 22px; margin-bottom: 6px; }
-.sh-info p { font-size: 13px; color: #8b96ab; margin-bottom: 8px; }
-.sh-stats { font-size: 13px; color: #5c6a82; }
+.sh-info p { font-size: 13px; color: #71717a; margin-bottom: 8px; }
+.sh-stats { font-size: 13px; color: #52525b; }
 
 .shop-notice { background: #fff8e6; border: 1px solid #ffe9b8; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #8a6d1a; }
 .notice-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -172,11 +172,11 @@ async function handleFollow() {
 .shop-products h3 { font-size: 17px; margin-bottom: 14px; }
 .sp-filter { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .sp-sorts { display: flex; gap: 4px; }
-.sp-sort { padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #8b96ab; }
+.sp-sort { padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #71717a; }
 .sp-sort:hover, .sp-sort.active { background: rgba(255,80,0,.12); color: #ff5000; font-weight: 600; }
 
 .sp-categories { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.sp-cat { font-size: 13px; color: #8b96ab; padding: 4px 14px; border-radius: 14px; border: 1px solid #e5e5e5; cursor: pointer; transition: all .2s; }
+.sp-cat { font-size: 13px; color: #71717a; padding: 4px 14px; border-radius: 14px; border: 1px solid #e5e5e5; cursor: pointer; transition: all .2s; }
 .sp-cat:hover { color: #ff5000; border-color: #ff5000; }
 .sp-cat.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 .sp-cat-count { font-style: normal; font-size: 11px; margin-left: 3px; opacity: .8; }

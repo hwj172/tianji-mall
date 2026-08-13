@@ -128,7 +128,7 @@ function formatSales(n) {
   overflow: hidden;
   min-height: 2.8em;
   margin-bottom: 6px;
-  color: #c3cbda;
+  color: #a1a1aa;
 }
 .name-highlight {
   color: #ff5000;
@@ -137,6 +137,6 @@ function formatSales(n) {
 }
 .product-price { display: flex; align-items: baseline; gap: 6px; }
 .price-current { color: #ff5000; font-size: 18px; font-weight: 700; }
-.price-original { color: #5c6a82; font-size: 12px; text-decoration: line-through; }
-.product-sales { font-size: 11px; color: #8b96ab; margin-top: auto; padding-top: 4px; display: block; }
+.price-original { color: #52525b; font-size: 12px; text-decoration: line-through; }
+.product-sales { font-size: 11px; color: #71717a; margin-top: auto; padding-top: 4px; display: block; }
 </style>

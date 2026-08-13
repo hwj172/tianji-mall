@@ -120,7 +120,7 @@ async function handleSubmit() {
 .rc-info { flex: 1; min-width: 0; }
 .rc-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-name:hover { color: #ff5000; }
-.rc-spec { font-size: 12px; color: #5c6a82; display: block; }
+.rc-spec { font-size: 12px; color: #52525b; display: block; }
 .rc-price { font-size: 14px; font-weight: 600; color: #ff5000; }
 .rc-action { margin-left: auto; }
 </style>

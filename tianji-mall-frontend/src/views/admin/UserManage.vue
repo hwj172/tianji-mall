@@ -202,7 +202,7 @@ async function handleReject(row) {
 .admin-page h2 { margin-bottom: 16px; }
 .ap-filter { display: flex; gap: 12px; margin-bottom: 12px; }
 .ap-tabs { display: flex; gap: 4px; margin-bottom: 12px; }
-.ap-tabs .tab-item { padding: 6px 16px; font-size: 13px; cursor: pointer; border-radius: 4px; color: #8b96ab; }
+.ap-tabs .tab-item { padding: 6px 16px; font-size: 13px; cursor: pointer; border-radius: 4px; color: #71717a; }
 .ap-tabs .tab-item:hover, .ap-tabs .tab-item.active { background: rgba(255, 80, 0, .12); color: #ff5000; font-weight: 600; }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 16px; }
 </style>

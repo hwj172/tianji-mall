@@ -277,8 +277,8 @@ function scrollBottom() {
 .cs-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; margin-bottom: 4px; transition: background .15s; }
 .cs-item:hover { background: transparent; }
 .cs-item.active { background: rgba(255,80,0,.12); }
-.cs-title { font-size: 13px; color: #c3cbda; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-meta { font-size: 11px; color: #5c6a82; margin-top: 4px; }
+.cs-title { font-size: 13px; color: #a1a1aa; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-meta { font-size: 11px; color: #52525b; margin-top: 4px; }
 
 /* 主聊天区 */
 .chat-container { flex: 1; display: flex; flex-direction: column; background: #1b1b1e; border-radius: 8px; overflow: hidden; }
@@ -287,7 +287,7 @@ function scrollBottom() {
 .chat-placeholder { text-align: center; padding: 60px 20px; }
 .cp-icon { font-size: 56px; margin-bottom: 12px; }
 .chat-placeholder h3 { font-size: 20px; margin-bottom: 8px; }
-.chat-placeholder p { font-size: 14px; color: #5c6a82; }
+.chat-placeholder p { font-size: 14px; color: #52525b; }
 .cp-hints { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
 .hint-tag { cursor: pointer; }
 
@@ -298,7 +298,7 @@ function scrollBottom() {
 .msg-row.user .msg-bubble { background: #ff5000; color: #fff; border-bottom-right-radius: 4px; }
 .msg-row.assistant .msg-bubble { background: transparent; border-bottom-left-radius: 4px; }
 .msg-row.assistant .msg-bubble.has-products { max-width: 92%; }
-.typing { color: #5c6a82; font-style: italic; }
+.typing { color: #52525b; font-style: italic; }
 
 .msg-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .tool-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; }

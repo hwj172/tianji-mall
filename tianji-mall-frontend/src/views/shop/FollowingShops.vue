@@ -45,6 +45,6 @@ onMounted(async () => {
 .shop-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
 .sc-info { flex: 1; min-width: 0; }
 .sc-info h3 { font-size: 15px; margin-bottom: 4px; }
-.sc-info p { font-size: 12px; color: #5c6a82; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.sc-info p { font-size: 12px; color: #52525b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .sc-enter { font-size: 13px; color: #ff5000; white-space: nowrap; }
 </style>

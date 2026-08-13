@@ -92,7 +92,7 @@ function fmt(v) {
 }
 
 // ECharts 深色主题公共色
-const textColor = '#8b96ab'
+const textColor = '#71717a'
 const axisLine = 'rgba(255,255,255,.08)'
 
 // GMV 趋势（今日/本周/本月）
@@ -161,7 +161,7 @@ const categoryOption = computed(() => {
     yAxis: {
       type: 'category',
       data: sales.map(c => c.categoryName),
-      axisLabel: { color: '#c3cbda' },
+      axisLabel: { color: '#a1a1aa' },
       axisLine: { lineStyle: { color: axisLine } }
     },
     series: [{
@@ -185,12 +185,12 @@ const categoryHeight = computed(() => {
 
 .overview-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
 .ov-card { background: #1b1b1e; border-radius: 8px; padding: 24px; text-align: center; border: 1px solid rgba(255,255,255,.07); }
-.ov-label { font-size: 14px; color: #5c6a82; margin-bottom: 8px; }
-.ov-value { font-size: 28px; font-weight: 700; color: #c3cbda; font-family: var(--font-tech); }
+.ov-label { font-size: 14px; color: #52525b; margin-bottom: 8px; }
+.ov-value { font-size: 28px; font-weight: 700; color: #a1a1aa; font-family: var(--font-tech); }
 .ov-gmv { color: #ff5000; }
 
 .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
 .chart-box { background: #1b1b1e; border-radius: 8px; padding: 20px; border: 1px solid rgba(255,255,255,.07); }
-.chart-box h3 { font-size: 15px; margin-bottom: 14px; color: #e6eaf2; }
+.chart-box h3 { font-size: 15px; margin-bottom: 14px; color: #f4f4f5; }
 .chart-box.wide { grid-column: 1 / -1; }
 </style>

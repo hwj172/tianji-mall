@@ -256,11 +256,11 @@ async function confirmReceive() {
 .status-1 { border-color: #e6a23c; }
 .status-2, .status-3 { border-color: #ff7a3d; }
 .status-4 { border-color: #67c23a; }
-.status-5 { border-color: #5c6a82; }
+.status-5 { border-color: #52525b; }
 .status-icon { font-size: 40px; }
 .status-text { flex: 1; }
 .status-text h3 { font-size: 18px; margin-bottom: 4px; }
-.status-text p { font-size: 13px; color: #5c6a82; }
+.status-text p { font-size: 13px; color: #52525b; }
 .status-actions { display: flex; gap: 10px; }
 
 /* 区块 */
@@ -269,11 +269,11 @@ async function confirmReceive() {
 .order-summary { border-top: none; }
 
 .addr-info b { font-size: 15px; margin-right: 12px; }
-.addr-phone { color: #8b96ab; font-size: 14px; }
-.addr-info p { font-size: 13px; color: #8b96ab; margin-top: 4px; }
+.addr-phone { color: #71717a; font-size: 14px; }
+.addr-info p { font-size: 13px; color: #71717a; margin-top: 4px; }
 
-.logistics-location { font-size: 12px; color: #5c6a82; }
-.logistics-summary { font-size: 13px; color: #8b96ab; margin-top: 8px; }
+.logistics-location { font-size: 12px; color: #52525b; }
+.logistics-summary { font-size: 13px; color: #71717a; margin-top: 8px; }
 
 /* 商品明细 */
 .od-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
@@ -282,14 +282,14 @@ async function confirmReceive() {
 .od-item-info { flex: 1; min-width: 0; }
 .od-item-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .od-item-name:hover { color: #ff5000; }
-.od-item-spec { font-size: 12px; color: #5c6a82; }
+.od-item-spec { font-size: 12px; color: #52525b; }
 .od-item-price, .od-item-qty, .od-item-subtotal { width: 90px; text-align: center; font-size: 14px; }
 .od-item-subtotal { color: #ff5000; font-weight: 600; }
 
 /* 订单概要 */
 .summary-grid { display: flex; flex-direction: column; gap: 10px; }
-.summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #8b96ab; }
-.summary-row b { color: #c3cbda; }
+.summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #71717a; }
+.summary-row b { color: #a1a1aa; }
 .total-row { border-top: 1px solid rgba(255,255,255,.08); padding-top: 10px; font-size: 15px; }
 .total-amount { color: #ff5000; font-size: 20px; }
 
