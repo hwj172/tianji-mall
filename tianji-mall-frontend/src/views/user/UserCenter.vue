@@ -431,32 +431,40 @@ async function submitPassword() {
 .shop-logo-upload { display: flex; align-items: center; gap: 12px; }
 
 /* 通用区块 */
-.section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .section-header h3 { font-size: 16px; font-weight: 600; }
 .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }
-.view-all { font-size: 13px; color: #999; }
+.view-all { font-size: 13px; color: #5c6a82; }
 
 /* 订单统计 */
 .order-stats { display: flex; justify-content: space-around; }
 .stat-item { display: flex; flex-direction: column; align-items: center; gap: 6px; cursor: pointer; position: relative; padding: 10px 20px; border-radius: 8px; transition: background .2s; }
-.stat-item:hover { background: #fff7f0; }
+.stat-item:hover { background: rgba(255, 80, 0, .12); }
 .stat-icon { color: #ff5000; }
-.stat-label { font-size: 13px; color: #666; }
+.stat-label { font-size: 13px; color: #8b96ab; }
 .stat-count { position: absolute; top: 2px; right: 8px; background: #ff5000; color: #fff; font-size: 11px; min-width: 18px; height: 18px; line-height: 18px; text-align: center; border-radius: 9px; padding: 0 5px; }
 
 /* 快捷入口 */
-.ql-group-title { font-size: 13px; color: #999; margin: 14px 0 8px; }
+.ql-group-title { font-size: 13px; color: #5c6a82; margin: 14px 0 8px; }
 .ql-group:first-child .ql-group-title { margin-top: 0; }
 .quick-links { display: grid; gap: 12px; }
 .quick-links.cols-2 { grid-template-columns: repeat(2, 1fr); }
 .quick-links.cols-3 { grid-template-columns: repeat(3, 1fr); }
 .quick-links.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .quick-links.cols-5 { grid-template-columns: repeat(5, 1fr); }
-.ql-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 8px; cursor: pointer; transition: all .2s; position: relative; color: #333; }
-.ql-item:hover { background: #fff7f0; color: #ff5000; }
+.ql-item { display: flex; flex-direction: column; align-items: center; gap: 8px; padding: 16px; border-radius: 8px; cursor: pointer; transition: all .2s; position: relative; color: #c3cbda; }
+.ql-item:hover { background: rgba(255, 80, 0, .12); color: #ff5000; }
 .ql-item span { font-size: 13px; }
 .ql-item.ql-danger { color: #f56c6c; }
-.ql-item.ql-danger:hover { color: #f56c6c; background: #fef0f0; }
+.ql-item.ql-danger:hover { color: #f56c6c; background: rgba(245, 108, 108, .12); }
 .ql-badge { position: absolute; top: 6px; right: 10px; }
+
+/* 响应式：移动端用户卡竖排、快捷入口网格收缩 */
+@media (max-width: 768px) {
+  .user-center-page { padding: 0 12px; }
+  .user-card { flex-direction: column; text-align: center; }
+  .uc-actions { margin: 0 auto; }
+  .quick-links.cols-4, .quick-links.cols-5 { grid-template-columns: repeat(3, 1fr); }
+}
 </style>

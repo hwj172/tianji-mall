@@ -261,9 +261,9 @@ async function handleDelete(row) {
 .ap-filter { margin-bottom: 12px; }
 .pagination-wrap { display: flex; justify-content: center; margin-top: 16px; }
 .img-list { display: flex; flex-wrap: wrap; gap: 8px; }
-.img-item { position: relative; width: 64px; height: 64px; border-radius: 4px; overflow: hidden; border: 1px solid #f0f0f0; }
+.img-item { position: relative; width: 64px; height: 64px; border-radius: 4px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
 .img-item img { width: 100%; height: 100%; object-fit: cover; }
 .img-del { position: absolute; top: 0; right: 0; background: rgba(0,0,0,.5); color: #fff; font-size: 14px; padding: 2px; cursor: pointer; }
-.img-add { width: 64px; height: 64px; border: 1px dashed #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #999; cursor: pointer; font-size: 12px; }
+.img-add { width: 64px; height: 64px; border: 1px dashed #ccc; border-radius: 4px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #5c6a82; cursor: pointer; font-size: 12px; }
 .img-add:hover { border-color: #ff5000; color: #ff5000; }
 </style>

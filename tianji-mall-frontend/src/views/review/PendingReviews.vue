@@ -115,12 +115,12 @@ async function handleSubmit() {
 .reviews-page { max-width: 800px; margin: 0 auto; }
 .reviews-page h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
-.review-card { background: #fff; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
-.rc-img { cursor: pointer; border-radius: 4px; overflow: hidden; background: #fafafa; flex-shrink: 0; }
+.review-card { background: #121826; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 14px; margin-bottom: 10px; }
+.rc-img { cursor: pointer; border-radius: 4px; overflow: hidden; background: #1a2233; flex-shrink: 0; }
 .rc-info { flex: 1; min-width: 0; }
 .rc-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .rc-name:hover { color: #ff5000; }
-.rc-spec { font-size: 12px; color: #999; display: block; }
+.rc-spec { font-size: 12px; color: #5c6a82; display: block; }
 .rc-price { font-size: 14px; font-weight: 600; color: #ff5000; }
 .rc-action { margin-left: auto; }
 </style>

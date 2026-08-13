@@ -40,12 +40,12 @@ onMounted(() => loadData())
 .reviews-page { max-width: 800px; margin: 0 auto; }
 .reviews-page h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
-.review-card { background: #fff; border-radius: 8px; padding: 16px; margin-bottom: 10px; }
+.review-card { background: #121826; border-radius: 8px; padding: 16px; margin-bottom: 10px; }
 .rc-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-.rc-product { font-size: 14px; cursor: pointer; color: #333; }
+.rc-product { font-size: 14px; cursor: pointer; color: #c3cbda; }
 .rc-product:hover { color: #ff5000; }
-.rc-content { font-size: 14px; color: #333; line-height: 1.6; margin-bottom: 8px; }
-.rc-reply { margin-top: 10px; background: #f7f8fa; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #333; line-height: 1.6; }
+.rc-content { font-size: 14px; color: #c3cbda; line-height: 1.6; margin-bottom: 8px; }
+.rc-reply { margin-top: 10px; background: #1a2233; border-radius: 6px; padding: 8px 12px; font-size: 13px; color: #c3cbda; line-height: 1.6; }
 .rc-reply-label { color: #ff5000; font-weight: 500; }
-.rc-time { font-size: 12px; color: #999; }
+.rc-time { font-size: 12px; color: #5c6a82; }
 </style>

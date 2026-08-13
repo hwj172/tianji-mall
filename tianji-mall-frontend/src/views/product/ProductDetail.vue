@@ -152,7 +152,7 @@
         </div>
         <div v-for="r in reviews" :key="r.id" class="review-item">
           <div class="review-item-header">
-            <span class="review-avatar">👤</span>
+            <span class="review-avatar"><el-icon><User /></el-icon></span>
             <span class="review-username">{{ r.username }}</span>
             <el-rate :model-value="r.rating" disabled size="small" allow-half />
             <span class="review-time">{{ fmtTime(r.createTime, { dateOnly: true }) }}</span>
@@ -183,12 +183,13 @@
 import { ref, reactive, computed, onMounted, onUnmounted, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
-import { Star, StarFilled } from '@element-plus/icons-vue'
+import { Star, StarFilled, User } from '@element-plus/icons-vue'
 import { getProductDetail, getProductReviews, toggleFavorite } from '@/api'
 import { addToCart as apiAddToCart } from '@/api'
 import { useCartStore } from '@/stores/cart'
 import { fmtTime } from '@/utils/date'
-import { imageOnError } from '@/utils/image'
+import { imageOnError, getFirstImage } from '@/utils/image'
+import { flyToCart } from '@/utils/flyToCart'
 
 const route = useRoute()
 const router = useRouter()
@@ -334,6 +335,7 @@ async function addToCart() {
     })
     // 加购后端做 (productId, skuId) 去重合并，本地无法精确计算，强制重新拉取保证角标准确
     cartStore.refreshCount(true)
+    flyToCart(getFirstImage(product.value.images))
     ElMessage.success('已加入购物车')
   } catch { /* interceptor 处理错误 */ }
 }
@@ -487,10 +489,10 @@ function onThumbError(e) {
 <style scoped>
 .product-detail-page { max-width: 1200px; margin: 0 auto; }
 .detail-loading-wrap { min-height: 400px; }
-.detail-main { display: flex; gap: 24px; background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
+.detail-main { display: flex; gap: 24px; background: #121826; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
 
 .detail-gallery { width: 400px; flex-shrink: 0; }
-.main-image { width: 400px; height: 400px; overflow: hidden; border-radius: 4px; border: 1px solid #f0f0f0; background: #fafafa; cursor: zoom-in; }
+.main-image { width: 400px; height: 400px; overflow: hidden; border-radius: 4px; border: 1px solid rgba(255,255,255,.08); background: #1a2233; cursor: zoom-in; }
 .main-image img { width: 100%; height: 100%; object-fit: contain; }
 .thumb-list { display: flex; gap: 8px; margin-top: 8px; }
 .thumb-list img { width: 64px; height: 64px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; cursor: pointer; }
@@ -498,26 +500,26 @@ function onThumbError(e) {
 
 .detail-info { flex: 1; }
 .product-title { font-size: 20px; font-weight: 600; margin-bottom: 6px; }
-.product-subtitle { font-size: 13px; color: #999; margin-bottom: 12px; }
+.product-subtitle { font-size: 13px; color: #5c6a82; margin-bottom: 12px; }
 
-.price-box { background: #fff5f0; padding: 16px; border-radius: 8px; margin-bottom: 16px; }
+.price-box { background: rgba(255, 80, 0, .08); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255, 80, 0, .25); }
 .price-row { display: flex; align-items: baseline; gap: 12px; }
-.price-label { font-size: 13px; color: #999; }
-.price-current { color: #ff5000; font-size: 28px; font-weight: 700; }
-.price-original { color: #999; font-size: 14px; text-decoration: line-through; }
+.price-label { font-size: 13px; color: #5c6a82; }
+.price-current { color: #ff5000; font-size: 28px; font-weight: 700; text-shadow: 0 0 16px rgba(255, 80, 0, .45); }
+.price-original { color: #5c6a82; font-size: 14px; text-decoration: line-through; }
 .price-tags { margin-top: 8px; }
 
 .sku-section { margin-bottom: 8px; }
 .sku-row { display: flex; align-items: flex-start; margin-bottom: 10px; }
-.sku-label { width: 50px; font-size: 13px; color: #999; line-height: 28px; flex-shrink: 0; }
+.sku-label { width: 50px; font-size: 13px; color: #5c6a82; line-height: 32px; flex-shrink: 0; }
 .sku-values { display: flex; flex-wrap: wrap; gap: 8px; }
-.sku-tag { padding: 4px 16px; border: 1px solid #ddd; border-radius: 4px; font-size: 13px; cursor: pointer; user-select: none; }
+.sku-tag { padding: 7px 16px; border: 1px solid rgba(255,255,255,.14); border-radius: 6px; font-size: 13px; cursor: pointer; user-select: none; transition: border-color .15s, color .15s, box-shadow .15s, background .15s; }
 .sku-tag:hover { border-color: #ff5000; color: #ff5000; }
-.sku-tag.active { border-color: #ff5000; background: #fff5f0; color: #ff5000; font-weight: 600; }
-.sku-tag.disabled { color: #ccc; border-color: #eee; cursor: not-allowed; }
+.sku-tag.active { border-color: #ff5000; background: rgba(255,80,0,.14); color: #ff5000; font-weight: 600; box-shadow: 0 0 12px rgba(255, 80, 0, .3); }
+.sku-tag.disabled { color: #414d63; border-color: rgba(255,255,255,.06); cursor: not-allowed; }
 
-.stock-info { font-size: 13px; color: #666; margin-bottom: 12px; display: flex; gap: 20px; }
-.sales-info { color: #999; }
+.stock-info { font-size: 13px; color: #8b96ab; margin-bottom: 12px; display: flex; gap: 20px; }
+.sales-info { color: #5c6a82; }
 
 .qty-row { display: flex; align-items: center; gap: 12px; margin-bottom: 20px; }
 
@@ -525,54 +527,54 @@ function onThumbError(e) {
 .action-row .el-button--large { width: 160px; }
 .action-row .el-button--primary { background: #ff5000; border-color: #ff5000; }
 
-.shop-card { border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px; }
+.shop-card { border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 12px; }
 .shop-inner { display: flex; align-items: center; gap: 8px; }
 .shop-logo { width: 32px; height: 32px; border-radius: 50%; object-fit: cover; }
 .shop-name { font-size: 14px; font-weight: 500; flex: 1; }
 
 .detail-sidebar { width: 180px; flex-shrink: 0; }
-.review-summary { text-align: center; padding: 16px; border: 1px solid #f0f0f0; border-radius: 8px; }
+.review-summary { text-align: center; padding: 16px; border: 1px solid rgba(255,255,255,.08); border-radius: 8px; }
 .review-summary h4 { font-size: 14px; margin-bottom: 8px; }
 .review-score { font-size: 32px; color: #ff5000; font-weight: 700; }
-.review-summary p { font-size: 12px; color: #999; margin-top: 8px; }
+.review-summary p { font-size: 12px; color: #5c6a82; margin-top: 8px; }
 
-.detail-bottom { background: #fff; border-radius: 8px; padding: 24px; min-height: 400px; }
+.detail-bottom { background: #121826; border-radius: 8px; padding: 24px; min-height: 400px; }
 .description-content { max-width: 800px; }
 .description-content :deep(img) { max-width: 100%; }
 
 .attr-table { width: 100%; border-collapse: collapse; }
-.attr-table td { padding: 8px 12px; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
-.attr-name { width: 120px; color: #999; background: #fafafa; }
+.attr-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; }
+.attr-name { width: 120px; color: #5c6a82; background: #1a2233; }
 
 /* 评价区 */
-.review-section { background: #fff; border-radius: 8px; padding: 24px; margin-top: 16px; }
+.review-section { background: #121826; border-radius: 8px; padding: 24px; margin-top: 16px; }
 .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .review-header h3 { font-size: 16px; font-weight: 600; }
-.review-stats-summary { font-size: 13px; color: #666; display: flex; gap: 16px; }
+.review-stats-summary { font-size: 13px; color: #8b96ab; display: flex; gap: 16px; }
 .review-good-rate { color: #ff5000; }
 .review-list-container { min-height: 100px; }
 .review-empty { padding: 20px 0; }
-.review-item { padding: 16px 0; border-bottom: 1px solid #f5f5f5; }
+.review-item { padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
 .review-item:last-child { border-bottom: none; }
 .review-item-header { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
 .review-avatar { font-size: 20px; }
-.review-username { font-size: 13px; color: #666; }
-.review-time { font-size: 12px; color: #999; margin-left: auto; }
-.review-content { font-size: 14px; line-height: 1.6; color: #333; }
+.review-username { font-size: 13px; color: #8b96ab; }
+.review-time { font-size: 12px; color: #5c6a82; margin-left: auto; }
+.review-content { font-size: 14px; line-height: 1.6; color: #c3cbda; }
 .review-images { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-.review-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid #f0f0f0; }
+.review-img { width: 80px; height: 80px; object-fit: cover; border-radius: 4px; border: 1px solid rgba(255,255,255,.08); }
 .review-load-more { text-align: center; padding: 16px 0; }
 .review-filter { display: flex; gap: 8px; margin-bottom: 12px; }
-.rf-item { font-size: 13px; color: #666; padding: 4px 14px; border-radius: 14px; border: 1px solid #e0e0e0; cursor: pointer; transition: all .2s; }
+.rf-item { font-size: 13px; color: #8b96ab; padding: 4px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
 .rf-item:hover { color: #ff5000; border-color: #ff5000; }
 .rf-item.active { color: #fff; background: #ff5000; border-color: #ff5000; }
-.review-reply { margin-top: 10px; background: #f7f8fa; border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
+.review-reply { margin-top: 10px; background: #1a2233; border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
 .rr-label { color: #ff5000; font-weight: 500; }
-.rr-content { color: #333; }
-.rr-time { color: #999; font-size: 12px; margin-left: 8px; }
+.rr-content { color: #c3cbda; }
+.rr-time { color: #5c6a82; font-size: 12px; margin-left: 8px; }
 
 /* 批次 C：SKU 提示条 + 秒杀倒计时 + 响应式 */
-.sku-hint { font-size: 13px; color: #ff5000; background: #fff5f0; border: 1px solid #ffd8c8; border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; }
+.sku-hint { font-size: 13px; color: #ff5000; background: rgba(255,80,0,.12); border: 1px solid rgba(255,80,0,.4); border-radius: 4px; padding: 8px 12px; margin-bottom: 12px; }
 .seckill-countdown { color: #ff5000; font-size: 13px; margin-left: 10px; }
 
 @media (max-width: 992px) {

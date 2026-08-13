@@ -122,14 +122,14 @@ async function handleUpdateShop() {
 <style scoped>
 .seller-dashboard h2 { margin-bottom: 20px; }
 
-.shop-card { background: #fff; border-radius: 8px; padding: 24px; display: flex; align-items: center; gap: 20px; margin-bottom: 16px; }
+.shop-card { background: #121826; border-radius: 8px; padding: 24px; display: flex; align-items: center; gap: 20px; margin-bottom: 16px; }
 .shop-info { flex: 1; }
 .shop-info h3 { font-size: 20px; margin-bottom: 6px; }
-.shop-info p { font-size: 13px; color: #666; margin-bottom: 8px; }
+.shop-info p { font-size: 13px; color: #8b96ab; margin-bottom: 8px; }
 
 .stats-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.stat-card { background: #fff; border-radius: 8px; padding: 24px; text-align: center; }
-.stat-label { font-size: 14px; color: #999; margin-bottom: 8px; }
-.stat-value { font-size: 28px; font-weight: 700; color: #333; }
+.stat-card { background: #121826; border-radius: 8px; padding: 24px; text-align: center; }
+.stat-label { font-size: 14px; color: #5c6a82; margin-bottom: 8px; }
+.stat-value { font-size: 28px; font-weight: 700; color: #c3cbda; }
 .logo-upload { display: flex; align-items: center; gap: 12px; }
 </style>

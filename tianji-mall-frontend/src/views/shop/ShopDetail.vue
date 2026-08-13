@@ -24,7 +24,7 @@
 
     <!-- 店铺公告 -->
     <div class="shop-notice" v-if="shop.notice">
-      <span class="notice-icon">📢</span>
+      <span class="notice-icon"><el-icon><Bell /></el-icon></span>
       <span class="notice-text">{{ shop.notice }}</span>
     </div>
 
@@ -79,7 +79,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { useRoute } from 'vue-router'
-import { Shop } from '@element-plus/icons-vue'
+import { Shop, Bell } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 import { getShopDetail, followShop } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
@@ -160,11 +160,11 @@ async function handleFollow() {
 <style scoped>
 .shop-page { max-width: 1200px; margin: 0 auto; }
 
-.shop-header { background: #fff; border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.shop-header { background: #121826; border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .sh-left { display: flex; align-items: center; gap: 16px; }
 .sh-info h2 { font-size: 22px; margin-bottom: 6px; }
-.sh-info p { font-size: 13px; color: #666; margin-bottom: 8px; }
-.sh-stats { font-size: 13px; color: #999; }
+.sh-info p { font-size: 13px; color: #8b96ab; margin-bottom: 8px; }
+.sh-stats { font-size: 13px; color: #5c6a82; }
 
 .shop-notice { background: #fff8e6; border: 1px solid #ffe9b8; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; font-size: 13px; color: #8a6d1a; }
 .notice-text { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -172,11 +172,11 @@ async function handleFollow() {
 .shop-products h3 { font-size: 17px; margin-bottom: 14px; }
 .sp-filter { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .sp-sorts { display: flex; gap: 4px; }
-.sp-sort { padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #666; }
-.sp-sort:hover, .sp-sort.active { background: #fff5f0; color: #ff5000; font-weight: 600; }
+.sp-sort { padding: 3px 10px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #8b96ab; }
+.sp-sort:hover, .sp-sort.active { background: rgba(255,80,0,.12); color: #ff5000; font-weight: 600; }
 
 .sp-categories { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
-.sp-cat { font-size: 13px; color: #666; padding: 4px 14px; border-radius: 14px; border: 1px solid #e5e5e5; cursor: pointer; transition: all .2s; }
+.sp-cat { font-size: 13px; color: #8b96ab; padding: 4px 14px; border-radius: 14px; border: 1px solid #e5e5e5; cursor: pointer; transition: all .2s; }
 .sp-cat:hover { color: #ff5000; border-color: #ff5000; }
 .sp-cat.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 .sp-cat-count { font-style: normal; font-size: 11px; margin-left: 3px; opacity: .8; }

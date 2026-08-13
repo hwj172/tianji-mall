@@ -124,7 +124,7 @@ async function handleClaim(c) {
 .coupon-page { max-width: 900px; margin: 0 auto; }
 
 .coupon-list { display: flex; flex-direction: column; gap: 12px; }
-.coupon-card { display: flex; align-items: stretch; background: #fff; border-radius: 8px; overflow: hidden; border: 1px solid #f0f0f0; }
+.coupon-card { display: flex; align-items: stretch; background: #121826; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
 .coupon-card.claimed, .coupon-card.used { opacity: .6; }
 
 .cc-left { width: 120px; background: linear-gradient(135deg, #ff6b35, #ff5000); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; }
@@ -134,8 +134,8 @@ async function handleClaim(c) {
 
 .cc-right { flex: 1; padding: 16px 20px; display: flex; flex-direction: column; justify-content: center; gap: 4px; }
 .cc-name { font-size: 16px; font-weight: 600; }
-.cc-cond { font-size: 13px; color: #666; }
-.cc-time { font-size: 12px; color: #999; }
+.cc-cond { font-size: 13px; color: #8b96ab; }
+.cc-time { font-size: 12px; color: #5c6a82; }
 
 .cc-action { display: flex; align-items: center; padding: 0 20px; }
 </style>

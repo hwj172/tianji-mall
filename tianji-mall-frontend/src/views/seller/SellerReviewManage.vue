@@ -115,6 +115,6 @@ async function handleReply() {
 <style scoped>
 .seller-page h2 { font-size: 18px; font-weight: 600; margin-bottom: 16px; }
 .pagination-wrap { display: flex; justify-content: flex-end; margin-top: 16px; }
-.reply-origin { background: #f7f8fa; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
-.reply-origin-content { font-size: 13px; color: #333; margin-top: 8px; line-height: 1.6; }
+.reply-origin { background: #1a2233; border-radius: 6px; padding: 12px; margin-bottom: 12px; }
+.reply-origin-content { font-size: 13px; color: #c3cbda; margin-top: 8px; line-height: 1.6; }
 </style>

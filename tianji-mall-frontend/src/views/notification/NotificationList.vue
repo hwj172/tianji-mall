@@ -22,7 +22,7 @@
         :class="{ 'is-read': n.isRead }"
         @click="handleClick(n)"
       >
-        <div class="nc-icon">{{ typeIcon(n.type) }}</div>
+        <div class="nc-icon"><el-icon><component :is="typeIcon(n.type)" /></el-icon></div>
         <div class="nc-body">
           <div class="nc-title">
             {{ n.title }}
@@ -56,6 +56,7 @@ import { useRouter } from 'vue-router'
 import { ElMessage } from 'element-plus'
 import { getNotifications, markRead, markAllRead, getUnreadCount } from '@/api'
 import { fmtTime } from '@/utils/date'
+import { ShoppingCart, Box, CircleCheck, Bell } from '@element-plus/icons-vue'
 
 const router = useRouter()
 
@@ -74,10 +75,10 @@ const tabs = [
 
 // 图标 key 与后端 type 保持一致（ORDER_CREATED / ORDER_SHIPPED / ORDER_COMPLETED / SYSTEM_ANNOUNCEMENT）
 const typeIcons = {
-  ORDER_CREATED: '🛒', ORDER_SHIPPED: '📦', ORDER_COMPLETED: '✅', SYSTEM_ANNOUNCEMENT: '📢'
+  ORDER_CREATED: ShoppingCart, ORDER_SHIPPED: Box, ORDER_COMPLETED: CircleCheck, SYSTEM_ANNOUNCEMENT: Bell
 }
 
-function typeIcon(t) { return typeIcons[t] || '📌' }
+function typeIcon(t) { return typeIcons[t] || Bell }
 
 // 用后端全局未读数判断（避免分页后"全部已读"按钮失真）
 const globalUnread = ref(0)
@@ -144,21 +145,21 @@ async function handleMarkAllRead() {
 .np-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .page-title { font-size: 20px; font-weight: 600; margin: 0; }
 .np-tabs { display: flex; gap: 8px; margin-bottom: 14px; }
-.np-tab { font-size: 13px; color: #666; padding: 5px 16px; border-radius: 16px; border: 1px solid #e0e0e0; cursor: pointer; transition: all .2s; }
+.np-tab { font-size: 13px; color: #8b96ab; padding: 5px 16px; border-radius: 16px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
 .np-tab:hover { color: #ff5000; border-color: #ff5000; }
 .np-tab.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 
 .notification-list { display: flex; flex-direction: column; gap: 10px; }
-.notification-card { background: #fff; border-radius: 8px; padding: 16px 20px; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .2s; }
-.notification-card:not(.is-read):hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); background: #fafafa; }
+.notification-card { background: #121826; border-radius: 8px; padding: 16px 20px; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .2s; }
+.notification-card:not(.is-read):hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); background: #1a2233; }
 .notification-card.is-read { background: #f7f7f7; opacity: .7; cursor: default; }
 
 .nc-icon { font-size: 28px; flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }
 
 .nc-body { flex: 1; min-width: 0; }
-.nc-title { font-size: 15px; font-weight: 600; color: #333; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
-.nc-content { font-size: 13px; color: #666; line-height: 1.5; margin-bottom: 6px; }
-.nc-time { font-size: 12px; color: #999; }
+.nc-title { font-size: 15px; font-weight: 600; color: #c3cbda; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+.nc-content { font-size: 13px; color: #8b96ab; line-height: 1.5; margin-bottom: 6px; }
+.nc-time { font-size: 12px; color: #5c6a82; }
 
 .pagination-wrap { display: flex; justify-content: center; margin-top: 20px; }
 </style>

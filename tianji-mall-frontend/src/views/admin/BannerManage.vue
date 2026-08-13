@@ -10,7 +10,7 @@
       <el-table-column label="预览" width="140">
         <template #default="{ row }">
           <img v-if="row.imageUrl" :src="row.imageUrl" loading="lazy" style="width:120px;height:60px;object-fit:cover;border-radius:4px;display:block" @error="onImgError" />
-          <span v-else style="color:#999">无图</span>
+          <span v-else style="color:#5c6a82">无图</span>
         </template>
       </el-table-column>
       <el-table-column prop="title" label="标题" show-overflow-tooltip />

@@ -3,7 +3,7 @@
     <div v-if="order">
     <!-- 状态横幅 -->
     <div class="status-bar" :class="'status-' + order.status">
-      <div class="status-icon">{{ statusInfo.icon }}</div>
+      <div class="status-icon"><el-icon><component :is="statusInfo.icon" /></el-icon></div>
       <div class="status-text">
         <h3>{{ statusInfo.title }}</h3>
         <p>{{ statusInfo.desc }}</p>
@@ -22,7 +22,7 @@
 
     <!-- 物流信息 -->
     <div class="section" v-if="logistics.length">
-      <h3 class="section-title">📦 物流信息</h3>
+      <h3 class="section-title">物流信息</h3>
       <el-timeline>
         <el-timeline-item
           v-for="t in logistics" :key="t.id"
@@ -40,7 +40,7 @@
 
     <!-- 收货地址 -->
     <div class="section" v-if="detail.address">
-      <h3 class="section-title">📍 收货地址</h3>
+      <h3 class="section-title">收货地址</h3>
       <div class="addr-info">
         <b>{{ detail.address.receiverName }}</b>
         <span class="addr-phone">{{ detail.address.phone }}</span>
@@ -50,7 +50,7 @@
 
     <!-- 商品列表 -->
     <div class="section">
-      <h3 class="section-title">🛍 商品信息</h3>
+      <h3 class="section-title">商品信息</h3>
       <div class="item-list">
         <div class="od-item" v-for="(item, idx) in detail.items" :key="idx">
           <img :src="getItemImage(item.productId)" class="od-item-img" loading="lazy" decoding="async" @error="imageOnError($event, 72)" style="width:72px;height:72px;object-fit:cover" />
@@ -67,7 +67,7 @@
 
     <!-- 订单概要 -->
     <div class="section order-summary">
-      <h3 class="section-title">📋 订单信息</h3>
+      <h3 class="section-title">订单信息</h3>
       <div class="summary-grid">
         <div class="summary-row"><span>订单编号</span><b>{{ order.orderNo }}</b></div>
         <div class="summary-row"><span>创建时间</span><span>{{ fmtTime(order.createTime) }}</span></div>
@@ -111,6 +111,7 @@ import { fmtPrice } from '@/utils/format'
 import { fmtTime } from '@/utils/date'
 import { getFirstImage, imageOnError } from '@/utils/image'
 import { orderStatusText, orderStatusTag } from '@/utils/order'
+import { Clock, Box, Van, CircleCheck, CircleClose } from '@element-plus/icons-vue'
 
 const route = useRoute()
 
@@ -128,11 +129,11 @@ const refundReason = ref('')
 const productImages = ref({})
 
 const statusMap = {
-  1: { title: '等待付款', desc: '请尽快完成支付，超时订单将自动取消', tagType: 'warning', icon: '🕐' },
-  2: { title: '已付款', desc: '商家正在备货中，请耐心等待', tagType: 'primary', icon: '📦' },
-  3: { title: '已发货', desc: '商品正在派送中', tagType: 'primary', icon: '🚚' },
-  4: { title: '交易完成', desc: '感谢您的购买，欢迎再次光临', tagType: 'success', icon: '✅' },
-  5: { title: '已取消', desc: '该订单已取消', tagType: 'info', icon: '❌' }
+  1: { title: '等待付款', desc: '请尽快完成支付，超时订单将自动取消', tagType: 'warning', icon: Clock },
+  2: { title: '已付款', desc: '商家正在备货中，请耐心等待', tagType: 'primary', icon: Box },
+  3: { title: '已发货', desc: '商品正在派送中', tagType: 'primary', icon: Van },
+  4: { title: '交易完成', desc: '感谢您的购买，欢迎再次光临', tagType: 'success', icon: CircleCheck },
+  5: { title: '已取消', desc: '该订单已取消', tagType: 'info', icon: CircleClose }
 }
 
 const statusInfo = computed(() => statusMap[order.value?.status] || statusMap[1])
@@ -251,44 +252,49 @@ async function confirmReceive() {
 .order-detail-page { max-width: 900px; margin: 0 auto; }
 
 /* 状态横幅 */
-.status-bar { display: flex; align-items: center; gap: 16px; background: #fff; border-radius: 8px; padding: 24px; margin-bottom: 12px; border-left: 4px solid #eee; }
+.status-bar { display: flex; align-items: center; gap: 16px; background: #121826; border-radius: 8px; padding: 24px; margin-bottom: 12px; border-left: 4px solid rgba(255,255,255,.08); }
 .status-1 { border-color: #e6a23c; }
 .status-2, .status-3 { border-color: #ff7a3d; }
 .status-4 { border-color: #67c23a; }
-.status-5 { border-color: #999; }
+.status-5 { border-color: #5c6a82; }
 .status-icon { font-size: 40px; }
 .status-text { flex: 1; }
 .status-text h3 { font-size: 18px; margin-bottom: 4px; }
-.status-text p { font-size: 13px; color: #999; }
+.status-text p { font-size: 13px; color: #5c6a82; }
 .status-actions { display: flex; gap: 10px; }
 
 /* 区块 */
-.section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
 .order-summary { border-top: none; }
 
 .addr-info b { font-size: 15px; margin-right: 12px; }
-.addr-phone { color: #666; font-size: 14px; }
-.addr-info p { font-size: 13px; color: #666; margin-top: 4px; }
+.addr-phone { color: #8b96ab; font-size: 14px; }
+.addr-info p { font-size: 13px; color: #8b96ab; margin-top: 4px; }
 
-.logistics-location { font-size: 12px; color: #999; }
-.logistics-summary { font-size: 13px; color: #666; margin-top: 8px; }
+.logistics-location { font-size: 12px; color: #5c6a82; }
+.logistics-summary { font-size: 13px; color: #8b96ab; margin-top: 8px; }
 
 /* 商品明细 */
-.od-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid #f5f5f5; }
+.od-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
 .od-item:last-child { border-bottom: none; }
-.od-item-img { border-radius: 4px; overflow: hidden; background: #fafafa; flex-shrink: 0; }
+.od-item-img { border-radius: 4px; overflow: hidden; background: #1a2233; flex-shrink: 0; }
 .od-item-info { flex: 1; min-width: 0; }
 .od-item-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .od-item-name:hover { color: #ff5000; }
-.od-item-spec { font-size: 12px; color: #999; }
+.od-item-spec { font-size: 12px; color: #5c6a82; }
 .od-item-price, .od-item-qty, .od-item-subtotal { width: 90px; text-align: center; font-size: 14px; }
 .od-item-subtotal { color: #ff5000; font-weight: 600; }
 
 /* 订单概要 */
 .summary-grid { display: flex; flex-direction: column; gap: 10px; }
-.summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #666; }
-.summary-row b { color: #333; }
-.total-row { border-top: 1px solid #f0f0f0; padding-top: 10px; font-size: 15px; }
+.summary-row { display: flex; justify-content: space-between; font-size: 14px; color: #8b96ab; }
+.summary-row b { color: #c3cbda; }
+.total-row { border-top: 1px solid rgba(255,255,255,.08); padding-top: 10px; font-size: 15px; }
 .total-amount { color: #ff5000; font-size: 20px; }
+
+/* 响应式：移动端容器留白收缩 */
+@media (max-width: 768px) {
+  .order-detail-page { padding: 0 12px; }
+}
 </style>

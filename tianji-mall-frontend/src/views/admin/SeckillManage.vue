@@ -17,7 +17,7 @@
             <div>秒杀价 ¥{{ fmtPrice(row.seckillPrice) }}（库存 {{ row.seckillStock ?? 0 }}）</div>
             <div class="sk-time">{{ fmtTime(row.seckillStartTime, { dateOnly: false }) }} ~ {{ fmtTime(row.seckillEndTime, { dateOnly: false }) }}</div>
           </template>
-          <span v-else style="color:#999">未设置</span>
+          <span v-else style="color:#5c6a82">未设置</span>
         </template>
       </el-table-column>
       <el-table-column label="操作" width="180" fixed="right">
@@ -136,6 +136,6 @@ async function handleClear(row) {
 .admin-page { max-width: 1000px; margin: 0 auto; }
 .ap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .ap-header h2 { font-size: 18px; font-weight: 600; }
-.sk-time { font-size: 12px; color: #999; }
+.sk-time { font-size: 12px; color: #5c6a82; }
 .pager { display: flex; justify-content: flex-end; margin-top: 14px; }
 </style>

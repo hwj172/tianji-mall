@@ -203,26 +203,26 @@ async function handleJoin() {
 <style scoped>
 .groupbuy-detail-page { max-width: 900px; margin: 0 auto; }
 
-.gb-header { display: flex; align-items: center; gap: 20px; background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
-.gb-img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; background: #fafafa; flex-shrink: 0; }
+.gb-header { display: flex; align-items: center; gap: 20px; background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.gb-img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; background: #1a2233; flex-shrink: 0; }
 .gb-info { flex: 1; min-width: 0; }
 .gb-info h2 { font-size: 20px; margin-bottom: 8px; }
 .gb-price { color: #ff5000; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
-.gb-time { font-size: 13px; color: #999; }
+.gb-time { font-size: 13px; color: #5c6a82; }
 .gb-start-btn { flex-shrink: 0; }
 
-.gb-section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.gb-section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .gb-section h3 { font-size: 16px; margin-bottom: 14px; }
 
 .tier-list { display: flex; gap: 12px; }
-.tier-card { border: 1px solid #f0f0f0; border-radius: 8px; padding: 12px 20px; text-align: center; cursor: pointer; transition: all .2s; }
+.tier-card { border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 12px 20px; text-align: center; cursor: pointer; transition: all .2s; }
 .tier-card:hover { border-color: #ff5000; }
-.tier-card.selected { border-color: #ff5000; background: #fff7f0; }
+.tier-card.selected { border-color: #ff5000; background: rgba(255, 80, 0, .12); }
 .tier-count { font-size: 15px; font-weight: 600; }
 .tier-discount { font-size: 13px; color: #ff5000; margin-top: 4px; }
 
 .group-list { display: flex; flex-direction: column; gap: 10px; }
-.group-row { display: flex; align-items: center; gap: 12px; background: #fafafa; border-radius: 6px; padding: 12px 16px; }
+.group-row { display: flex; align-items: center; gap: 12px; background: #1a2233; border-radius: 6px; padding: 12px 16px; }
 .gr-count { font-size: 14px; font-weight: 600; flex: 1; }
-.gr-time { font-size: 12px; color: #999; }
+.gr-time { font-size: 12px; color: #5c6a82; }
 </style>

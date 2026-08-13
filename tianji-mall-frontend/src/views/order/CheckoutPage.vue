@@ -68,10 +68,18 @@
             class="coupon-option" :class="{ active: selectedCouponId === c.userCouponId }"
             @click="selectedCouponId = selectedCouponId === c.userCouponId ? null : c.userCouponId"
           >
-            <div class="co-name">{{ c.name }}</div>
-            <div class="co-value" v-if="c.discountType === 'FIXED'">减 ¥{{ fmtPrice(c.discountValue) }}</div>
-            <div class="co-value" v-else>{{ formatDiscount(c.discountValue) }}</div>
-            <div class="co-cond" v-if="c.minOrderAmount > 0">满 ¥{{ fmtPrice(c.minOrderAmount) }}</div>
+            <div class="co-amount">
+              <template v-if="c.discountType === 'FIXED'">
+                <span class="co-currency">¥</span><span class="co-num">{{ c.discountValue }}</span>
+              </template>
+              <template v-else>
+                <span class="co-num">{{ formatDiscount(c.discountValue).replace('折', '') }}</span><span class="co-currency">折</span>
+              </template>
+            </div>
+            <div class="co-body">
+              <div class="co-name">{{ c.name }}</div>
+              <div class="co-cond">{{ c.minOrderAmount > 0 ? `满 ¥${fmtPrice(c.minOrderAmount)} 可用` : '无门槛' }}</div>
+            </div>
           </div>
         </div>
       </div>
@@ -397,49 +405,62 @@ async function submitOrder() {
 .checkout-page { max-width: 1200px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
-.section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
-.section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid #f0f0f0; }
+.section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.08); }
 
 /* 地址 */
 .address-list { display: grid; gap: 10px; }
-.addr-card { display: flex; gap: 12px; border: 2px solid #f0f0f0; border-radius: 8px; padding: 14px; cursor: pointer; transition: border-color .2s; }
+.addr-card { display: flex; gap: 12px; border: 2px solid rgba(255,255,255,.08); border-radius: 8px; padding: 14px; cursor: pointer; transition: border-color .2s; }
 .addr-card:hover, .addr-card.active { border-color: #ff5000; }
-.addr-radio { width: 20px; height: 20px; border: 2px solid #ddd; border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
+.addr-radio { width: 20px; height: 20px; border: 2px solid rgba(255,255,255,.08); border-radius: 50%; display: flex; align-items: center; justify-content: center; flex-shrink: 0; margin-top: 2px; }
 .address-list .addr-card.active .addr-radio { border-color: #ff5000; }
 .radio-dot { width: 10px; height: 10px; background: #ff5000; border-radius: 50%; }
 .addr-contact { display: flex; align-items: center; gap: 8px; font-size: 14px; margin-bottom: 4px; }
-.addr-text { font-size: 13px; color: #666; }
+.addr-text { font-size: 13px; color: #8b96ab; }
 .add-addr-btn { margin-top: 10px; }
 
 /* 商品明细：行内结构与样式已收敛到公共组件 OrderItemRow */
 .item-list { display: flex; flex-direction: column; gap: 12px; }
 
 /* 底部 */
-.checkout-footer { background: #fff; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
-.footer-summary { font-size: 14px; color: #666; }
+.checkout-footer { background: #121826; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.footer-summary { font-size: 14px; color: #8b96ab; }
 .footer-summary b { color: #ff5000; }
 .footer-total { font-size: 24px; font-weight: 700; color: #ff5000; }
 .submit-btn { background: #ff5000; border-color: #ff5000; padding: 12px 48px; font-size: 16px; }
-.footer-original { color: #999; text-decoration: line-through; font-size: 13px; }
+.footer-original { color: #5c6a82; text-decoration: line-through; font-size: 13px; }
 .footer-coupon { color: #ff5000; font-size: 13px; }
 
-/* 优惠券 */
+/* 优惠券票样式：左面额大数字 + 虚线分隔 + 右券信息 */
 .coupon-options { display: flex; flex-wrap: wrap; gap: 12px; }
-.coupon-option { border: 1px solid #f0f0f0; border-radius: 8px; padding: 10px 14px; cursor: pointer; transition: all .2s; display: flex; flex-direction: column; gap: 4px; min-width: 140px; }
-.coupon-option:hover { border-color: #ff5000; }
-.coupon-option.active { border-color: #ff5000; background: #fff7f0; }
-.co-name { font-size: 14px; font-weight: 600; }
-.co-value { color: #ff5000; font-weight: 700; font-size: 14px; }
-.co-cond { font-size: 12px; color: #999; }
+.coupon-option { border: 1px solid rgba(255,255,255,.12); border-radius: 8px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; display: flex; align-items: stretch; min-width: 180px; overflow: hidden; background: rgba(255,255,255,.02); }
+.coupon-option:hover { border-color: #ff5000; transform: translateY(-1px); }
+.coupon-option.active { border-color: #ff5000; box-shadow: 0 0 16px rgba(255, 80, 0, .25); }
+.co-amount { width: 78px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; gap: 1px; background: rgba(255, 80, 0, .12); border-right: 1px dashed rgba(255, 80, 0, .45); color: #ff5000; font-family: var(--font-tech); }
+.co-currency { font-size: 13px; }
+.co-num { font-size: 22px; font-weight: 700; }
+.co-body { padding: 10px 12px; display: flex; flex-direction: column; justify-content: center; gap: 4px; min-width: 0; }
+.co-name { font-size: 13px; font-weight: 600; color: #c3cbda; }
+.co-cond { font-size: 12px; color: #5c6a82; }
 
 /* 满减活动（自动应用） */
 .promotion-options { display: flex; flex-wrap: wrap; gap: 12px; }
-.promotion-option { border: 1px solid #f0f0f0; border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
-.promotion-option.active { border-color: #ff5000; background: #fff7f0; }
+.promotion-option { border: 1px solid rgba(255,255,255,.08); border-radius: 8px; padding: 10px 14px; display: flex; flex-direction: column; gap: 4px; min-width: 160px; }
+.promotion-option.active { border-color: #ff5000; background: rgba(255, 80, 0, .12); }
 .po-name { font-size: 14px; font-weight: 600; }
 .po-value { color: #ff5000; font-weight: 700; font-size: 14px; }
-.po-hint { font-size: 12px; color: #999; }
+.po-hint { font-size: 12px; color: #5c6a82; }
 
 .region-row { display: flex; gap: 8px; }
 .region-input { flex: 1; }
+
+/* 响应式：移动端结算栏堆叠、券票全宽、容器留白收缩 */
+@media (max-width: 768px) {
+  .checkout-page { padding: 0 12px; }
+  .section { padding: 16px; }
+  .checkout-footer { flex-direction: column; align-items: stretch; gap: 12px; padding: 14px; }
+  .footer-summary { text-align: center; }
+  .submit-btn { width: 100%; }
+  .coupon-option, .promotion-option { min-width: 100%; }
+}
 </style>

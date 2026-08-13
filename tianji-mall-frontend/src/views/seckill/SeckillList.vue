@@ -1,8 +1,11 @@
 <template>
   <div class="seckill-page">
-    <div class="sk-header">
-      <h2>⚡ 限时秒杀</h2>
-      <span class="sk-now" v-if="products.length">当前时间 {{ fmtClock(now) }}</span>
+    <div class="sk-banner">
+      <div class="sk-banner-left">
+        <h2><el-icon class="sk-banner-icon"><Timer /></el-icon> 限时秒杀</h2>
+        <span class="sk-sub">超低价限时抢购 · 手慢无</span>
+      </div>
+      <span class="sk-now" v-if="products.length">当前 {{ fmtClock(now) }}</span>
     </div>
 
     <ProductGrid
@@ -45,6 +48,7 @@ import { ref, onMounted, onUnmounted } from 'vue'
 import { getSeckillList } from '@/api'
 import ProductCard from '@/components/common/ProductCard.vue'
 import ProductGrid from '@/components/common/ProductGrid.vue'
+import { Timer } from '@element-plus/icons-vue'
 
 const products = ref([])
 const loading = ref(false)
@@ -121,14 +125,23 @@ function fmtClock(t) {
 
 <style scoped>
 .seckill-page { max-width: 1200px; margin: 0 auto; }
-.sk-header { display: flex; align-items: baseline; gap: 12px; margin-bottom: 16px; }
-.sk-header h2 { font-size: 22px; }
-.sk-now { font-size: 13px; color: #999; }
+.sk-banner {
+  display: flex; justify-content: space-between; align-items: center;
+  background: linear-gradient(135deg, #ff7a3d, #ff5000);
+  border-radius: 12px; padding: 20px 24px; margin-bottom: 16px;
+  box-shadow: 0 4px 24px rgba(255, 80, 0, .28);
+  color: #fff;
+}
+.sk-banner-left { display: flex; align-items: center; gap: 14px; }
+.sk-banner-left h2 { font-size: 24px; font-weight: 700; display: flex; align-items: center; gap: 8px; }
+.sk-banner-icon { font-size: 26px; }
+.sk-sub { font-size: 13px; opacity: .85; }
+.sk-now { font-size: 13px; opacity: .9; font-family: var(--font-tech); }
 
 .sk-card { position: relative; }
 .sk-state { position: absolute; top: 6px; left: 6px; display: flex; flex-direction: column; align-items: flex-start; gap: 4px; z-index: 1; pointer-events: none; }
 .sk-tag { font-size: 11px; font-weight: 600; color: #fff; padding: 3px 8px; border-radius: 4px; line-height: 1.2; }
 .sk-tag-active { background: #ff5000; }
 .sk-tag-gray { background: rgba(0,0,0,.55); }
-.sk-cd { font-size: 11px; color: #fff; background: rgba(255,80,0,.9); padding: 3px 8px; border-radius: 4px; line-height: 1.2; }
+.sk-cd { font-size: 11px; color: #fff; background: rgba(255,80,0,.9); padding: 3px 8px; border-radius: 4px; line-height: 1.2; font-family: var(--font-tech); letter-spacing: .5px; }
 </style>

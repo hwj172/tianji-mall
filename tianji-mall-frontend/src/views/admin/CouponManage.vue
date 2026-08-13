@@ -182,5 +182,5 @@ async function handleDelete(row) {
 <style scoped>
 .admin-page h2 { margin-bottom: 16px; }
 .ap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-.form-hint { margin-left: 8px; font-size: 12px; color: #999; }
+.form-hint { margin-left: 8px; font-size: 12px; color: #5c6a82; }
 </style>

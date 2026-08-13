@@ -10,5 +10,5 @@
 <style scoped>
 .not-found { display: flex; flex-direction: column; align-items: center; justify-content: center; min-height: 60vh; }
 .not-found h1 { font-size: 80px; color: #dcdfe6; }
-.not-found p { font-size: 18px; color: #999; margin: 16px 0; }
+.not-found p { font-size: 18px; color: #5c6a82; margin: 16px 0; }
 </style>

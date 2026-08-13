@@ -25,7 +25,7 @@
         <!-- 消息列表 -->
         <div class="chat-messages" ref="msgContainer">
           <div v-if="messages.length === 0" class="chat-placeholder">
-            <div class="cp-icon">🤖</div>
+            <div class="cp-icon"><el-icon><ChatDotRound /></el-icon></div>
             <h3>AI 智能导购</h3>
             <p>你好，我是天机商城的 AI 导购，可以帮你找商品、查订单、加购物车</p>
             <div v-if="quickPrompts.length" class="cp-hints">
@@ -35,8 +35,8 @@
 
           <div v-for="(msg, idx) in messages" :key="idx" class="msg-row" :class="msg.role">
             <div class="msg-avatar">
-              <span v-if="msg.role === 'user'">👤</span>
-              <span v-else>🤖</span>
+              <el-icon v-if="msg.role === 'user'"><User /></el-icon>
+              <el-icon v-else><ChatDotRound /></el-icon>
             </div>
             <div class="msg-bubble" :class="{ 'has-products': msg.products && msg.products.length }">
               <div class="msg-text">{{ msg.content }}</div>
@@ -54,7 +54,7 @@
           </div>
 
           <div v-if="sending" class="msg-row assistant">
-            <div class="msg-avatar">🤖</div>
+            <div class="msg-avatar"><el-icon><ChatDotRound /></el-icon></div>
             <div class="msg-bubble typing">思考中...</div>
           </div>
         </div>
@@ -63,7 +63,7 @@
         <div class="chat-input">
           <div class="ci-tools">
             <input ref="fileInput" type="file" accept="image/*" style="display:none" @change="handleFile" />
-            <el-button size="small" text type="primary" @click="fileInput.click()" :disabled="sending">📷 传图搜商品</el-button>
+            <el-button size="small" text type="primary" @click="fileInput.click()" :disabled="sending"><el-icon><Picture /></el-icon> 传图搜商品</el-button>
           </div>
           <el-input
             v-model="inputText"
@@ -84,7 +84,7 @@
 
 <script setup>
 import { ref, nextTick, onMounted } from 'vue'
-import { Promotion } from '@element-plus/icons-vue'
+import { Promotion, ChatDotRound, User, Picture } from '@element-plus/icons-vue'
 import ProductCard from '@/components/common/ProductCard.vue'
 import { sendChatMessage, getChatHistory, getChatSessions, getHotKeywords, imageSearch } from '@/api'
 import { fmtTime } from '@/utils/date'
@@ -210,7 +210,7 @@ function sendQuick(hint) {
 async function handleFile(e) {
   const file = e.target.files && e.target.files[0]
   if (!file || sending.value) return
-  messages.value.push({ role: 'user', content: '🔍 图片搜索：' + (file.name || '图片') })
+  messages.value.push({ role: 'user', content: '图片搜索：' + (file.name || '图片') })
   sending.value = true
   try {
     const dataUrl = await fileToBase64(file)
@@ -270,35 +270,35 @@ function scrollBottom() {
 .chat-wrap { display: flex; height: 100%; gap: 14px; }
 
 /* 会话侧栏 */
-.chat-sidebar { width: 220px; background: #fff; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; flex-shrink: 0; }
+.chat-sidebar { width: 220px; background: #121826; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; flex-shrink: 0; }
 .cs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .cs-title-label { font-size: 14px; font-weight: 600; }
 .cs-list { flex: 1; overflow-y: auto; }
 .cs-item { padding: 10px 12px; border-radius: 6px; cursor: pointer; margin-bottom: 4px; transition: background .15s; }
-.cs-item:hover { background: #f5f5f5; }
-.cs-item.active { background: #fff5f0; }
-.cs-title { font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.cs-meta { font-size: 11px; color: #999; margin-top: 4px; }
+.cs-item:hover { background: transparent; }
+.cs-item.active { background: rgba(255,80,0,.12); }
+.cs-title { font-size: 13px; color: #c3cbda; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cs-meta { font-size: 11px; color: #5c6a82; margin-top: 4px; }
 
 /* 主聊天区 */
-.chat-container { flex: 1; display: flex; flex-direction: column; background: #fff; border-radius: 8px; overflow: hidden; }
+.chat-container { flex: 1; display: flex; flex-direction: column; background: #121826; border-radius: 8px; overflow: hidden; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 20px; }
 
 .chat-placeholder { text-align: center; padding: 60px 20px; }
 .cp-icon { font-size: 56px; margin-bottom: 12px; }
 .chat-placeholder h3 { font-size: 20px; margin-bottom: 8px; }
-.chat-placeholder p { font-size: 14px; color: #999; }
+.chat-placeholder p { font-size: 14px; color: #5c6a82; }
 .cp-hints { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 20px; }
 .hint-tag { cursor: pointer; }
 
 .msg-row { display: flex; gap: 10px; margin-bottom: 16px; }
 .msg-row.user { flex-direction: row-reverse; }
-.msg-avatar { width: 36px; height: 36px; border-radius: 50%; background: #f0f0f0; display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
+.msg-avatar { width: 36px; height: 36px; border-radius: 50%; background: rgba(255,255,255,.08); display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0; }
 .msg-bubble { max-width: 70%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.6; }
 .msg-row.user .msg-bubble { background: #ff5000; color: #fff; border-bottom-right-radius: 4px; }
-.msg-row.assistant .msg-bubble { background: #f5f5f5; border-bottom-left-radius: 4px; }
+.msg-row.assistant .msg-bubble { background: transparent; border-bottom-left-radius: 4px; }
 .msg-row.assistant .msg-bubble.has-products { max-width: 92%; }
-.typing { color: #999; font-style: italic; }
+.typing { color: #5c6a82; font-style: italic; }
 
 .msg-tools { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 8px; }
 .tool-chip { font-size: 11px; padding: 2px 8px; border-radius: 10px; background: #e8f5e9; color: #2e7d32; }
@@ -306,6 +306,6 @@ function scrollBottom() {
 
 .msg-products { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 10px; margin-top: 10px; }
 
-.chat-input { padding: 16px; border-top: 1px solid #f0f0f0; }
+.chat-input { padding: 16px; border-top: 1px solid rgba(255,255,255,.08); }
 .ci-tools { margin-bottom: 8px; }
 </style>

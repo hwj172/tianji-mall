@@ -1,5 +1,5 @@
 <template>
-  <div class="home-page">
+  <div ref="pageRef" class="home-page">
     <!-- 主体：分类侧栏 + Banner + 快捷入口 -->
     <div class="home-hero">
       <div class="category-sidebar">
@@ -13,14 +13,14 @@
           @mouseleave="activeCategory = null"
           @click="$router.push({ name: 'productList', query: { categoryId: cat.id } })"
         >
-          <span>{{ categoryIcon(cat.name) }} {{ cat.name }}</span>
+          <span class="category-label"><el-icon class="category-icon"><component :is="categoryIcon(cat.name)" /></el-icon>{{ cat.name }}</span>
           <el-icon><ArrowRight /></el-icon>
         </div>
       </div>
       <HomeBanner :banners="homeData.banners" class="hero-banner" />
       <div class="hero-sidebar">
         <div class="hero-user">
-          <div class="user-avatar">👤</div>
+          <div class="user-avatar"><el-icon><User /></el-icon></div>
           <div class="user-hi">{{ userStore.isLoggedIn ? `Hi, ${userStore.userInfo?.username || '用户'}` : 'Hi, 欢迎光临' }}</div>
           <el-button v-if="!userStore.isLoggedIn" class="user-login-btn" size="small" round @click="$router.push('/login')">登录 / 注册</el-button>
           <div class="user-tags">
@@ -35,16 +35,16 @@
           </div>
         </div>
         <div class="quick-grid">
-          <div class="quick-item" @click="$router.push('/seckill')"><div class="quick-icon">⚡</div><div class="quick-label">限时秒杀</div></div>
-          <div class="quick-item" @click="$router.push('/groupbuy')"><div class="quick-icon">🎯</div><div class="quick-label">阶梯拼团</div></div>
-          <div class="quick-item" @click="$router.push('/coupon/center')"><div class="quick-icon">🎫</div><div class="quick-label">领券中心</div></div>
-          <div class="quick-item" @click="$router.push('/chat')"><div class="quick-icon">🤖</div><div class="quick-label">AI 导购</div></div>
+          <div class="quick-item" @click="$router.push('/seckill')"><el-icon class="quick-icon"><Timer /></el-icon><div class="quick-label">限时秒杀</div></div>
+          <div class="quick-item" @click="$router.push('/groupbuy')"><el-icon class="quick-icon"><Connection /></el-icon><div class="quick-label">阶梯拼团</div></div>
+          <div class="quick-item" @click="$router.push('/coupon/center')"><el-icon class="quick-icon"><Stamp /></el-icon><div class="quick-label">领券中心</div></div>
+          <div class="quick-item" @click="$router.push('/chat')"><el-icon class="quick-icon"><ChatDotRound /></el-icon><div class="quick-label">AI 导购</div></div>
         </div>
         <div class="hero-notice">
-          <h4>📢 公告</h4>
-          <p>🆕 秒杀专区已上线</p>
-          <p>🎉 阶梯拼团新玩法</p>
-          <p>🤖 AI 导购帮你挑</p>
+          <h4>公告</h4>
+          <p>秒杀专区已上线</p>
+          <p>阶梯拼团新玩法</p>
+          <p>AI 导购帮你挑</p>
         </div>
       </div>
     </div>
@@ -52,7 +52,7 @@
     <!-- 热销排行 -->
     <section class="home-section" v-if="loading || homeData.hotProducts?.length">
       <div class="section-header">
-        <h3>🔥 热销排行榜</h3>
+        <h3>热销排行榜</h3>
         <span class="section-more" @click="$router.push('/product/list?sort=sales')">查看更多 →</span>
       </div>
       <template v-if="loading">
@@ -66,12 +66,12 @@
     <!-- 个性化推荐（独立接口） -->
     <section class="home-section" v-if="loading || personalRecommend.length || personalAlsoBuy.length">
       <template v-if="loading">
-        <div class="section-header"><h3>💝 猜你喜欢</h3></div>
+        <div class="section-header"><h3>猜你喜欢</h3></div>
         <ProductGridSkeleton :cols="5" />
       </template>
       <template v-else>
         <template v-if="personalRecommend.length">
-          <div class="section-header"><h3>💝 猜你喜欢</h3></div>
+          <div class="section-header"><h3>猜你喜欢</h3></div>
           <div class="product-grid cols-5">
             <div v-for="p in personalRecommend" :key="p.id" class="rec-card">
               <div class="rec-reason" v-if="p.reason">{{ p.reason }}</div>
@@ -80,7 +80,7 @@
           </div>
         </template>
         <template v-if="personalAlsoBuy.length">
-          <div class="section-header" style="margin-top: 24px"><h3>🛒 买了还买</h3></div>
+          <div class="section-header" style="margin-top: 24px"><h3>买了还买</h3></div>
           <div class="product-grid cols-5">
             <div v-for="p in personalAlsoBuy" :key="p.id" class="rec-card">
               <div class="rec-reason" v-if="p.reason">{{ p.reason }}</div>
@@ -100,8 +100,17 @@ import { getHomeData } from '@/api'
 import HomeBanner from '@/components/home/HomeBanner.vue'
 import ProductCard from '@/components/common/ProductCard.vue'
 import ProductGridSkeleton from '@/components/common/ProductGridSkeleton.vue'
+import { useReveal } from '@/composables/useReveal'
+import {
+  User, Iphone, Monitor, OfficeBuilding, ShoppingBag, Cpu, House,
+  Trophy, Present, Food, Reading, Box, Timer, Connection, Stamp, ChatDotRound
+} from '@element-plus/icons-vue'
 
 const userStore = useUserStore()
+
+const pageRef = ref(null)
+// 商品卡片交错入场
+useReveal(pageRef, '.product-card', { stagger: 0.05 })
 
 const loading = ref(true)
 
@@ -113,25 +122,26 @@ const homeData = reactive({
 })
 const categories = ref([])
 const activeCategory = ref(null)
+// 分类图标：Element 图标映射（keyword 命中，未命中兜底 Box）
 const CATEGORY_ICONS = [
-  { keyword: '手机', icon: '📱' },
-  { keyword: '电脑', icon: '💻' },
-  { keyword: '办公', icon: '💻' },
-  { keyword: '服饰', icon: '👕' },
-  { keyword: '鞋', icon: '👟' },
-  { keyword: '智能', icon: '⌚' },
-  { keyword: '家电', icon: '🏠' },
-  { keyword: '家居', icon: '🛋️' },
-  { keyword: '运动', icon: '⚽' },
-  { keyword: '美妆', icon: '💄' },
-  { keyword: '食品', icon: '🍎' },
-  { keyword: '图书', icon: '📚' },
-  { keyword: '玩具', icon: '🧸' },
+  { keyword: '手机', icon: Iphone },
+  { keyword: '电脑', icon: Monitor },
+  { keyword: '办公', icon: OfficeBuilding },
+  { keyword: '服饰', icon: ShoppingBag },
+  { keyword: '鞋', icon: ShoppingBag },
+  { keyword: '智能', icon: Cpu },
+  { keyword: '家电', icon: House },
+  { keyword: '家居', icon: House },
+  { keyword: '运动', icon: Trophy },
+  { keyword: '美妆', icon: Present },
+  { keyword: '食品', icon: Food },
+  { keyword: '图书', icon: Reading },
+  { keyword: '玩具', icon: Present },
 ]
 
 function categoryIcon(name) {
   const hit = CATEGORY_ICONS.find(i => name.includes(i.keyword))
-  return hit ? hit.icon : '📦'
+  return hit ? hit.icon : Box
 }
 const personalRecommend = ref([])
 const personalAlsoBuy = ref([])
@@ -190,50 +200,52 @@ onMounted(async () => {
 <style scoped>
 .home-page { max-width: 1200px; margin: 0 auto; }
 .home-hero { display: flex; gap: 12px; margin-bottom: 20px; }
-.category-sidebar { width: 200px; background: #fff; border-radius: 8px; padding: 4px 0; flex-shrink: 0; }
-.category-title { position: relative; padding: 10px 16px; font-weight: 600; font-size: 14px; color: #ff5000; }
-.category-title::after {
-  content: '';
-  position: absolute; left: 16px; right: 16px; bottom: 0; height: 2px;
-  background: linear-gradient(90deg, #ff5000, #ff7a3d); border-radius: 1px;
-}
-.category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; cursor: pointer; transition: background .15s; }
-.category-item:hover, .category-item.active { color: #ff5000; background: #fff5f0; font-weight: 600; }
+.category-sidebar { width: 200px; background: #121826; border-radius: 8px; padding: 4px 0; flex-shrink: 0; border: 1px solid rgba(255,255,255,.07); }
+.category-title { padding: 10px 16px 12px; font-weight: 600; font-size: 14px; color: #e6eaf2; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 4px; }
+.category-label { display: inline-flex; align-items: center; gap: 8px; }
+.category-icon { color: #8b96ab; font-size: 15px; }
+.category-item { padding: 7px 16px; display: flex; justify-content: space-between; align-items: center; font-size: 13px; color: #c3cbda; cursor: pointer; transition: background .12s, color .12s; }
+.category-item:hover { color: #ff5000; background: rgba(255, 255, 255, .04); }
+.category-item.active { color: #ff5000; background: rgba(255, 80, 0, .08); }
 .hero-banner { flex: 1; }
 .hero-sidebar { width: 220px; display: flex; flex-direction: column; gap: 8px; flex-shrink: 0; }
 .hero-user {
-  background: linear-gradient(135deg, #ff7a3d, #ff5000);
+  background: #ff5000;
   border-radius: 10px; padding: 14px; text-align: center; color: #fff;
-  box-shadow: 0 2px 8px rgba(255, 80, 0, .2);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .4);
 }
-.user-avatar { font-size: 32px; margin-bottom: 6px; }
+.user-avatar { font-size: 30px; margin-bottom: 6px; }
+.user-avatar .el-icon { font-size: 30px; }
 .user-hi { font-size: 14px; font-weight: 600; margin-bottom: 10px; }
-.user-login-btn { border: 1px solid #fff; background: transparent; color: #fff; }
+.user-login-btn { border: 1px solid rgba(255, 255, 255, .6); background: transparent; color: #fff; }
 .user-login-btn:hover { background: rgba(255, 255, 255, .15); color: #fff; }
 .user-tags { display: flex; gap: 8px; margin-top: 10px; font-size: 11px; justify-content: center; }
-.user-tags span { background: rgba(255, 255, 255, .18); color: #fff; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+.user-tags span { background: rgba(0, 0, 0, .18); color: #fff; padding: 2px 8px; border-radius: 4px; cursor: pointer; }
+.user-tags span:hover { background: rgba(0, 0, 0, .3); }
 .quick-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .quick-item {
-  background: #fff; border-radius: 10px; padding: 10px 0; text-align: center;
-  box-shadow: 0 1px 4px rgba(0, 0, 0, .05); cursor: pointer;
-  transition: transform .15s, box-shadow .15s;
+  background: #121826; border-radius: 8px; padding: 12px 0; text-align: center;
+  border: 1px solid rgba(255,255,255,.07); cursor: pointer;
+  transition: transform .15s, border-color .15s, box-shadow .15s;
 }
-.quick-item:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0, 0, 0, .1); }
-.quick-icon { font-size: 20px; }
-.quick-label { font-size: 11px; color: #666; margin-top: 2px; }
-.hero-notice { background: #fff; border-radius: 8px; padding: 12px; flex: 1; }
-.hero-notice h4 { font-size: 13px; margin-bottom: 8px; color: #333; }
-.hero-notice p { font-size: 12px; color: #666; padding: 3px 0; }
-.home-section { background: #fff; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.quick-item:hover { transform: translateY(-2px); border-color: rgba(255, 255, 255, .16); box-shadow: 0 4px 16px rgba(0, 0, 0, .35); }
+.quick-icon { font-size: 20px; color: #ff5000; margin-bottom: 4px; }
+/* AI 导购用科技青标识，区分于品牌橙 */
+.quick-item:last-child .quick-icon { color: var(--tianji-cyan); }
+.quick-label { font-size: 11px; color: #c3cbda; }
+.hero-notice { background: #121826; border-radius: 8px; padding: 12px; flex: 1; border: 1px solid rgba(255,255,255,.07); }
+.hero-notice h4 { font-size: 13px; margin-bottom: 8px; color: #e6eaf2; }
+.hero-notice p { font-size: 12px; color: #8b96ab; padding: 3px 0; }
+.home-section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,.07); }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.section-header h3 { font-size: 18px; }
-.section-more { font-size: 13px; color: #999; cursor: pointer; }
+.section-header h3 { font-size: 17px; color: #e6eaf2; }
+.section-more { font-size: 13px; color: #8b96ab; cursor: pointer; }
 .section-more:hover { color: #ff5000; }
 .product-grid { display: grid; gap: 16px; }
 .product-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
 .product-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
 .rec-card { position: relative; }
-.rec-reason { position: absolute; top: 4px; left: 4px; z-index: 2; font-size: 11px; color: #ff5000; background: rgba(255,255,255,.92); border: 1px solid #ffd8c8; border-radius: 10px; padding: 1px 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.rec-reason { position: absolute; top: 4px; left: 4px; z-index: 2; font-size: 11px; color: #ff5000; background: rgba(18, 24, 38, .9); border: 1px solid rgba(255, 80, 0, .35); border-radius: 10px; padding: 1px 8px; max-width: 90%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 /* 响应式：窄屏首屏折叠为单列 */
 @media (max-width: 900px) {

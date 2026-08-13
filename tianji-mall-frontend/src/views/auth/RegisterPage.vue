@@ -52,10 +52,10 @@ async function handleRegister() {
 </script>
 
 <style scoped>
-.auth-page { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: linear-gradient(135deg, #fff7f0, #ffe8d6); padding: 24px; }
+.auth-page { display: flex; flex-direction: column; justify-content: center; align-items: center; min-height: 100vh; background: radial-gradient(900px 500px at 50% -12%, rgba(255, 80, 0, .2), transparent 60%), #0a0e17; padding: 24px; }
 .auth-brand { text-align: center; margin-bottom: 24px; }
-.ab-logo { display: block; font-size: 42px; font-weight: 800; color: #ff5000; letter-spacing: 3px; }
-.ab-slogan { display: block; margin-top: 6px; font-size: 13px; color: #c06a2e; letter-spacing: 5px; }
+.ab-logo { display: block; font-size: 42px; font-weight: 800; color: #ff5000; letter-spacing: 3px; text-shadow: 0 0 18px rgba(255, 80, 0, .5); }
+.ab-slogan { display: block; margin-top: 6px; font-size: 13px; color: #8b96ab; letter-spacing: 5px; }
 .auth-card { width: 400px; border-radius: 12px; overflow: hidden; border-top: 4px solid #ff5000; }
 .auth-card h2 { text-align: center; margin-bottom: 24px; color: #ff5000; }
 .auth-switch { text-align: center; margin-top: 16px; }
