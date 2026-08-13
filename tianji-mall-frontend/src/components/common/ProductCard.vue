@@ -79,20 +79,21 @@ function formatSales(n) {
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  background: #fff;
-  transition: transform 0.2s, box-shadow 0.2s;
-  border: 1px solid #f0f0f0;
+  background: #121826;
+  transition: transform .15s, box-shadow .15s, border-color .15s;
+  border: 1px solid rgba(255, 255, 255, .07);
 }
 .product-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,.1);
+  border-color: rgba(255, 80, 0, .55);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 0 28px rgba(255, 80, 0, .28), 0 8px 24px rgba(0, 0, 0, .4);
 }
 .product-image {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  background: #fafafa;
+  background: #1a2233;
 }
 .product-image img {
   width: 100%;
@@ -120,13 +121,14 @@ function formatSales(n) {
 .product-name {
   font-size: 13px;
   font-weight: 400;
-  line-height: 1.3;
+  line-height: 1.4;
   display: -webkit-box;
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow: hidden;
-  min-height: 2.6em;
+  min-height: 2.8em;
   margin-bottom: 6px;
+  color: #c3cbda;
 }
 .name-highlight {
   color: #ff5000;
@@ -134,7 +136,7 @@ function formatSales(n) {
   font-weight: 600;
 }
 .product-price { display: flex; align-items: baseline; gap: 6px; }
-.price-current { color: var(--el-color-primary); font-size: 18px; font-weight: 700; }
-.price-original { color: #999; font-size: 12px; text-decoration: line-through; }
-.product-sales { font-size: 11px; color: #999; margin-top: auto; padding-top: 4px; display: block; }
+.price-current { color: #ff5000; font-size: 18px; font-weight: 700; }
+.price-original { color: #5c6a82; font-size: 12px; text-decoration: line-through; }
+.product-sales { font-size: 11px; color: #8b96ab; margin-top: auto; padding-top: 4px; display: block; }
 </style>

@@ -20,14 +20,14 @@ defineProps({
   gap: 16px;
 }
 .skeleton-card {
-  background: #fff;
+  background: #121826;
   border-radius: 8px;
   overflow: hidden;
-  border: 1px solid #f0f0f0;
+  border: 1px solid rgba(255, 255, 255, .07);
 }
 .sk-image {
   aspect-ratio: 1;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e6e6e6 37%, #f0f0f0 63%);
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.1) 37%, rgba(255,255,255,.05) 63%);
   background-size: 400% 100%;
   animation: shimmer 1.4s ease infinite;
 }
@@ -35,7 +35,7 @@ defineProps({
   height: 14px;
   border-radius: 4px;
   margin: 12px 12px 0;
-  background: linear-gradient(90deg, #f0f0f0 25%, #e6e6e6 37%, #f0f0f0 63%);
+  background: linear-gradient(90deg, rgba(255,255,255,.05) 25%, rgba(255,255,255,.1) 37%, rgba(255,255,255,.05) 63%);
   background-size: 400% 100%;
   animation: shimmer 1.4s ease infinite;
 }

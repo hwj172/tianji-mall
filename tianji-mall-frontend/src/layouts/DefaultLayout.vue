@@ -18,7 +18,7 @@
           >
             <template #default="{ item }">
               <div class="suggest-item">
-                <span class="suggest-icon">{{ item.tag === 'history' ? '🕘' : '🔍' }}</span>
+                <el-icon class="suggest-icon"><Clock v-if="item.tag === 'history'" /><Search v-else /></el-icon>
                 <span class="suggest-text">{{ item.value }}</span>
                 <span class="suggest-tag">{{ item.tag === 'history' ? '历史' : '搜索' }}</span>
               </div>
@@ -30,7 +30,7 @@
           <router-link to="/" title="返回首页"><el-button text><el-icon><HomeFilled /></el-icon></el-button></router-link>
           <template v-if="userStore.isLoggedIn">
             <router-link v-if="userStore.isSeller" to="/seller"><el-button text><el-icon><Shop /></el-icon> 商家中心</el-button></router-link>
-            <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text><el-icon><ShoppingCart /></el-icon> 购物车</el-button></el-badge></router-link>
+            <router-link to="/cart"><el-badge :value="cartStore.count" :hidden="!cartStore.count"><el-button text class="cart-icon"><el-icon><ShoppingCart /></el-icon> 购物车</el-button></el-badge></router-link>
             <router-link to="/notification/list"><el-badge :value="unreadCount" :hidden="!unreadCount"><el-button text><el-icon><Bell /></el-icon></el-button></el-badge></router-link>
             <router-link to="/chat"><el-button text><el-icon><ChatDotRound /></el-icon> AI导购</el-button></router-link>
             <el-dropdown>
@@ -70,6 +70,7 @@ import { useRouter } from 'vue-router'
 import { useUserStore } from '@/stores/user'
 import { useCartStore } from '@/stores/cart'
 import { getProductSuggest, getUnreadCount } from '@/api'
+import { Clock, Search } from '@element-plus/icons-vue'
 
 const router = useRouter()
 const userStore = useUserStore()
@@ -137,21 +138,21 @@ function search() {
 </script>
 
 <style scoped>
-.layout { min-height: 100vh; background: #f5f5f5; }
-.top-bar { background: #fff; border-bottom: 2px solid #ff5000; position: sticky; top: 0; z-index: 100; }
+.layout { min-height: 100vh; background: transparent; }
+.top-bar { background: rgba(14, 20, 36, .85); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); border-bottom: 1px solid rgba(255, 80, 0, .55); box-shadow: 0 1px 0 rgba(255, 80, 0, .18), 0 6px 28px rgba(255, 80, 0, .14); position: sticky; top: 0; z-index: 100; }
 .top-bar-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; height: 64px; gap: 20px; }
-.logo { font-size: 24px; font-weight: 700; color: #ff5000; white-space: nowrap; }
+.logo { font-size: 24px; font-weight: 700; color: #ff5000; white-space: nowrap; text-shadow: 0 0 14px rgba(255, 80, 0, .55); }
 .search-bar { flex: 1; max-width: 540px; }
 .search-input { width: 100%; }
-.search-input :deep(.el-input__wrapper) { border-radius: 20px 0 0 20px; border: 2px solid #ff5000; box-shadow: none; }
-.search-input :deep(.el-input__wrapper.is-focus) { border-color: #ff7a3d; box-shadow: 0 0 0 2px rgba(255, 122, 61, .2) inset; }
-.search-btn { background: #ff5000; border-color: #ff5000; border-radius: 0 20px 20px 0; }
+.search-input :deep(.el-input__wrapper) { border-radius: 20px 0 0 20px; border: 2px solid #ff5000; box-shadow: 0 0 12px rgba(255, 80, 0, .18); }
+.search-input :deep(.el-input__wrapper.is-focus) { border-color: #ff7a3d; box-shadow: 0 0 0 2px rgba(255, 122, 61, .2) inset, 0 0 18px rgba(255, 80, 0, .28); }
+.search-btn { background: linear-gradient(135deg, #ff7a3d, #ff5000); border-color: transparent; border-radius: 0 20px 20px 0; }
 .suggest-item { display: flex; align-items: center; gap: 8px; width: 100%; }
 .suggest-icon { font-size: 12px; }
-.suggest-text { flex: 1; font-size: 13px; color: #333; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.suggest-tag { font-size: 11px; color: #999; background: #f5f5f5; border-radius: 3px; padding: 1px 6px; }
+.suggest-text { flex: 1; font-size: 13px; color: #c3cbda; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.suggest-tag { font-size: 11px; color: #5c6a82; background: rgba(255,255,255,.08); border-radius: 3px; padding: 1px 6px; }
 .header-actions { display: flex; align-items: center; gap: 12px; white-space: nowrap; }
-.user-name { cursor: pointer; color: #666; }
+.user-name { cursor: pointer; color: #8b96ab; }
 .main { max-width: 1200px; margin: 12px auto; min-height: calc(100vh - 200px); }
-.footer { text-align: center; color: #999; padding: 24px; font-size: 12px; }
+.footer { text-align: center; color: #5c6a82; padding: 24px; font-size: 12px; }
 </style>

@@ -17,8 +17,5 @@ onMounted(() => {
 </script>
 
 <style>
-/* 全局路由过渡动效（作用于各 layout 内部 router-view 的 transition，layout 自身不被整体过渡） */
-.fade-slide-enter-active, .fade-slide-leave-active { transition: opacity .2s, transform .2s; }
-.fade-slide-enter-from { opacity: 0; transform: translateY(8px); }
-.fade-slide-leave-to { opacity: 0; }
+/* 路由过渡动效统一定义在 global.css（此处不再重复，避免时长不一致） */
 </style>

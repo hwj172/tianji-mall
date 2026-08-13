@@ -39,6 +39,6 @@ const route = useRoute()
 .aside :deep(.el-menu-item) { color: #bfcbd9; }
 .aside :deep(.el-menu-item:hover) { background: rgba(255,255,255,.08); color: #fff; }
 .aside :deep(.el-menu-item.is-active) { background: #ff5000; color: #fff; }
-.topbar { background: #fff; display: flex; align-items: center; padding: 0 20px; font-size: 16px; box-shadow: 0 1px 4px rgba(0,0,0,.08); }
-.content { background: #f0f2f5; min-height: calc(100vh - 60px); padding: 20px; }
+.topbar { background: #161e31; display: flex; align-items: center; padding: 0 20px; font-size: 16px; border-bottom: 1px solid rgba(255, 80, 0, .4); }
+.content { background: transparent; min-height: calc(100vh - 60px); padding: 20px; }
 </style>

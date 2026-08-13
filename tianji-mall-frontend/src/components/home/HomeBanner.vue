@@ -50,7 +50,7 @@ function onImageError(e) {
 .home-banner :deep(.el-carousel__indicators--horizontal) { bottom: 14px; }
 .home-banner :deep(.el-carousel__indicator) { padding: 0 3px; }
 .home-banner :deep(.el-carousel__indicator .el-carousel__button) {
-  width: 7px; height: 7px; border-radius: 50%; background: #fff; opacity: .6;
+  width: 7px; height: 7px; border-radius: 50%; background: #121826; opacity: .6;
   transition: width .2s;
 }
 .home-banner :deep(.el-carousel__indicator.is-active .el-carousel__button) {
