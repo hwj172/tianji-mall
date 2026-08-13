@@ -177,7 +177,7 @@ async function loadLogs() {
 .mc-head { display: flex; justify-content: space-between; align-items: flex-start; }
 .mc-level { display: flex; align-items: center; gap: 10px; font-size: 20px; font-weight: 700; }
 .mc-sign-btn { background: rgba(255, 255, 255, .92); color: #c3cbda; border: none; font-weight: 600; }
-.mc-sign-btn:hover:not(:disabled) { background: #121826; }
+.mc-sign-btn:hover:not(:disabled) { background: #1b1b1e; }
 .mc-sign-btn:disabled { background: rgba(255, 255, 255, .35); color: #fff; border-color: transparent; }
 
 .mc-points { margin: 22px 0 6px; }
@@ -187,7 +187,7 @@ async function loadLogs() {
 .mc-progress-text { font-size: 13px; opacity: .9; margin-bottom: 8px; }
 
 /* 通用区块 */
-.section { background: #121826; border-radius: 8px; padding: 20px; }
+.section { background: #1b1b1e; border-radius: 8px; padding: 20px; }
 .section-header h3 { font-size: 16px; font-weight: 600; margin: 0 0 14px; }
 
 .points-pos { color: #f56c2d; font-weight: 600; }

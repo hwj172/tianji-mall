@@ -216,7 +216,7 @@ async function showDetail(id) {
 
 .refund-tabs { margin-bottom: 16px; }
 .refund-list { display: flex; flex-direction: column; gap: 12px; }
-.refund-card { background: #121826; border-radius: 8px; padding: 16px 20px; cursor: pointer; transition: box-shadow .2s; }
+.refund-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; cursor: pointer; transition: box-shadow .2s; }
 .refund-card:hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); }
 
 .rc-header { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; }

@@ -188,13 +188,13 @@ function goCheckout() {
 <style scoped>
 .cart-page { max-width: 1200px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
-.cart-main { background: #121826; border-radius: 8px; overflow: hidden; }
+.cart-main { background: #1b1b1e; border-radius: 8px; overflow: hidden; }
 .cart-header { padding: 12px 16px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; color: #8b96ab; }
 .cart-header-hint b { color: #ff5000; }
 .cart-list { padding: 0 16px; }
 .cart-item { display: flex; align-items: center; gap: 12px; padding: 16px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
 .item-check { flex-shrink: 0; }
-.item-image { width: 80px; height: 80px; border-radius: 4px; overflow: hidden; cursor: pointer; background: #1a2233; flex-shrink: 0; }
+.item-image { width: 80px; height: 80px; border-radius: 4px; overflow: hidden; cursor: pointer; background: #232327; flex-shrink: 0; }
 .item-image img { width: 100%; height: 100%; object-fit: cover; }
 .item-info { flex: 1; min-width: 0; }
 .item-name { font-size: 14px; color: #c3cbda; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -205,14 +205,14 @@ function goCheckout() {
 .item-subtotal { width: 100px; text-align: center; font-size: 14px; font-weight: 600; color: #ff5000; }
 .item-del { flex-shrink: 0; }
 
-.cart-footer { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #1a2233; border-top: 1px solid rgba(255,255,255,.08); }
+.cart-footer { display: flex; justify-content: space-between; align-items: center; padding: 16px; background: #232327; border-top: 1px solid rgba(255,255,255,.08); }
 .footer-check { display: flex; align-items: center; gap: 16px; }
 .del-selected { font-size: 13px; color: #5c6a82; cursor: pointer; }
 .del-selected:hover { color: #ff5000; }
 .footer-right { display: flex; align-items: center; gap: 12px; }
 .total-label { font-size: 14px; color: #8b96ab; }
 .total-label b { color: #ff5000; }
-.total-price { font-size: 24px; font-weight: 700; color: #ff5000; font-family: var(--font-tech); text-shadow: 0 0 14px rgba(255, 80, 0, .4); }
+.total-price { font-size: 24px; font-weight: 700; color: #ff5000; font-family: var(--font-tech); }
 .checkout-btn { background: #ff5000; border-color: #ff5000; padding: 12px 40px; font-size: 16px; }
 
 /* 响应式：窄屏购物车行换行、隐藏次要列 */

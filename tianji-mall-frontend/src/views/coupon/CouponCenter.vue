@@ -124,10 +124,10 @@ async function handleClaim(c) {
 .coupon-page { max-width: 900px; margin: 0 auto; }
 
 .coupon-list { display: flex; flex-direction: column; gap: 12px; }
-.coupon-card { display: flex; align-items: stretch; background: #121826; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
+.coupon-card { display: flex; align-items: stretch; background: #1b1b1e; border-radius: 8px; overflow: hidden; border: 1px solid rgba(255,255,255,.08); }
 .coupon-card.claimed, .coupon-card.used { opacity: .6; }
 
-.cc-left { width: 120px; background: linear-gradient(135deg, #ff6b35, #ff5000); color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; }
+.cc-left { width: 120px; background: #ff5000; color: #fff; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 16px 12px; }
 .cc-value { font-size: 28px; font-weight: 700; }
 .cc-symbol { font-size: 16px; }
 .cc-type { font-size: 12px; margin-top: 4px; opacity: .85; }

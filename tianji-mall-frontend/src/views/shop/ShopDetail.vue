@@ -160,7 +160,7 @@ async function handleFollow() {
 <style scoped>
 .shop-page { max-width: 1200px; margin: 0 auto; }
 
-.shop-header { background: #121826; border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+.shop-header { background: #1b1b1e; border-radius: 8px; padding: 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .sh-left { display: flex; align-items: center; gap: 16px; }
 .sh-info h2 { font-size: 22px; margin-bottom: 6px; }
 .sh-info p { font-size: 13px; color: #8b96ab; margin-bottom: 8px; }

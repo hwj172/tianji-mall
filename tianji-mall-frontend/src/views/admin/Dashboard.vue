@@ -140,7 +140,7 @@ const statusOption = computed(() => ({
     type: 'pie',
     radius: ['42%', '68%'],
     center: ['50%', '44%'],
-    itemStyle: { borderRadius: 6, borderColor: '#121826', borderWidth: 2 },
+    itemStyle: { borderRadius: 6, borderColor: '#1b1b1e', borderWidth: 2 },
     label: { show: false },
     data: (dashboard.value.orderStatusDist || []).map(d => ({ name: d.label, value: d.count })),
     color: ['#ff5000', '#ff7a3d', '#22d3ee', '#34d399', '#64748b']
@@ -184,13 +184,13 @@ const categoryHeight = computed(() => {
 .admin-dashboard h2 { margin-bottom: 20px; }
 
 .overview-cards { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 16px; }
-.ov-card { background: #121826; border-radius: 8px; padding: 24px; text-align: center; border: 1px solid rgba(255,255,255,.07); }
+.ov-card { background: #1b1b1e; border-radius: 8px; padding: 24px; text-align: center; border: 1px solid rgba(255,255,255,.07); }
 .ov-label { font-size: 14px; color: #5c6a82; margin-bottom: 8px; }
 .ov-value { font-size: 28px; font-weight: 700; color: #c3cbda; font-family: var(--font-tech); }
-.ov-gmv { color: #ff5000; text-shadow: 0 0 14px rgba(255, 80, 0, .35); }
+.ov-gmv { color: #ff5000; }
 
 .charts-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
-.chart-box { background: #121826; border-radius: 8px; padding: 20px; border: 1px solid rgba(255,255,255,.07); }
+.chart-box { background: #1b1b1e; border-radius: 8px; padding: 20px; border: 1px solid rgba(255,255,255,.07); }
 .chart-box h3 { font-size: 15px; margin-bottom: 14px; color: #e6eaf2; }
 .chart-box.wide { grid-column: 1 / -1; }
 </style>

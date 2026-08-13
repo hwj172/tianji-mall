@@ -127,7 +127,7 @@ function fmtClock(t) {
 .seckill-page { max-width: 1200px; margin: 0 auto; }
 .sk-banner {
   display: flex; justify-content: space-between; align-items: center;
-  background: linear-gradient(135deg, #ff7a3d, #ff5000);
+  background: #ff5000;
   border-radius: 12px; padding: 20px 24px; margin-bottom: 16px;
   box-shadow: 0 4px 24px rgba(255, 80, 0, .28);
   color: #fff;

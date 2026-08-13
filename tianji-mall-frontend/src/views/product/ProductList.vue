@@ -240,7 +240,7 @@ function search(keyword) {
 .hot-tag:hover { color: #ff5000; }
 .history-clear { float: right; color: #5c6a82; cursor: pointer; font-size: 12px; }
 .history-clear:hover { color: #ff5000; }
-.filter-bar { display: flex; justify-content: space-between; align-items: center; background: #121826; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+.filter-bar { display: flex; justify-content: space-between; align-items: center; background: #1b1b1e; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
 .filter-sorts { display: flex; gap: 4px; }
 .sort-item { padding: 4px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; color: #8b96ab; }
 .sort-item:hover, .sort-item.active { background: rgba(255,80,0,.12); color: #ff5000; font-weight: 600; }

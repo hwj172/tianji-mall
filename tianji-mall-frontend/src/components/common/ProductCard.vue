@@ -79,21 +79,21 @@ function formatSales(n) {
   border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  background: #121826;
+  background: #1b1b1e;
   transition: transform .15s, box-shadow .15s, border-color .15s;
   border: 1px solid rgba(255, 255, 255, .07);
 }
 .product-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 80, 0, .55);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 0 28px rgba(255, 80, 0, .28), 0 8px 24px rgba(0, 0, 0, .4);
+  border-color: rgba(255, 80, 0, .4);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 8px 24px rgba(0, 0, 0, .4);
 }
 .product-image {
   position: relative;
   width: 100%;
   aspect-ratio: 1;
   overflow: hidden;
-  background: #1a2233;
+  background: #232327;
 }
 .product-image img {
   width: 100%;

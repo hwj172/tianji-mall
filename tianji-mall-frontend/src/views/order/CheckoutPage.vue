@@ -405,7 +405,7 @@ async function submitOrder() {
 .checkout-page { max-width: 1200px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
-.section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.08); }
 
 /* 地址 */
@@ -423,7 +423,7 @@ async function submitOrder() {
 .item-list { display: flex; flex-direction: column; gap: 12px; }
 
 /* 底部 */
-.checkout-footer { background: #121826; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
+.checkout-footer { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; display: flex; justify-content: flex-end; align-items: center; gap: 16px; }
 .footer-summary { font-size: 14px; color: #8b96ab; }
 .footer-summary b { color: #ff5000; }
 .footer-total { font-size: 24px; font-weight: 700; color: #ff5000; }

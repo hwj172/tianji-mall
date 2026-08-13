@@ -489,10 +489,10 @@ function onThumbError(e) {
 <style scoped>
 .product-detail-page { max-width: 1200px; margin: 0 auto; }
 .detail-loading-wrap { min-height: 400px; }
-.detail-main { display: flex; gap: 24px; background: #121826; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
+.detail-main { display: flex; gap: 24px; background: #1b1b1e; border-radius: 8px; padding: 24px; margin-bottom: 16px; }
 
 .detail-gallery { width: 400px; flex-shrink: 0; }
-.main-image { width: 400px; height: 400px; overflow: hidden; border-radius: 4px; border: 1px solid rgba(255,255,255,.08); background: #1a2233; cursor: zoom-in; }
+.main-image { width: 400px; height: 400px; overflow: hidden; border-radius: 4px; border: 1px solid rgba(255,255,255,.08); background: #232327; cursor: zoom-in; }
 .main-image img { width: 100%; height: 100%; object-fit: contain; }
 .thumb-list { display: flex; gap: 8px; margin-top: 8px; }
 .thumb-list img { width: 64px; height: 64px; object-fit: cover; border-radius: 4px; border: 2px solid transparent; cursor: pointer; }
@@ -505,7 +505,7 @@ function onThumbError(e) {
 .price-box { background: rgba(255, 80, 0, .08); padding: 16px; border-radius: 8px; margin-bottom: 16px; border: 1px solid rgba(255, 80, 0, .25); }
 .price-row { display: flex; align-items: baseline; gap: 12px; }
 .price-label { font-size: 13px; color: #5c6a82; }
-.price-current { color: #ff5000; font-size: 28px; font-weight: 700; text-shadow: 0 0 16px rgba(255, 80, 0, .45); }
+.price-current { color: #ff5000; font-size: 28px; font-weight: 700; }
 .price-original { color: #5c6a82; font-size: 14px; text-decoration: line-through; }
 .price-tags { margin-top: 8px; }
 
@@ -538,16 +538,16 @@ function onThumbError(e) {
 .review-score { font-size: 32px; color: #ff5000; font-weight: 700; }
 .review-summary p { font-size: 12px; color: #5c6a82; margin-top: 8px; }
 
-.detail-bottom { background: #121826; border-radius: 8px; padding: 24px; min-height: 400px; }
+.detail-bottom { background: #1b1b1e; border-radius: 8px; padding: 24px; min-height: 400px; }
 .description-content { max-width: 800px; }
 .description-content :deep(img) { max-width: 100%; }
 
 .attr-table { width: 100%; border-collapse: collapse; }
 .attr-table td { padding: 8px 12px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 13px; }
-.attr-name { width: 120px; color: #5c6a82; background: #1a2233; }
+.attr-name { width: 120px; color: #5c6a82; background: #232327; }
 
 /* 评价区 */
-.review-section { background: #121826; border-radius: 8px; padding: 24px; margin-top: 16px; }
+.review-section { background: #1b1b1e; border-radius: 8px; padding: 24px; margin-top: 16px; }
 .review-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .review-header h3 { font-size: 16px; font-weight: 600; }
 .review-stats-summary { font-size: 13px; color: #8b96ab; display: flex; gap: 16px; }
@@ -568,7 +568,7 @@ function onThumbError(e) {
 .rf-item { font-size: 13px; color: #8b96ab; padding: 4px 14px; border-radius: 14px; border: 1px solid rgba(255,255,255,.08); cursor: pointer; transition: all .2s; }
 .rf-item:hover { color: #ff5000; border-color: #ff5000; }
 .rf-item.active { color: #fff; background: #ff5000; border-color: #ff5000; }
-.review-reply { margin-top: 10px; background: #1a2233; border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
+.review-reply { margin-top: 10px; background: #232327; border-radius: 6px; padding: 10px 12px; font-size: 13px; line-height: 1.6; }
 .rr-label { color: #ff5000; font-weight: 500; }
 .rr-content { color: #c3cbda; }
 .rr-time { color: #5c6a82; font-size: 12px; margin-left: 8px; }

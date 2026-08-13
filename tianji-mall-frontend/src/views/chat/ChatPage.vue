@@ -270,7 +270,7 @@ function scrollBottom() {
 .chat-wrap { display: flex; height: 100%; gap: 14px; }
 
 /* 会话侧栏 */
-.chat-sidebar { width: 220px; background: #121826; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; flex-shrink: 0; }
+.chat-sidebar { width: 220px; background: #1b1b1e; border-radius: 8px; padding: 12px; display: flex; flex-direction: column; flex-shrink: 0; }
 .cs-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
 .cs-title-label { font-size: 14px; font-weight: 600; }
 .cs-list { flex: 1; overflow-y: auto; }
@@ -281,7 +281,7 @@ function scrollBottom() {
 .cs-meta { font-size: 11px; color: #5c6a82; margin-top: 4px; }
 
 /* 主聊天区 */
-.chat-container { flex: 1; display: flex; flex-direction: column; background: #121826; border-radius: 8px; overflow: hidden; }
+.chat-container { flex: 1; display: flex; flex-direction: column; background: #1b1b1e; border-radius: 8px; overflow: hidden; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 20px; }
 
 .chat-placeholder { text-align: center; padding: 60px 20px; }

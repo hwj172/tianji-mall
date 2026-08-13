@@ -146,7 +146,7 @@ async function handleDelete(addr) {
 .ap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .ap-header h2 { font-size: 20px; font-weight: 600; }
 
-.addr-card { background: #121826; border-radius: 8px; padding: 16px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+.addr-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
 .ac-contact { display: flex; align-items: center; gap: 10px; font-size: 15px; margin-bottom: 6px; }
 .ac-text { font-size: 13px; color: #8b96ab; }
 .ac-actions { display: flex; gap: 4px; }

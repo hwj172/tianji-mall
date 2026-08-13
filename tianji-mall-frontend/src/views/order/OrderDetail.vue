@@ -252,7 +252,7 @@ async function confirmReceive() {
 .order-detail-page { max-width: 900px; margin: 0 auto; }
 
 /* 状态横幅 */
-.status-bar { display: flex; align-items: center; gap: 16px; background: #121826; border-radius: 8px; padding: 24px; margin-bottom: 12px; border-left: 4px solid rgba(255,255,255,.08); }
+.status-bar { display: flex; align-items: center; gap: 16px; background: #1b1b1e; border-radius: 8px; padding: 24px; margin-bottom: 12px; border-left: 4px solid rgba(255,255,255,.08); }
 .status-1 { border-color: #e6a23c; }
 .status-2, .status-3 { border-color: #ff7a3d; }
 .status-4 { border-color: #67c23a; }
@@ -264,7 +264,7 @@ async function confirmReceive() {
 .status-actions { display: flex; gap: 10px; }
 
 /* 区块 */
-.section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
 .order-summary { border-top: none; }
 
@@ -278,7 +278,7 @@ async function confirmReceive() {
 /* 商品明细 */
 .od-item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.08); }
 .od-item:last-child { border-bottom: none; }
-.od-item-img { border-radius: 4px; overflow: hidden; background: #1a2233; flex-shrink: 0; }
+.od-item-img { border-radius: 4px; overflow: hidden; background: #232327; flex-shrink: 0; }
 .od-item-info { flex: 1; min-width: 0; }
 .od-item-name { font-size: 14px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .od-item-name:hover { color: #ff5000; }

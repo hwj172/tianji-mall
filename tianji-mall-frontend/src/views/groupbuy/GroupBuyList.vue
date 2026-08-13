@@ -74,9 +74,9 @@ function onImgError(e) { imageOnError(e, 80) }
 .gb-banner-icon { font-size: 26px; }
 .gb-sub { font-size: 13px; opacity: .85; }
 
-.gb-card { display: flex; align-items: center; gap: 16px; background: #121826; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
+.gb-card { display: flex; align-items: center; gap: 16px; background: #1b1b1e; border: 1px solid rgba(255,255,255,.07); border-radius: 8px; padding: 16px; margin-bottom: 12px; cursor: pointer; transition: border-color .15s, box-shadow .15s, transform .15s; }
 .gb-card:hover { border-color: rgba(34, 211, 238, .5); box-shadow: 0 0 20px rgba(34, 211, 238, .12); transform: translateY(-1px); }
-.gb-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #1a2233; }
+.gb-img { width: 80px; height: 80px; object-fit: cover; border-radius: 6px; flex-shrink: 0; background: #232327; }
 .gb-info { flex: 1; min-width: 0; }
 .gb-name { font-size: 15px; font-weight: 600; margin-bottom: 10px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .gb-tiers { display: flex; gap: 8px; }

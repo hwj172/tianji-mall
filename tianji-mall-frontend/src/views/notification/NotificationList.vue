@@ -150,8 +150,8 @@ async function handleMarkAllRead() {
 .np-tab.active { color: #fff; background: #ff5000; border-color: #ff5000; }
 
 .notification-list { display: flex; flex-direction: column; gap: 10px; }
-.notification-card { background: #121826; border-radius: 8px; padding: 16px 20px; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .2s; }
-.notification-card:not(.is-read):hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); background: #1a2233; }
+.notification-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; display: flex; gap: 14px; cursor: pointer; transition: box-shadow .2s; }
+.notification-card:not(.is-read):hover { box-shadow: 0 2px 12px rgba(0,0,0,.06); background: #232327; }
 .notification-card.is-read { background: #f7f7f7; opacity: .7; cursor: default; }
 
 .nc-icon { font-size: 28px; flex-shrink: 0; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; }

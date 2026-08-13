@@ -39,7 +39,7 @@ function onImageError(e) {
 .banner-link img { width: 100%; height: 100%; object-fit: cover; }
 .placeholder {
   height: 300px;
-  background: linear-gradient(135deg, #ff6b35, #ff5000);
+  background: #ff5000;
   display: flex; align-items: center; justify-content: center;
 }
 .placeholder-content { text-align: center; color: #fff; }
@@ -50,7 +50,7 @@ function onImageError(e) {
 .home-banner :deep(.el-carousel__indicators--horizontal) { bottom: 14px; }
 .home-banner :deep(.el-carousel__indicator) { padding: 0 3px; }
 .home-banner :deep(.el-carousel__indicator .el-carousel__button) {
-  width: 7px; height: 7px; border-radius: 50%; background: #121826; opacity: .6;
+  width: 7px; height: 7px; border-radius: 50%; background: #1b1b1e; opacity: .6;
   transition: width .2s;
 }
 .home-banner :deep(.el-carousel__indicator.is-active .el-carousel__button) {

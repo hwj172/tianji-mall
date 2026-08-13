@@ -41,7 +41,7 @@ onMounted(async () => {
 .following-page { max-width: 900px; margin: 0 auto; }
 .following-page h2 { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 .shop-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
-.shop-card { background: #121826; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: box-shadow .2s; }
+.shop-card { background: #1b1b1e; border-radius: 8px; padding: 16px; display: flex; align-items: center; gap: 14px; cursor: pointer; transition: box-shadow .2s; }
 .shop-card:hover { box-shadow: 0 4px 16px rgba(0,0,0,.08); }
 .sc-info { flex: 1; min-width: 0; }
 .sc-info h3 { font-size: 15px; margin-bottom: 4px; }

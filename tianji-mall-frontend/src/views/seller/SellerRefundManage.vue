@@ -61,7 +61,7 @@ async function confirmReceive(r) {
 .seller-refund-page h2 { margin-bottom: 8px; }
 .sub-tip { font-size: 13px; color: #5c6a82; margin-bottom: 16px; }
 .refund-list { display: flex; flex-direction: column; gap: 12px; }
-.refund-card { background: #121826; border-radius: 8px; padding: 16px 20px; }
+.refund-card { background: #1b1b1e; border-radius: 8px; padding: 16px 20px; }
 .rc-header { display: flex; align-items: center; gap: 12px; padding-bottom: 10px; border-bottom: 1px solid rgba(255,255,255,.08); }
 .rc-id { font-weight: 600; color: #c3cbda; }
 .rc-order { color: #8b96ab; flex: 1; font-size: 13px; }

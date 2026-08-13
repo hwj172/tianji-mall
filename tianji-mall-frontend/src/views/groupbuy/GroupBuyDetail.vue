@@ -203,15 +203,15 @@ async function handleJoin() {
 <style scoped>
 .groupbuy-detail-page { max-width: 900px; margin: 0 auto; }
 
-.gb-header { display: flex; align-items: center; gap: 20px; background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
-.gb-img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; background: #1a2233; flex-shrink: 0; }
+.gb-header { display: flex; align-items: center; gap: 20px; background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.gb-img { width: 120px; height: 120px; border-radius: 8px; object-fit: cover; background: #232327; flex-shrink: 0; }
 .gb-info { flex: 1; min-width: 0; }
 .gb-info h2 { font-size: 20px; margin-bottom: 8px; }
 .gb-price { color: #ff5000; font-size: 24px; font-weight: 700; margin-bottom: 8px; }
 .gb-time { font-size: 13px; color: #5c6a82; }
 .gb-start-btn { flex-shrink: 0; }
 
-.gb-section { background: #121826; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.gb-section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .gb-section h3 { font-size: 16px; margin-bottom: 14px; }
 
 .tier-list { display: flex; gap: 12px; }
@@ -222,7 +222,7 @@ async function handleJoin() {
 .tier-discount { font-size: 13px; color: #ff5000; margin-top: 4px; }
 
 .group-list { display: flex; flex-direction: column; gap: 10px; }
-.group-row { display: flex; align-items: center; gap: 12px; background: #1a2233; border-radius: 6px; padding: 12px 16px; }
+.group-row { display: flex; align-items: center; gap: 12px; background: #232327; border-radius: 6px; padding: 12px 16px; }
 .gr-count { font-size: 14px; font-weight: 600; flex: 1; }
 .gr-time { font-size: 12px; color: #5c6a82; }
 </style>
