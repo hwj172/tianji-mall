@@ -50,3 +50,6 @@ tianji-mall-frontend/dist/
 
 # Superpowers
 .superpowers/
+
+# 本地参考图/临时资源
+task/
