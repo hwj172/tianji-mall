@@ -199,7 +199,7 @@ onMounted(async () => {
 
 <style scoped>
 .home-page { max-width: 1200px; margin: 0 auto; }
-.home-hero { display: flex; gap: 12px; margin-bottom: 20px; }
+.home-hero { display: flex; align-items: stretch; gap: 12px; margin-bottom: 20px; height: 440px; }
 .category-sidebar { width: 200px; background: #1b1b1e; border-radius: 8px; padding: 4px 0; flex-shrink: 0; border: 1px solid rgba(255,255,255,.07); }
 .category-title { padding: 10px 16px 12px; font-weight: 600; font-size: 14px; color: #f4f4f5; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: 4px; }
 .category-label { display: inline-flex; align-items: center; gap: 8px; }

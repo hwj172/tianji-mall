@@ -1,6 +1,6 @@
 <template>
   <div class="home-banner" v-if="banners.length">
-    <el-carousel :interval="4000" arrow="hover" height="300px">
+    <el-carousel :interval="4000" arrow="hover" height="440px">
       <el-carousel-item v-for="banner in banners" :key="banner.id">
         <a :href="banner.linkUrl || '#'" class="banner-link">
           <img :src="banner.imageUrl" :alt="banner.title" @error="onImageError" />
@@ -27,8 +27,8 @@ function onImageError(e) {
 </script>
 
 <style scoped>
-.home-banner { border-radius: 8px; overflow: hidden; }
-.banner-link { position: relative; display: block; height: 300px; }
+.home-banner { border-radius: 8px; overflow: hidden; height: 100%; }
+.banner-link { position: relative; display: block; height: 100%; }
 .banner-link::after {
   content: '';
   position: absolute;
@@ -38,7 +38,7 @@ function onImageError(e) {
 }
 .banner-link img { width: 100%; height: 100%; object-fit: cover; }
 .placeholder {
-  height: 300px;
+  height: 100%;
   background: #ff5000;
   display: flex; align-items: center; justify-content: center;
 }
