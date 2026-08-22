@@ -45,13 +45,13 @@ TRUNCATE TABLE user_member;
 
 -- ============ 用户（6） ============
 -- 密码 123456
-INSERT INTO `user` (`id`, `username`, `password`, `phone`, `email`, `avatar`, `status`, `role`) VALUES
-(1, 'admin',       '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13900139000', 'admin@tianji.com',   NULL, 1, 'admin'),
-(2, 'seller_demo', '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13800138000', 'seller@tianji.com',  NULL, 1, 'seller'),
-(3, 'testuser',    '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13700137000', 'test@tianji.com',    NULL, 1, 'user'),
-(4, 'buyer_wang',  '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13600136000', 'wang@tianji.com',    NULL, 1, 'user'),
-(5, 'seller_li',   '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13500135000', 'lishop@tianji.com',  NULL, 1, 'seller'),
-(6, 'buyer_zhao',  '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13400134000', 'zhao@tianji.com',    NULL, 1, 'user');
+INSERT INTO `user` (`id`, `username`, `password`, `phone`, `email`, `avatar`, `status`, `role`, `profile_status`, `pending_username`, `pending_avatar`) VALUES
+(1, 'admin',       '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13900139000', 'admin@tianji.com',   NULL, 1, 'admin',  'approved', NULL, NULL),
+(2, 'seller_demo', '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13800138000', 'seller@tianji.com',  NULL, 1, 'seller', 'approved', NULL, NULL),
+(3, 'testuser',    '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13700137000', 'test@tianji.com',    NULL, 1, 'user',   'approved', NULL, NULL),
+(4, 'buyer_wang',  '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13600136000', 'wang@tianji.com',    NULL, 1, 'user',   'approved', NULL, NULL),
+(5, 'seller_li',   '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13500135000', 'lishop@tianji.com',  NULL, 1, 'seller', 'approved', NULL, NULL),
+(6, 'buyer_zhao',  '$2b$12$B2bsAOk6RuH5cXZiCoXkV.B9bHPDqQ2DD2DReVmikoFBEgfPMR/jq', '13400134000', 'zhao@tianji.com',    NULL, 1, 'user',   'pending',  'zhao_renamed', '/uploads/demo_avatar.png');
 
 -- ============ 会员（6） ============
 INSERT INTO `user_member` (`user_id`, `level`, `points`, `total_points`) VALUES
@@ -76,8 +76,8 @@ INSERT INTO `points_log` (`user_id`, `change_type`, `points`, `remark`) VALUES
 
 -- ============ 店铺（2） ============
 INSERT INTO `shop` (`id`, `name`, `logo`, `description`, `seller_id`, `status`, `notice`) VALUES
-(1, '天机数码旗舰店', 'https://picsum.photos/seed/shop1/200/200', '数码 3C 专营，正品保障，闪电发货', 2, 1, '本店商品均支持 7 天无理由退换'),
-(2, 'Li 运动户外店',  'https://picsum.photos/seed/shop2/200/200', '运动鞋服，潮流装备', 5, 1, '满 200 包邮');
+(1, '天机数码旗舰店', 'https://images.unsplash.com/photo-1553406830-ef2513450d76?w=200&q=80', '数码 3C 专营，正品保障，闪电发货', 2, 1, '本店商品均支持 7 天无理由退换'),
+(2, 'Li 运动户外店',  'https://images.unsplash.com/photo-1465453869711-7e174808ace9?w=200&q=80', '运动鞋服，潮流装备', 5, 1, '满 200 包邮');
 
 -- ============ 分类（3 顶级 + 6 子级） ============
 INSERT INTO `category` (`id`, `name`, `parent_id`, `sort`) VALUES
@@ -93,28 +93,29 @@ INSERT INTO `category` (`id`, `name`, `parent_id`, `sort`) VALUES
 
 -- ============ Banner ============
 INSERT INTO `banner` (`id`, `title`, `image_url`, `link_url`, `sort`, `status`) VALUES
-(1, '新品首发 · iPhone 16',  'https://picsum.photos/seed/banner1/1200/300', '/product/1',  1, 1),
-(2, '限时秒杀 · ThinkPad',  'https://picsum.photos/seed/banner2/1200/300', '/seckill',     2, 1),
-(3, '阶梯拼团 · 罗技鼠标',  'https://picsum.photos/seed/banner3/1200/300', '/groupbuy',    3, 1);
+(1, '新品首发 · iPhone 16',  'https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=1200&q=80', '/product/1',  1, 1),
+(2, '限时秒杀 · ThinkPad',  'https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=1200&q=80', '/seckill',     2, 1),
+(3, '阶梯拼团 · 罗技鼠标',  'https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=1200&q=80', '/groupbuy',    3, 1);
 
 -- ============ 商品（12） ============
 -- 平台商品 1-6（含 SKU 商品 id=1、秒杀商品 id=5）
 INSERT INTO `product` (`id`, `name`, `description`, `price`, `stock`, `category_id`, `images`, `status`, `sales`, `shop_id`, `seckill_price`, `seckill_stock`, `seckill_start_time`, `seckill_end_time`) VALUES
-(1,  'iPhone 16 Pro 手机 256GB 深空黑',   'A18 Pro 芯片，4800 万三摄，钛金属边框', 9999.00, 50, 11, '["https://picsum.photos/seed/iphone16/400/400","https://picsum.photos/seed/iphone16b/400/400"]', 1, 32, NULL, NULL, NULL, NULL, NULL),
-(2,  '华为 Mate 70 Pro 旗舰手机 512GB',   '麒麟 9100，卫星通信，XMAGE 影像', 6999.00, 30, 11, '["https://picsum.photos/seed/mate70/400/400"]', 1, 25, NULL, NULL, NULL, NULL, NULL),
-(3,  '小米 15 Ultra 手机 512GB 摄影套装',  '徕卡光学，2 亿像素长焦，120W 快充', 5999.00, 80, 11, '["https://picsum.photos/seed/mi15/400/400"]', 1, 40, NULL, NULL, NULL, NULL, NULL),
-(4,  'MacBook Pro 14 笔记本电脑 M4 Pro',   'M4 Pro，24GB 内存，1TB SSD', 14999.00, 25, 21, '["https://picsum.photos/seed/macbook14/400/400"]', 1, 18, NULL, NULL, NULL, NULL, NULL),
-(5,  'ThinkPad X1 Carbon Gen 12 商务本',  'Intel Ultra 7，2.8K OLED，1.09kg 超轻', 14999.00, 15, 21, '["https://picsum.photos/seed/thinkpad/400/400"]', 1, 12, NULL, 12999.00, 8, '2026-01-01 00:00:00', '2027-01-01 00:00:00'),
-(6,  '罗技 MX Master 3S 无线鼠标',         '8K DPI，MagSpeed，多设备切换', 599.00, 200, 22, '["https://picsum.photos/seed/mxmaster/400/400"]', 1, 66, NULL, NULL, NULL, NULL, NULL);
+(1,  'iPhone 16 Pro 手机 256GB 深空黑',   'A18 Pro 芯片，4800 万三摄，钛金属边框', 9999.00, 50, 11, '["https://images.unsplash.com/photo-1591337676887-a217a6970a8a?w=400&q=80","https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80"]', 1, 32, NULL, NULL, NULL, NULL, NULL),
+(2,  '华为 Mate 70 Pro 旗舰手机 512GB',   '麒麟 9100，卫星通信，XMAGE 影像', 6999.00, 30, 11, '["https://images.unsplash.com/photo-1511707171634-5f897ff02aa9?w=400&q=80"]', 1, 25, NULL, NULL, NULL, NULL, NULL),
+(3,  '小米 15 Ultra 手机 512GB 摄影套装',  '徕卡光学，2 亿像素长焦，120W 快充', 5999.00, 80, 11, '["https://images.unsplash.com/photo-1601784551446-20c9e07cdbdb?w=400&q=80"]', 1, 40, NULL, NULL, NULL, NULL, NULL),
+(4,  'MacBook Pro 14 笔记本电脑 M4 Pro',   'M4 Pro，24GB 内存，1TB SSD', 14999.00, 25, 21, '["https://images.unsplash.com/photo-1496181133206-80ce9b88a853?w=400&q=80"]', 1, 18, NULL, NULL, NULL, NULL, NULL),
+(5,  'ThinkPad X1 Carbon Gen 12 商务本',  'Intel Ultra 7，2.8K OLED，1.09kg 超轻', 14999.00, 15, 21, '["https://images.unsplash.com/photo-1588872657578-7efd1f1555ed?w=400&q=80"]', 1, 12, NULL, 12999.00, 8, '2026-01-01 00:00:00', '2027-01-01 00:00:00'),
+(6,  '罗技 MX Master 3S 无线鼠标',         '8K DPI，MagSpeed，多设备切换', 599.00, 200, 22, '["https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=400&q=80"]', 1, 66, NULL, NULL, NULL, NULL, NULL);
 
 -- 店铺商品 7-12
 INSERT INTO `product` (`id`, `name`, `description`, `price`, `stock`, `category_id`, `images`, `status`, `sales`, `shop_id`) VALUES
-(7,  'Nike Air Jordan 1 复刻运动鞋',      '经典复刻，Air Sole 气垫', 1299.00, 100, 31, '["https://picsum.photos/seed/aj1/400/400"]', 1, 45, 1),
-(8,  'Adidas Samba OG 经典板鞋',          '复古皮革板鞋，百搭', 899.00, 150, 31, '["https://picsum.photos/seed/samba/400/400"]', 1, 38, 1),
-(9,  '优衣库轻薄羽绒服 冬季外套',         '90% 鹅绒，轻便保暖', 499.00, 300, 32, '["https://picsum.photos/seed/uniqlo/400/400"]', 1, 88, 1),
-(10, '新秀丽双肩背包 17.3 英寸',          '防泼水，电脑隔层，USB 充电口', 299.00, 120, 32, '["https://picsum.photos/seed/samsonite/400/400"]', 1, 56, 1),
-(11, '华为 MateBook X Pro 轻薄本 2024',   'Ultra 9，3.1K OLED 触屏', 8999.00, 20, 21, '["https://picsum.photos/seed/matebook/400/400"]', 1, 9, 1),
-(12, '小米手环 9 智能手环',               'AMOLED 屏，150+ 运动模式，21 天续航', 249.00, 500, 12, '["https://picsum.photos/seed/band9/400/400"]', 1, 120, 2);
+(7,  'Nike Air Jordan 1 复刻运动鞋',      '经典复刻，Air Sole 气垫', 1299.00, 100, 31, '["https://images.unsplash.com/photo-1542291026-7eec264c27ff?w=400&q=80"]', 1, 45, 1),
+(8,  'Adidas Samba OG 经典板鞋',          '复古皮革板鞋，百搭', 899.00, 150, 31, '["https://images.unsplash.com/photo-1549298916-b41d501d3772?w=400&q=80"]', 1, 38, 1),
+(9,  '优衣库轻薄羽绒服 冬季外套',         '90% 鹅绒，轻便保暖', 499.00, 300, 32, '["https://images.unsplash.com/photo-1539533018447-63fcce2678e3?w=400&q=80"]', 1, 88, 1),
+(10, '新秀丽双肩背包 17.3 英寸',          '防泼水，电脑隔层，USB 充电口', 299.00, 120, 32, '["https://images.unsplash.com/photo-1553062407-98eeb64c6a62?w=400&q=80"]', 1, 56, 1),
+(11, '华为 MateBook X Pro 轻薄本 2024',   'Ultra 9，3.1K OLED 触屏', 8999.00, 20, 21, '["https://images.unsplash.com/photo-1531297484001-80022131f5a1?w=400&q=80"]', 1, 9, 1),
+(12, '小米手环 9 智能手环',               'AMOLED 屏，150+ 运动模式，21 天续航', 249.00, 500, 12, '["https://images.unsplash.com/photo-1524805444758-089113d48a6d?w=400&q=80"]', 1, 120, 2),
+(13, 'iPad Pro 11 平板电脑 256G',         'M4 芯片，OLED 显示屏，Apple Pencil Pro 支持', 8999.00, 40, 11, '["https://images.unsplash.com/photo-1544244015-0df4b3ffc6b0?w=400&q=80"]', 2, 0, 2);
 
 -- ============ SKU（iPhone 3 规格） ============
 INSERT INTO `product_sku` (`id`, `product_id`, `sku_code`, `specs`, `price`, `stock`, `sales`, `status`) VALUES
@@ -232,7 +233,7 @@ INSERT INTO `refund_item` (`id`, `refund_id`, `order_item_id`, `product_id`, `sk
 
 -- ============ 评价（含商家回复） ============
 INSERT INTO `review` (`id`, `user_id`, `product_id`, `order_id`, `rating`, `content`, `images`, `status`, `reply`, `reply_time`) VALUES
-(1, 3, 6, 4, 5, '鼠标手感很好，静音按键非常棒！', '["https://picsum.photos/seed/review1/200/200"]', 1, '感谢您的支持，祝您购物愉快！', NOW()),
+(1, 3, 6, 4, 5, '鼠标手感很好，静音按键非常棒！', '["https://images.unsplash.com/photo-1527864550417-7fd91fc51a46?w=200&q=80"]', 1, '感谢您的支持，祝您购物愉快！', NOW()),
 (2, 4, 2, 6, 4, '手机拍照很强，就是发货有点慢', NULL, 1, NULL, NULL);
 
 -- ============ 通知 ============
