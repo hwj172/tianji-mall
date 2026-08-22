@@ -10,8 +10,13 @@ html {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', 'PingFang SC', 'Microsoft YaHei', Arial, sans-serif;
-  /* 深灰底（非纯黑，避免 halation），无光晕/纹理/渐变 */
+  /* 深灰底 + 顶部氛围光（cinema 级：不纯黑，有 ambient 光晕） */
+  background:
+    radial-gradient(1100px 600px at 18% -12%, rgba(255, 80, 0, .14), transparent 60%),
+    radial-gradient(900px 520px at 88% 8%, rgba(34, 211, 238, .1), transparent 55%),
+    #141416;
   background-color: #141416;
+  background-attachment: fixed;
   color: #f4f4f5;
   min-height: 100vh;
   -webkit-font-smoothing: antialiased;
@@ -61,19 +66,16 @@ input, textarea {
 
 /* ============ Element Plus 深色变量（分层 surface + 灰阶文字） ============ */
 html.dark {
-  /* surface 亮度阶梯：页面底 < 卡片 < 浮层 */
   --el-bg-color: #1b1b1e;
   --el-bg-color-overlay: #232327;
   --el-bg-color-page: #141416;
 
-  /* 文字灰阶：off-white → 灰 → 弱灰 → muted */
   --el-text-color-primary: #f4f4f5;
   --el-text-color-regular: #a1a1aa;
   --el-text-color-secondary: #71717a;
   --el-text-color-placeholder: #52525b;
   --el-text-color-disabled: #3f3f46;
 
-  /* 边框：1px 半透明白，替代阴影 */
   --el-border-color: rgba(255, 255, 255, .14);
   --el-border-color-light: rgba(255, 255, 255, .11);
   --el-border-color-lighter: rgba(255, 255, 255, .08);
@@ -81,14 +83,12 @@ html.dark {
   --el-border-color-hover: rgba(255, 255, 255, .22);
   --el-border-color-dark: rgba(255, 255, 255, .2);
 
-  /* 填充 */
   --el-fill-color: rgba(255, 255, 255, .06);
   --el-fill-color-light: rgba(255, 255, 255, .04);
   --el-fill-color-lighter: rgba(255, 255, 255, .03);
   --el-fill-color-extra-light: rgba(255, 255, 255, .02);
   --el-fill-color-blank: transparent;
 
-  /* 单一 accent：品牌橙（克制使用，无 neon） */
   --el-color-primary: #ff5000;
   --el-color-primary-light-3: #ff7a3d;
   --el-color-primary-light-5: #ff9a6a;
@@ -103,7 +103,6 @@ html.dark {
   --el-color-error: #f87171;
   --el-color-info: #71717a;
 
-  /* 阴影：仅纯黑做浮层分离，不用彩色光晕 */
   --el-box-shadow: 0 8px 24px rgba(0, 0, 0, .45);
   --el-box-shadow-light: 0 4px 16px rgba(0, 0, 0, .4);
   --el-box-shadow-lighter: 0 2px 8px rgba(0, 0, 0, .35);
@@ -112,16 +111,17 @@ html.dark {
 
 /* ============ 组件质感（克制、无发光、无渐变） ============ */
 
-/* 主按钮：纯橙，无渐变/发光 */
+/* 主按钮：橙渐变 + 克制光晕（primary CTA 的 bold moment） */
 .el-button--primary:not(.is-text):not(.is-link):not(.is-plain) {
-  background: #ff5000;
-  border-color: #ff5000;
-  box-shadow: none;
-  transition: background .15s, transform .15s;
+  background: linear-gradient(135deg, #ff7a3d, #ff5000);
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(255, 80, 0, .22);
+  transition: box-shadow .2s, transform .2s;
 }
 .el-button--primary:not(.is-text):not(.is-link):not(.is-plain):hover {
-  background: #e64800;
-  border-color: #e64800;
+  background: linear-gradient(135deg, #ff8a52, #ff5c17);
+  border-color: transparent;
+  box-shadow: 0 4px 18px rgba(255, 80, 0, .32);
 }
 
 /* 焦点环：键盘可达 */

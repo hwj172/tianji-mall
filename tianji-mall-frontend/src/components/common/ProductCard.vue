@@ -76,17 +76,19 @@ function formatSales(n) {
 
 <style scoped>
 .product-card {
-  border-radius: 8px;
+  border-radius: 10px;
   overflow: hidden;
   cursor: pointer;
-  background: #1b1b1e;
-  transition: transform .15s, box-shadow .15s, border-color .15s;
-  border: 1px solid rgba(255, 255, 255, .07);
+  background: rgba(27, 27, 30, .75);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
+  transition: transform .2s, box-shadow .2s, border-color .2s;
+  border: 1px solid rgba(255, 255, 255, .06);
 }
 .product-card:hover {
   transform: translateY(-2px);
-  border-color: rgba(255, 80, 0, .4);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, .45), 0 8px 24px rgba(0, 0, 0, .4);
+  border-color: rgba(255, 80, 0, .35);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, .45), 0 12px 32px rgba(0, 0, 0, .5);
 }
 .product-image {
   position: relative;

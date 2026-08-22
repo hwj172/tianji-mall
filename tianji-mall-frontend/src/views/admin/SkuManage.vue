@@ -234,7 +234,7 @@ async function handleDeleteAttr(row) {
 .admin-page { max-width: 1000px; margin: 0 auto; }
 .ap-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .ap-header h2 { font-size: 18px; font-weight: 600; }
-.section { background: #1b1b1e; border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.section { background: rgba(27,27,30,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
 .section-header h3 { font-size: 15px; font-weight: 600; }
 </style>

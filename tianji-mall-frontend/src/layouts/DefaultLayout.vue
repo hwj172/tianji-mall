@@ -139,7 +139,7 @@ function search() {
 
 <style scoped>
 .layout { min-height: 100vh; background: transparent; }
-.top-bar { background: #141416; border-bottom: 1px solid rgba(255, 255, 255, .08); position: sticky; top: 0; z-index: 100; }
+.top-bar { background: rgba(20, 20, 22, .72); backdrop-filter: blur(16px) saturate(140%); -webkit-backdrop-filter: blur(16px) saturate(140%); border-bottom: 1px solid rgba(255, 255, 255, .06); position: sticky; top: 0; z-index: 100; }
 .top-bar-inner { max-width: 1200px; margin: 0 auto; display: flex; align-items: center; height: 64px; gap: 20px; }
 .logo { font-size: 24px; font-weight: 700; color: #ff5000; white-space: nowrap; }
 .search-bar { flex: 1; max-width: 540px; }

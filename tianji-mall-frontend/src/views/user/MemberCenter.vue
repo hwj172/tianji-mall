@@ -187,7 +187,7 @@ async function loadLogs() {
 .mc-progress-text { font-size: 13px; opacity: .9; margin-bottom: 8px; }
 
 /* 通用区块 */
-.section { background: #1b1b1e; border-radius: 8px; padding: 20px; }
+.section { background: rgba(27,27,30,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; padding: 20px; }
 .section-header h3 { font-size: 16px; font-weight: 600; margin: 0 0 14px; }
 
 .points-pos { color: #f56c2d; font-weight: 600; }

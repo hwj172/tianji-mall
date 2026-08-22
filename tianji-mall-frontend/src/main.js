@@ -8,7 +8,7 @@ import App from './App.vue'
 import router from './router'
 import './assets/styles/global.css'
 
-// 全局深色科技风：html.dark 触发 Element 暗色变量，global.css 内自定义科技主题覆盖
+// 影院级深色主题：html.dark 触发 Element 暗色变量
 document.documentElement.classList.add('dark')
 
 const app = createApp(App)

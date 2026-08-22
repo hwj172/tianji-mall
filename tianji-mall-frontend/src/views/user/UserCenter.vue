@@ -431,7 +431,7 @@ async function submitPassword() {
 .shop-logo-upload { display: flex; align-items: center; gap: 12px; }
 
 /* 通用区块 */
-.section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: rgba(27,27,30,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
 .section-header h3 { font-size: 16px; font-weight: 600; }
 .section-title { font-size: 16px; font-weight: 600; margin-bottom: 16px; }

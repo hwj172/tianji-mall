@@ -264,7 +264,7 @@ async function confirmReceive() {
 .status-actions { display: flex; gap: 10px; }
 
 /* 区块 */
-.section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: rgba(27,27,30,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; }
 .order-summary { border-top: none; }
 

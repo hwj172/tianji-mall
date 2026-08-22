@@ -405,7 +405,7 @@ async function submitOrder() {
 .checkout-page { max-width: 1200px; margin: 0 auto; }
 .page-title { font-size: 20px; font-weight: 600; margin-bottom: 16px; }
 
-.section { background: #1b1b1e; border-radius: 8px; padding: 20px; margin-bottom: 12px; }
+.section { background: rgba(27,27,30,.72); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-radius: 8px; padding: 20px; margin-bottom: 12px; }
 .section-title { font-size: 15px; font-weight: 600; margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,.08); }
 
 /* 地址 */
