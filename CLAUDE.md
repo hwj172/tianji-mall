@@ -148,6 +148,17 @@ ssh root@192.168.150.11 "docker exec -i mysql mysql -uroot -proot tianji_mall < 
 - **已含审核演示数据**：待审核商品 iPad（status=2）、待审核用户 buyer_zhao（改了用户名+头像）；admin 可走审核流程验收。
 - 演示账号：admin / seller_demo / testuser / buyer_wang / seller_li / buyer_zhao，密码均 `123456`。
 
+## 公网访问（ngrok 给老师看）
+
+一键脚本：`bash deploy/start-ngrok.sh`（自动确保 VM nginx → 本地 8088 SSH 隧道 → ngrok http 8088 → 打印公网地址）。
+
+链路：老师浏览器 → ngrok 域名 → 本地 8088(SSH 隧道) → VM 8088 → nginx → 前端静态 + `/api` `/uploads` 反代 gateway:8080。
+
+- **nginx 容器**：VM `/root/tianji-mall/docker/docker-compose.apps.yml` 加 `nginx` 服务（宿主 8088→80），镜像用 **`nginx:stable`** —— ⚠️ `nginx:alpine` 在老内核 CentOS7 + SELinux Enforcing 下**重启循环**（写 `/run/nginx.pid` EPERM），务必用 Debian 版。配置 `deploy/nginx.conf`（`pid /tmp/nginx.pid` + `/api` `/uploads` 反代 `gateway:8080`）。
+- **ngrok.exe**：winget 安装（Edge/安全中心拦 zip 下载，winget 是合规渠道）；`ngrok update` 需 ≥3.20（旧版报 `authentication failed: too old`）。令牌存本地 `ngrok.yml`，**勿进 git**。
+- **免费隧道域名会变**：一次会话稳定，重启后重跑脚本拿新地址。
+- 验证：`curl <ngrok域名>/` 应返回页面，`/api/home` 应返回 JSON。
+
 ## 子模块依赖速查
 
 | 模块 | 关键依赖 |
