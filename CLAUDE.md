@@ -14,7 +14,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **链路监控**：SkyWalking + Sentinel Dashboard
 - **向量数据库**：Milvus
 - **AI 模型**：DeepSeek（OpenAI 兼容 API）
-- **前端**：Vue3（独立项目）
+- **前端**：Vue3 + Element Plus + Pinia + Vite（独立项目 `tianji-mall-frontend`），含 ECharts 图表 + GSAP 动效 + Orbitron 数字字体，影院级深色主题
 - 完整需求文档见 `remand.md`
 
 ## 部署拓扑
@@ -87,7 +87,7 @@ tianji-mall (父 POM)
 
 ## 前端架构（tianji-mall-frontend，独立 Vue3 项目）
 
-**目录结构**：`views/`（页面：home/product/order/cart/user/seller/admin/chat/groupbuy/coupon/refund/review/notification/favorite/history/seckill/auth）、`components/common/`（公共组件）、`utils/`（工具）、`composables/`（组合式函数）、`stores/`（Pinia：user/cart）、`layouts/`（DefaultLayout/AdminLayout/SellerLayout）、`api/`（Axios 封装 + 接口）。
+**目录结构**：`views/`（页面：home/product/order/cart/user/seller/admin/chat/groupbuy/coupon/refund/review/notification/favorite/history/seckill/auth）、`components/common/`（公共组件）+ `components/charts/`（ECharts 封装：BaseChart.vue）、`utils/`（工具）、`composables/`（组合式函数）、`stores/`（Pinia：user/cart）、`layouts/`（DefaultLayout/AdminLayout/SellerLayout）、`api/`（Axios 封装 + 接口）。
 
 **公共组件**：`ProductCard.vue`（商品卡，images JSON 解析/原价折扣/懒加载）、`ProductGridSkeleton.vue`（网格骨架屏，props cols）、`EmptyState.vue`（空态，封装 el-empty + 操作按钮 slot）、`HomeBanner.vue`（首页轮播，渐变叠加 + 自定义指示器）。
 
@@ -99,8 +99,13 @@ tianji-mall (父 POM)
 - `utils/discount.js` — `formatDiscount(d)`（0.9→"9折"，兼容旧数据 >1 归一化：5→"5折"，与后端 applyCoupon 一致）
 - `composables/useProductBatch.js` — 商品批量回填（FavoriteList/BrowsingHistory）
 - `composables/usePagedList.js` — 加载更多分页（MyReviews/PendingReviews）
+- `composables/useCountUp.js` — GSAP 数字从 0 滚动到目标值（Dashboard 概览卡）
+- `composables/useReveal.js` — 商品网格滚动入场 + 交错动画（IntersectionObserver + gsap）
+- `utils/flyToCart.js` — 加购飞入购物车动画（gsap）
 
-**主题**：品牌橙 `#ff5000`。`global.css` 用 `--el-color-primary-*` 覆盖 Element 主色，全站 primary 按钮统一橙色。
+**主题（影院级深色）**：深灰底 `#141416` + 顶部橙/青光氛围（非纯黑）+ 玻璃拟态顶栏/卡片（backdrop-blur）+ 分层 surface 亮度阶梯（`#141416`→`#1b1b1e`→`#232327`，用亮度差替代 box-shadow 做深度）+ 单一品牌橙 accent `#ff5000` + off-white 文字 `#f4f4f5`（灰阶 `#a1a1aa`/`#71717a`/`#52525b`）。`global.css` 覆盖 `--el-*` 变量，`main.js` 需 `classList.add('dark')` + import `element-plus/theme-chalk/dark/css-vars.css`。数字用 Orbitron 等宽字体（`--font-tech`）。
+
+> **前端换肤教训**（避免重蹈）：用户在意的不是"装饰多少"而是"克制的高级感"。走过 3 版：① 深色霓虹满屏发光→"低级"；② 极简深灰无装饰→"太黑无科技感"；③ **影院级深色**（氛围光+玻璃+克制橙渐变按钮）→ 认可。关键平衡：光效集中（背景氛围+顶栏玻璃+主按钮），其余安静克制。**el-carousel 的 height 传精确像素值可靠，`height="100%"` 会导致图不显示**。浅色↔深色切换需同步改 main.js 的 dark class + global.css 的 `html.dark` 变量，只改一半会乱。
 
 **验证方式**：前端**无单测框架**，改动后用 `cd tianji-mall-frontend && npm run build`（必须 `✓ built`）+ 浏览器视觉确认（dev 5173，proxy `/api`、`/uploads` → VM gateway `192.168.150.11:8080`）。
 
@@ -108,7 +113,7 @@ tianji-mall (父 POM)
 - 金额统一 `fmtPrice`、时间统一 `fmtTime`；空态用 `EmptyState`；列表 loading 用 `ProductGridSkeleton`
 - **开店角色链路**：`POST /api/shop/register` 成功后 DB 角色提升为 seller，但 **JWT 的 role claim 不刷新**（网关 `X-User-Role` 按 JWT 鉴权）→ 前端必须提示并**强制重新登录**签发新 token，否则商家中心返回 403
 - **AI 客服历史**：走后端 `getChatHistory(sessionId)`；localStorage 只存 sessionId 字符串（读取需兼容旧对象格式 `{sessionId, messages}`）
-- 顶栏入口：logo/🏠 回首页、🏪 商家中心（`isSeller` 显示）、🛒 购物车、🤖 AI导购、用户下拉
+- 顶栏入口：logo 回首页、商家中心（`isSeller` 显示）、购物车、AI导购（Element 图标）、用户下拉
 - **Admin 后台管理页**（`views/admin/`，侧栏菜单在 `AdminLayout.vue`）：Dashboard / CategoryManage / ProductManage（含待审核筛选+通过/拒绝）/ OrderManage / CouponManage / PromotionManage / AnnouncementManage / ShopManage / UserManage（含待审核资料 tab）/ **BannerManage** / **SkuManage**（选商品管 SKU+属性）/ **SeckillManage**（设置/清除秒杀窗口）/ **GroupBuyManage**（拼团活动阶梯编辑）；路由在 `router/index.js` admin 子路由
 - **用户中心**：账户区含「修改密码」弹窗（`PUT /user/password`，新密码 6-32 位 + 两次一致校验）；编辑资料改姓名/头像提示需 admin 审核（生效前显示原值）
 
@@ -129,6 +134,19 @@ mvn compile -rf :pay-service
 # 打包跳过测试
 mvn package -DskipTests
 ```
+
+## 演示数据（seed-current.sql）
+
+`sql/seed-current.sql` 是干净演示数据（自带 TRUNCATE 清空 + 全量灌入，密码统一 `123456`）。重灌：
+```bash
+scp sql/seed-current.sql root@192.168.150.11:/tmp/
+ssh root@192.168.150.11 "docker exec -i mysql mysql -uroot -proot tianji_mall < /tmp/seed-current.sql"
+```
+
+- **商品图用真实 Unsplash 照片**（非 picsum 占位）——12 商品 + 3 banner + 2 店 logo + 评论晒图均按类目贴合（iPhone/华为→手机、ThinkPad→商用本、罗技→鼠标、AJ1→运动鞋、羽绒服/背包/手环等），URL 已实测 200 可达。图搜命中更准。换图时按商品名从 Unsplash 挑对应 photo-id，替换 product.images 的 JSON 数组。
+- **3 个时间字段**（seckill/coupon/promotion/group_buy 的 start/end）用 2026-01-01~2027-01-01 宽窗口，规避 MySQL(+8) 与 JVM(UTC) 时区比较偏差。
+- **已含审核演示数据**：待审核商品 iPad（status=2）、待审核用户 buyer_zhao（改了用户名+头像）；admin 可走审核流程验收。
+- 演示账号：admin / seller_demo / testuser / buyer_wang / seller_li / buyer_zhao，密码均 `123456`。
 
 ## 子模块依赖速查
 
