@@ -1,10 +1,18 @@
 #!/bin/bash
 # 一键启动 ngrok 让老师公网访问天机商城（先确保 VM nginx + 本地隧道，再起 ngrok）
-NGROK="/c/Users/黄文杰/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe"
+SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
+NGROK_DIR="$SCRIPT_DIR/ngrok"
+NGROK="$NGROK_DIR/ngrok.exe"
+NGROK_CONFIG="$NGROK_DIR/ngrok.yml"
 SSH_ARGS="-i C:/Users/黄文杰/.ssh/id_rsa -o StrictHostKeyChecking=accept-new -o UserKnownHostsFile=C:/Users/黄文杰/.ssh/known_hosts"
 VM="root@192.168.150.11"
 
+# 优先项目内 ngrok，回退 winget 托管，最后 PATH
+[ -f "$NGROK" ] || NGROK="/c/Users/黄文杰/AppData/Local/Microsoft/WinGet/Packages/Ngrok.Ngrok_Microsoft.Winget.Source_8wekyb3d8bbwe/ngrok.exe"
 [ -f "$NGROK" ] || NGROK="ngrok"
+# 有项目内令牌配置则用 --config 指定，否则走 ngrok 默认位置
+NGROK_CONFIG_ARG=""
+[ -f "$NGROK_CONFIG" ] && NGROK_CONFIG_ARG="--config $NGROK_CONFIG"
 
 echo "==> [1/3] 确保 VM nginx 容器在跑"
 ssh $SSH_ARGS $VM "cd /root/tianji-mall/docker && docker compose -f docker-compose.apps.yml up -d nginx 2>&1 | tail -1"
@@ -19,7 +27,7 @@ fi
 
 echo "==> [3/3] 启动 ngrok http 隧道 -> 本地8088"
 pkill -f "ngrok http" 2>/dev/null; sleep 1
-"$NGROK" http 8088 --log stdout > /tmp/ngrok.log 2>&1 &
+"$NGROK" http 8088 --log stdout $NGROK_CONFIG_ARG > /tmp/ngrok.log 2>&1 &
 sleep 8
 URL=$(curl -s http://127.0.0.1:4040/api/tunnels 2>/dev/null | grep -oE '"public_url":"https://[^"]+"' | head -1 | cut -d'"' -f4)
 

@@ -53,3 +53,6 @@ tianji-mall-frontend/dist/
 
 # 本地参考图/临时资源
 task/
+
+# ngrok 本地化（含 authtoken 的 ngrok.yml，绝不可提交）
+deploy/ngrok/
