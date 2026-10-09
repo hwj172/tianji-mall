@@ -1,6 +1,11 @@
 # 天机商城 — 中间件容器编排
-# 启动: docker compose up -d
-# 停止: docker compose down
+#
+# 首次使用先准备环境变量文件（含各项密码，不入库）：
+#     cp docker/.env.example docker/.env
+# 然后在 docker/ 目录下执行：
+#     docker compose up -d
+#
+# 各项密码统一由 docker/.env 提供，不要在仓库里写死真实密码。
 
 services:
 
@@ -17,10 +22,10 @@ services:
       - MYSQL_SERVICE_HOST=mysql
       - MYSQL_SERVICE_DB_NAME=nacos_config
       - MYSQL_SERVICE_USER=root
-      - MYSQL_SERVICE_PASSWORD=root
+      - MYSQL_SERVICE_PASSWORD=${MYSQL_ROOT_PASSWORD}
       - MYSQL_SERVICE_DB_PARAM=characterEncoding=utf8&connectTimeout=1000&socketTimeout=3000&autoReconnect=true&useSSL=false&allowPublicKeyRetrieval=true
       - NACOS_AUTH_ENABLE=true
-      - NACOS_AUTH_TOKEN=SecretKey012345678901234567890123456789012345678901234567890123456789
+      - NACOS_AUTH_TOKEN=${NACOS_AUTH_TOKEN}
       - NACOS_AUTH_IDENTITY_KEY=serverIdentity
       - NACOS_AUTH_IDENTITY_VALUE=security
     ports:
@@ -41,7 +46,7 @@ services:
     image: mysql:8.0.33
     container_name: mysql
     environment:
-      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
       MYSQL_DATABASE: tianji_mall
       MYSQL_CHARSET: utf8mb4
       MYSQL_COLLATION: utf8mb4_unicode_ci
@@ -55,7 +60,7 @@ services:
       - --collation-server=utf8mb4_unicode_ci
       - --default-time-zone=+08:00
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-proot"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_ROOT_PASSWORD}"]
       interval: 30s
       timeout: 10s
       retries: 5
@@ -134,8 +139,8 @@ services:
     image: minio/minio:RELEASE.2023-03-20T20-16-18Z
     container_name: milvus-minio
     environment:
-      MINIO_ROOT_USER: minioadmin
-      MINIO_ROOT_PASSWORD: minioadmin
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - minio-data:/minio_data
     command: minio server /minio_data
@@ -154,8 +159,8 @@ services:
     environment:
       ETCD_ENDPOINTS: etcd:2379
       MINIO_ADDRESS: minio:9000
-      MINIO_ACCESS_KEY_ID: minioadmin
-      MINIO_SECRET_ACCESS_KEY: minioadmin
+      MINIO_ACCESS_KEY_ID: ${MINIO_ROOT_USER}
+      MINIO_SECRET_ACCESS_KEY: ${MINIO_ROOT_PASSWORD}
     ports:
       - "19530:19530"
       - "9091:9091"
@@ -196,7 +201,7 @@ services:
     ports:
       - "8858:8858"
     environment:
-      - JAVA_OPTS=-Dsentinel.dashboard.auth.username=sentinel -Dsentinel.dashboard.auth.password=sentinel
+      - JAVA_OPTS=-Dsentinel.dashboard.auth.username=${SENTINEL_USERNAME} -Dsentinel.dashboard.auth.password=${SENTINEL_PASSWORD}
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8858"]
       interval: 30s

@@ -45,19 +45,67 @@ tianji-mall (父 POM)
 
 ## 快速启动
 
+需要一台装了 Docker 的机器（本机或虚拟机都行），至少 8G 内存。
+
+### 1. 准备环境
+
 ```bash
-# 一键启动（本机）：SSH 隧道 → VM 恢复(中间件+微服务) → 前端 dev → 验证
-bash start-all.sh
+# 两个 compose 文件共用这个外部网络，首次需要手动创建
+docker network create root_default
+
+# 生成环境变量文件（含各项密码，已 gitignore）
+cp docker/.env.example docker/.env
 ```
 
-重灌演示数据：
+`.env.example` 里给的是可直接跑通的开发默认值，正式部署请逐项替换。
+
+### 2. 拉起中间件
 
 ```bash
-scp sql/seed-current.sql root@192.168.150.11:/tmp/
-ssh root@192.168.150.11 "docker exec -i mysql mysql -uroot -proot tianji_mall < /tmp/seed-current.sql"
+cd docker && docker compose up -d
+```
+
+包含 Nacos / MySQL / Redis / RocketMQ / Milvus（含 etcd、MinIO）/ SkyWalking / Sentinel。
+
+> MySQL 首次启动时会自动执行 `sql/init.sql` 建表灌数据。
+> 这一步**只在数据卷为空时发生**，之后重建容器不会重跑。
+
+各控制台：
+
+| 组件 | 地址 |
+|---|---|
+| Nacos | http://localhost:8848/nacos |
+| Sentinel | http://localhost:8858 |
+| SkyWalking UI | http://localhost:8090 |
+| Milvus | localhost:19530 |
+
+### 3. 启动微服务
+
+等中间件健康检查通过后再启动（`docker compose ps` 全部 healthy）：
+
+```bash
+cd docker && docker compose -f docker-compose.apps.yml up -d
+```
+
+它会基于各服务目录下的 Dockerfile 构建镜像，并以 `docker` profile 运行。
+
+### 4. 前端
+
+```bash
+cd tianji-mall-frontend && npm install && npm run dev
 ```
 
 启动后访问：前端 http://localhost:5173 / 网关 http://localhost:8080
+
+> **作者本机环境**：作者自己是在一台 Linux VM 上跑中间件与微服务，本机通过 SSH 隧道访问。仓库里的 `start-all.sh` 是针对那套环境的快捷脚本，无法直接复用。上面的步骤是通用的跑法。
+
+### 重灌演示数据
+
+```bash
+docker exec -i mysql mysql -uroot -p tianji_mall < sql/seed-current.sql
+```
+
+会提示输入密码，取 `docker/.env` 里的 `MYSQL_ROOT_PASSWORD`。
 
 ## 演示数据
 
