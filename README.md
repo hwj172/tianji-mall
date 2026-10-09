@@ -2,6 +2,18 @@
 
 基于 **Spring Cloud Alibaba** 的仿淘宝智能电商平台。微服务 + 向量检索 + DeepSeek AI 导购，前后端完整闭环。
 
+## 界面
+
+| 首页 | 商品详情 |
+|:---:|:---:|
+| ![商城首页](docs/images/01-home.webp) | ![商品详情](docs/images/02-product.webp) |
+
+**链路监控** —— SkyWalking 中的真实运行数据，6 个微服务全部注册并上报：
+
+![SkyWalking 服务指标](docs/images/04-skywalking.webp)
+
+> 截图为本地运行中的演示环境。商品图片为 Unsplash 演示数据，账号密码见下方「账号」一节。
+
 ## 技术栈
 
 | 层 | 技术 |
