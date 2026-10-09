@@ -8,6 +8,10 @@
 |:---:|:---:|
 | ![商城首页](docs/images/01-home.webp) | ![商品详情](docs/images/02-product.webp) |
 
+**限时秒杀** —— 倒计时、库存进度、原价与秒杀价对比：
+
+![限时秒杀](docs/images/03-seckill.webp)
+
 **链路监控** —— SkyWalking 中的真实运行数据，6 个微服务全部注册并上报：
 
 ![SkyWalking 服务指标](docs/images/04-skywalking.webp)
